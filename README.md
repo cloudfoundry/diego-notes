@@ -195,7 +195,7 @@ The `CRASHED` ActualLRP is eventually restarted by the converger.  The `WaitTime
 
 - If `CrashCount < 8`
 	- the Converger should restart the ActualLRP `N` seconds after `LastCrashedAt` (exponential backoff in [this story](https://www.pivotaltracker.com/story/show/83638710))
-- If `CrashCount >= 5`
+- If `CrashCount >= 8`
 	- the Converger should restart the ActualLRP `MaxWaitTime = 16` minutes after `LastCrashedAt`
 - If `CrashCount > 200`
 	- the ActualLRP is never restarted
