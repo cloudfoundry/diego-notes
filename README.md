@@ -254,7 +254,7 @@ Here are it's responsibilities and the actions it takes:
 
 The Rep is responsible for ensuring that the BBS is kept up-to-date with what is running.  It does this by periodically fetching containers from the executor and taking actions.
 
-Here is an outline of how the Rep should act to reconcile the ActualLRPs in the BBS with the set of containers.  In this example, α will represent the Cell performing the reconciliation and ω will represent some (any) other cell:
+Here is an outline of how the Rep should act to reconcile the ActualLRPs in the BBS with the set of containers.  In this example, α will represent the Cell performing the reconciliation and ω will represent some (any) other cell.
 
 Container State | ActualLRP State | Action | Reason
 ----------------|-----------------|--------|-------
@@ -294,6 +294,10 @@ Some notes:
 - `COMPLETED` comes in two flavors.  `crashed` implies the container died unexpectedly.  `shutdown` implies the container was asked to shut down (e.g. the Rep was sent a stop).
 - The "No Container" rows are necessary to ensure that the BBS reflects the reality of what is - and is *not* - running on the Cell.  Note that "No Container" includes "No Reservation".
 - In principal several of these combinations should not be possible.  However in the presence of network partitions and partial failures it is difficult to make such a statement with confidence.  An exhaustive analysis of all possible combinations (such as this) ensures eventual consistency... eventually.
+
+In principal it is possible for one Cell to end up running more than one instance of an ActualLRP (i.e. same `ProcessGuid` and `Index` but different `InstanceGuid`).  At most one of these ActualLRPs will be in the BBS.  The table above still applies like so: when processing a container whose `InstanceGuid` is *not* in the BBS, the Rep treats the ActualLRP as if it were on some other Cell (the `ω` cases here).  To be concrete: assume the Cell has two running containers, one with `InstanceGuid` `ig1`, the other with `ig2`.  Suppose further that the BBS lists an ActualLRP running on `α` with `InstanceGuid` `ig1`.  When processing `ig1` the Rep will do nothing.  When processing `ig2` the Rep will see that there is already an ActualLRP running and will delete the container.
+
+It is impossible for multiple containers with the same `InstanceGuid` to run on a Cell as the `InstanceGuid` is the unique-identifier associated with the container.
 
 ## Tasks
 
