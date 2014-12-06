@@ -271,14 +271,14 @@ Container State | ActualLRP State | Action | Reason
 `COMPLETED (crashed)` | No ActualLRP | Perform `RepCrashDance` then Delete Container | α just saw a crash but the BBS is empty.  Perhaps BBS was accidentally purged?  In that case: update it with what we know to be true.
 `COMPLETED (crashed)` | `UNCLAIMED` | Delete Container | Instance will be scheduled elsewhere
 `COMPLETED (crashed)` | `CLAIMED by α` | Perform `RepCrashDance` then Delete Container | Instance crashed on α while starting
-`COMPLETED (crashed)` | `STARING on ω` | Delete Container | Instance is starting elsewhere, leave it be
+`COMPLETED (crashed)` | `CLAIMED on ω` | Delete Container | Instance is starting elsewhere, leave it be
 `COMPLETED (crashed)` | `RUNNING on α` | Perform `RepCrashDance` then Delete Container | Instance crashed on α while running
 `COMPLETED (crashed)` | `RUNNING on ω` | Delete Container | Instance is running elsewhere, leave it be
 `COMPLETED (crashed)` | `CRASHED` | Delete Container | The crash has already been noted
 `COMPLETED (shutdown)` | No ActualLRP | Perform `RepCrashDance` then Delete Container | α just saw a crash but the BBS is empty.  Perhaps BBS was accidentally purged?  In that case: update it with what we know to be true.
 `COMPLETED (shutdown)` | `UNCLAIMED` | Delete Container | Nothing to be done
 `COMPLETED (shutdown)` | `CLAIMED by α` | CAD ActualLRP then Delete Container  | α was told to stop and should now clean up the BBS
-`COMPLETED (shutdown)` | `STARING on ω` | Delete Container | Instance is starting elsewhere, leave it be
+`COMPLETED (shutdown)` | `CLAIMED on ω` | Delete Container | Instance is starting elsewhere, leave it be
 `COMPLETED (shutdown)` | `RUNNING on α` | CAD ActualLRP then Delete Container | α was told to stop and should now clean up the BBS
 `COMPLETED (shutdown)` | `RUNNING on ω` | Delete Container | Instance is running elsewhere, leave it be
 `COMPLETED (shutdown)` | `CRASHED` | Delete Container | Nothing to do
