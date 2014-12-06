@@ -1,7 +1,15 @@
 # Diego: The Big Picture, The Deep Dive
 
 This describes the world *as it will be* when the next pile of stories are completed.
+
 Also.  I probably missed something(s) ;)
+
+This document is not concerned with:
+
+- the Receptor API (we have docs for that)
+- the details around how the Exeuctor runs steps/recipes/monitor actions/run actions/etc../etc..
+- anything that begins with "CC"
+- anything to do with emitting routes (though I should add that since it's going to be relevant)
 
 ## The Rep-Executor(-Garden) Cycle
 
@@ -42,6 +50,12 @@ The executor emits two events:
 - `ContainerCompletedEvent`: triggered when the container enters the completed state
 
 The rep should handle events exactly as it handles polling.  Given a container in a particular state, reconcile with the BBS.  The events are simply an optimization on top of polling.
+
+#### Polling vs Events
+
+The Rep keeps the BBS up-to-date via two mechanisms: polling and events.  This is complicated by the fact that events can come in while the poller is *fetching* state from its two sources (BBS & Executor).
+
+As a result, when polling the Rep may have a stale copy of the containers and/or a stale copy of the BBS.  To be safe it should always validate a decision it is about to make.  This is *especially* important when deleting an `INITIALIZING/CREATED/RUNNING` container.
 
 ## LRPs
 
@@ -138,16 +152,18 @@ When an ActualLRP should be stopped:
 
 ### Distributing ActualLRPs: Auctioneer
 
-The Auctioneer is responsible for distributing ActualLRPs optimally.  When requests to start ActualLRPs arrive:
+The Auctioneer is responsible for distributing ActualLRPs optimally.  When requests to start ActualLRPs arrive the Auctioneer performs the scheduling loop:
 
 - the Auctioneer fetches the state of each Cell.  This includes information about the available capacity on the Cell, the Cell's stack, and the set of ActualLRPs currently running on the Cell.
 - the Auctioneer then distributes the ActualLRPs across the Cells (in-memory).  During this process the Auctioneer optimizes for:
 	- an even distribution of memory and disk usage across Cells
 	- minimizing colocation of ActualLRP instances of a given DesiredLRP on the same Cell.
 	- minimizing colocation of ActualLRP instances of a givne DesiredLRP in the same Availability Zone (see below).
-- the Auctioneer then submits the allocated work to all Cells.  Work that fails to start/cannot be allocated is placed back in the pool of work to be allocated and is eventually retried
-
-> Note: the Auctioneer never manipulates the BBS.  It simply follows instructions.  The Converger/Rep take care of coming to eventual consistency on the BBS.
+- the Auctioneer then submits the allocated work to all Cells
+	- any work that could not be allocated is carried over into the next batch
+	- if the Cell responds saying that the work could not be performed, the auctioneer carries the failed work over into the next batch
+	- if the Cell *fails to respond* (e.g. a connection timeout elapses), the auctioneer *does **not*** carry the work over into the next batch.  This is a case of partial failure and the auctioneer defers to the converger to figure out what to do
+- any work carried over into the next batch is merged in with work that came in during the previous round of scheduling and the auction repeats the scheduling loop
 
 #### Managing Availability Zones
 
@@ -162,9 +178,9 @@ There are some important details around how the Auctioneer distributes instances
 
 The preferred zone is computed as follows.  Assume we have a deterministic mapping from `ProcessGuid` to `zone`: `f(ProcessGuid) ∈ {1..N}`.  Then `PreferredZone(ProcessGuid, Index) = (f(ProcessGuid) + Index) % NZones`
 
-#### Communicating Fullness
+#### Communicating Fullness (TBD)
 
-TBD - (new ActualLRP state?)
+When an ActualLRP cannot be placed because there are no resources to place it, the Auctioneer can communicate this back to the user somehow.  The mechanism for this is TBD.  A new `ActualLRP` state (e.g. `FAILED` or `UNPLACEABLE`) could be the best way forward.  Diego could retry starting `FAILED` `ActualLRPs` periodically.  TBD.
 
 ### Crashes
 
@@ -231,62 +247,56 @@ Here are it's responsibilities and the actions it takes:
 
 ### Harmonizing ActualLRPs with Container State: Rep
 
-The Rep is responsible for ensuring the the BBS is kept up-to-date with what is running.  It does this by periodically fetching containers from the executor and taking actions.
+The Rep is responsible for ensuring that the BBS is kept up-to-date with what is running.  It does this by periodically fetching containers from the executor and taking actions.
 
-Here is an outline of how the Rep should act to reconcile the ActualLRPs in the BBS with the set of containers.  In this example, A will represent the Cell performing the reconciliation and O will represent some (any) other cell:
+Here is an outline of how the Rep should act to reconcile the ActualLRPs in the BBS with the set of containers.  In this example, α will represent the Cell performing the reconciliation and ω will represent some (any) other cell:
 
 Container State | ActualLRP State | Action | Reason
 ----------------|-----------------|--------|-------
-`RESERVED` | `ANY` | Do Nothing | A merely has a reservation the ActualLRP, no need to act yet.
-`INITIALIZING` or `CREATED` | No ActualLRP | Delete Container | The consumer likely stopped desiring this ActualLRP while it was being auctioned
-`INITIALIZING` or `CREATED` | `UNCLAIMED` | CAS to `CLAIMED by A` | A is starting this ActualLRP
-`INITIALIZING` or `CREATED` | `CLAIMED by A` | Do Nothing | A is starting this ActualLRP, no need to write to the BBS
-`INITIALIZING` or `CREATED` | `CLAIMED by O` | Delete Container | The ActualLRP is starting on O, stop starting it on A
-`INITIALIZING` or `CREATED` | `RUNNING on A` | Do Nothing | This should not be possible
-`INITIALIZING` or `CREATED` | `RUNNING on O` | Delete Container | The ActualLRP is running on O, stop starting it on A
-`INITIALIZING` or `CREATED` | `CRASHED` | Delete Container | A is incorrectly starting the instance - some other Cell will pick this up later.
-`RUNNING` | No ActualLRP | CREATE `RUNNING on A` | A is running on this ActualLRP, let Diego know so it can take action appropriately (we don't allow blank ActualLRPs to shut down containers as this would lead to catastrophic fail should the BBS be accidentally purged).
-`RUNNING` | `UNCLAIMED` | CAS to `RUNNING on A` | A is running on this ActualLRP, no need to start it elsewhere
-`RUNNING` | `CLAIMED by A` | CAS to `RUNNING on A` | A is running this ActualLRP
-`RUNNING` | `CLAIMED by O` | CAS to `RUNNING on A` | A is running this ActualLRP, no need to start it elsewhere
-`RUNNING` | `RUNNING on A` | Do Nothing | A is running on this ActualLRP, no need to write to the BBS
-`RUNNING` | `RUNNING on O` | Delete Container | Instance is running on O, stop running it on A
-`RUNNING` | `CRASHED` | CAS to `RUNNING on A` | A is succesfully running this ActualLRP. It's not crashed and need not be restarted.
-`COMPLETED (crashed)` | No ActualLRP | Perform `RepCrashDance` then Delete Container | A just saw a crash but the BBS is empty.  Perhaps BBS was accidentally purged?  In that case: update it with what we know to be true.
+`RESERVED` | `ANY` | Do Nothing | α merely has a reservation for the ActualLRP, no need to act yet.
+`INITIALIZING|CREATED` | No ActualLRP | Delete Container | The consumer likely stopped desiring this ActualLRP while it was being auctioned
+`INITIALIZING|CREATED` | `UNCLAIMED` | CAS to `CLAIMED by α` | α is starting this ActualLRP
+`INITIALIZING|CREATED` | `CLAIMED by α` | Do Nothing | α is starting this ActualLRP, no need to write to the BBS
+`INITIALIZING|CREATED` | `CLAIMED by ω` | Delete Container | The ActualLRP is starting on ω, stop starting it on α
+`INITIALIZING|CREATED` | `RUNNING on α` | Do Nothing | This should not be possible
+`INITIALIZING|CREATED` | `RUNNING on ω` | Delete Container | The ActualLRP is running on ω, stop starting it on α
+`INITIALIZING|CREATED` | `CRASHED` | Delete Container | α is incorrectly starting the instance - some other Cell will pick this up later.
+`RUNNING` | No ActualLRP | CREATE `RUNNING on α` | α is running on this ActualLRP, let Diego know so it can take action appropriately (we don't allow blank ActualLRPs to shut down containers as this would lead to catastrophic fail should the BBS be accidentally purged).
+`RUNNING` | `UNCLAIMED` | CAS to `RUNNING on α` | α is running on this ActualLRP, no need to start it elsewhere
+`RUNNING` | `CLAIMED by α` | CAS to `RUNNING on α` | α is running this ActualLRP
+`RUNNING` | `CLAIMED by ω` | CAS to `RUNNING on α` | α is running this ActualLRP, no need to start it elsewhere
+`RUNNING` | `RUNNING on α` | Do Nothing | α is running on this ActualLRP, no need to write to the BBS
+`RUNNING` | `RUNNING on ω` | Delete Container | Instance is running on ω, stop running it on α
+`RUNNING` | `CRASHED` | CAS to `RUNNING on α` | α is succesfully running this ActualLRP. It's not crashed and need not be restarted.
+`COMPLETED (crashed)` | No ActualLRP | Perform `RepCrashDance` then Delete Container | α just saw a crash but the BBS is empty.  Perhaps BBS was accidentally purged?  In that case: update it with what we know to be true.
 `COMPLETED (crashed)` | `UNCLAIMED` | Delete Container | Instance will be scheduled elsewhere
-`COMPLETED (crashed)` | `CLAIMED by A` | Perform `RepCrashDance` then Delete Container | Instance crashed on A while starting
-`COMPLETED (crashed)` | `STARING on O` | Delete Container | Instance is starting elsewhere, leave it be
-`COMPLETED (crashed)` | `RUNNING on A` | Perform `RepCrashDance` then Delete Container | Instance crashed on A while running
-`COMPLETED (crashed)` | `RUNNING on O` | Delete Container | Instance is running elsewhere, leave it be
+`COMPLETED (crashed)` | `CLAIMED by α` | Perform `RepCrashDance` then Delete Container | Instance crashed on α while starting
+`COMPLETED (crashed)` | `STARING on ω` | Delete Container | Instance is starting elsewhere, leave it be
+`COMPLETED (crashed)` | `RUNNING on α` | Perform `RepCrashDance` then Delete Container | Instance crashed on α while running
+`COMPLETED (crashed)` | `RUNNING on ω` | Delete Container | Instance is running elsewhere, leave it be
 `COMPLETED (crashed)` | `CRASHED` | Delete Container | The crash has already been noted
-`COMPLETED (shutdown)` | No ActualLRP | Perform `RepCrashDance` then Delete Container | A just saw a crash but the BBS is empty.  Perhaps BBS was accidentally purged?  In that case: update it with what we know to be true.
+`COMPLETED (shutdown)` | No ActualLRP | Perform `RepCrashDance` then Delete Container | α just saw a crash but the BBS is empty.  Perhaps BBS was accidentally purged?  In that case: update it with what we know to be true.
 `COMPLETED (shutdown)` | `UNCLAIMED` | Delete Container | Nothing to be done
-`COMPLETED (shutdown)` | `CLAIMED by A` | CAD ActualLRP then Delete Container  | A was told to stop and should now clean up the BBS
-`COMPLETED (shutdown)` | `STARING on O` | Delete Container | Instance is starting elsewhere, leave it be
-`COMPLETED (shutdown)` | `RUNNING on A` | CAD ActualLRP then Delete Container | A was told to stop and should now clean up the BBS
-`COMPLETED (shutdown)` | `RUNNING on O` | Delete Container | Instance is running elsewhere, leave it be
+`COMPLETED (shutdown)` | `CLAIMED by α` | CAD ActualLRP then Delete Container  | α was told to stop and should now clean up the BBS
+`COMPLETED (shutdown)` | `STARING on ω` | Delete Container | Instance is starting elsewhere, leave it be
+`COMPLETED (shutdown)` | `RUNNING on α` | CAD ActualLRP then Delete Container | α was told to stop and should now clean up the BBS
+`COMPLETED (shutdown)` | `RUNNING on ω` | Delete Container | Instance is running elsewhere, leave it be
 `COMPLETED (shutdown)` | `CRASHED` | Delete Container | Nothing to do
-No Container | `CLAIMED by A` | CAS to `UNCLAIMED`, request a start | Diego thinks A is starting the instance, but it is not
-No Container | `RUNNING on A` | CAS to `UNCLAIMED`, request a start | Diego thinks A is starting the instance, but it is not
+No Container | `CLAIMED by α` | CAS to `UNCLAIMED`, request a start | Diego thinks α is starting the instance, but it is not
+No Container | `RUNNING on α` | CAS to `UNCLAIMED`, request a start | Diego thinks α is starting the instance, but it is not
 
 Some notes:
 - `COMPLETED` comes in two flavors.  `crashed` implies the container died unexpectedly.  `shutdown` implies the container was asked to shut down (e.g. the Rep was sent a stop).
 - The "No Container" rows are necessary to ensure that the BBS reflects the reality of what is - and is *not* - running on the Cell.  Note that "No Container" includes "No Reservation".
 - In principal several of these combinations should not be possible.  However in the presence of network partitions and partial failures it is difficult to make such a statement with confidence.  An exhaustive analysis of all possible combinations (such as this) ensures eventual consistency... eventually.
 
-#### Polling vs Events
-
-The Rep keeps the BBS up-to-date via two mechanisms: polling and events.  This is complicated by the fact that events can come in while the poller is *fetching* state from its two sources (BBS & Executor).
-
-As a result, when polling the Rep may have a stale copy of the containers and/or a stale copy of the BBS.  To be safe it should always validate a decision it is about to make.  This is *especially* important when deleting an `INITIALIZING/CREATED/RUNNING` container.
-
 ## Tasks
 
 All things Tasks.  Here's an outline:
 
-### Task States and Lifecycle
+### Task States
 
-The lifecycle of a Task in Diego is quite different from that of an LRP.  Tasks run at most once: they're never restarted, they don't "crash" they don't move during an evacuation.  Instead Tasks `COMPLETE`.  Once in the `COMPLETE` state the Tasks have a notion of whether they have failed or not.  Failed Tasks include a `FailureReason`; succesful Tasks (may) include a `Result` (the contents of a file requested by the user).
+The lifecycle of a Task in Diego is quite different from that of an LRP.  Tasks are guaranteed to run at most once: they're never restarted, they don't "crash", they don't move during an evacuation.  Instead Tasks `COMPLETE`.  Once in the `COMPLETE` state the Tasks have a notion of whether they have failed or not.  Failed Tasks include a `FailureReason`; succesful Tasks (may) include a `Result` (the contents of a file requested by the user).
 
 Here are the states for the Tasks:
 
@@ -297,19 +307,114 @@ RUNNING | The Task is running on a Cell
 COMPLETED | The Task is complete
 RESOLVING | The Task is being resolved by a Receptor
 
-Here's the happy path for a Task:
+### Task Lifecycle
 
+Here's a happy path overview of the Task lifecycle, just to set the stage.  Many more details will follow.
 
-
+- When a new Task is created by the Receptor it:
+	+ Creates a Task in the `PENDING` state
+	+ Sends a start request to the Auctioneer
+- The Auctioneer picks a Cell to run the Task
+- The Rep creates a container reservation, CAS the Task to `RUNNING`, then starts the contianer running.
+- When the container completes (succesfully or otherwise) the Rep CAS the Task to `COMPLETED`
+	+ If the Task has a `CompletionCallback` URL this sends a message to the Receptor to handle resolving the Task.
+- The Receptor CAS the Task to `RESOLVING` and calls the `CompletionCallback`
+- Upon success Receptor Rep CAD the Task
 
 ### Distributing Tasks: Auctioneer
 
+The Auctioneer is responsible for distributing Tasks optimally.  When requests to start Tasks arrive the Auctioneer performs the scheduling loop:
+
+- the Auctioneer fetches the state of each Cell.  This includes information about the available capacity on the Cell and the Cell's stack
+- The Auctioneer then distributes the Tasks across the Cells (in-memory).  During the process the Auctioneer optimizes for:
+	+ an even distribution of memory and disk usage across Cells
+- the Auctioneer then submits the allocated work to all Cells
+	- any work that could not be allocated is carried over into the next batch
+	- if the Cell responds saying that the work could not be performed, the auctioneer carries the failed work over into the next batch
+	- if the Cell *fails to respond* (e.g. a connection timeout elapses), the auctioneer *does **not*** carry the work over into the next batch.  This is a case of partial failure and the auctioneer defers to the converger to figure out what to do
+- any work carried over into the next batch is merged in with work that came in during the previous round of scheduling and the auction repeats the scheduling loop
+
+#### Communicating Fullness
+
+When a Task cannot be allocated the Auctioneer CAS the Task from the `PENDING` state to the `COMPLETED` state, marking it as `Failed` and including a `FailureReason` that explains that the cluster has no capacity for the task.  It is up to the consumer to retry the Task.
+
 ### Resolving Completed Tasks
+
+When a Task is `COMPLETED` it is up-to the consumer to delete the Task (though the converger will clean up Tasks that have been `COMPLETED` for a lengthy period of time).  Consumers can either poll Tasks to see them enter the `COMPLETED` state or can register a `CompletionCallback` to be told the Task has been completed:
+
+- When polling:
+	+ consumers instruct the Receptor to delete the Task.  This CAS `COMPLETED => RESOLVING` then CAD `RESOLVING`.
+- When handling the `CompletionCallback`
+	+ the Receptor CAS `COMPLETED => RESOLVING` to indicate that it is handling resolving the Task.  This is necessary to ensure that no two Receptors attempt to call the `CompletionCallback`.
+	+ when the `CompletionCallback` returns, the Receptor CAD the Task.
+
+It is an error to attempt to delete a Task that is *not* in the `COMPLETED` state.
+
+> There are a few details around retrying the `CompletionCallback` -- these are documented in the Receptor API docs.
 
 ### Cancelling Tasks
 
+Tasks in the `PENDING` and `RUNNING` state can be cancelled via the Receptor at any time:
+
+- If the Task is `PENDING` or `RUNNING`:
+	+ The Receptor CAS the Task to `COMPLETED` and `Failed` with `FailureReason = "cancelled"`
+- The Rep's poller will eventually notice that the task has been `COMPLETED` and will delete its container
+	+ This is something that could be optimized via a message send to the Rep by the Receptor
+
+The consumer then deletes the `COMPLETED` task.  It is an error to attempt to cancel a Task that is not in the `PENDING` or `RUNNING` states.
+
+> There is a bit of a hole here.  A user could cancel then delete a Task and then request a new Task with the same `TaskGuid` *before* the Rep notices the container should be deleted.  This gap is narrowed by emitting a message to the Rep.  The only way to truly close the gap would be to introduce a `CANCELLING` state but this adds complexity.  (For CF this isn't super important as we have control over the `TaskGuid` and always generate a new one).
+
 ### Evacuation
+
+Tasks never migrate from one Cell to another.  They effectively block Cell evacuation. Here's what happens when a Cell must be evacuated:
+
+- the Rep is told to evacuate.
+- the Rep subsequently refuses to take on any new work
+- the Rep shuts down when either all containers have been destroyed OR an evacuation timeout is exceeded:
+	- in either case, the Rep ensures that any `RUNNING` Tasks associated with it are CAS to the `COMPLETED` state.  These should be marked `Failed` with the `FailureReason = "timed out during cell evacuation"`
 
 ### Maintaining Consistency: Converger
 
+Since tasks are guaranteed to run at most once, the Converger never attempts to "restart" Tasks.  Instead it's role is:
+
+1. The converger will CAS Tasks that are `RUNNING` on failed Cells
+	- Cells periodically maintain their presence in the BBS.  If a Cell disappears the converger will notice and CAS `RUNNING` Tasks associated with the missing Cell to `COMPLETED` and `Failed`.
+2. The converger will re-emit start requests for Tasks stuck in the `PENDING` state
+	- If a Task is stuck in the `PENDING` state and has been there for a long period of time a start request is re-emitted to the auctioneer
+3. The converger will ask a random receptor to resolve a `COMPLETED` Task that has been in the `COMPLETED` state for too long
+4. The converger will CAD a `COMPLETED` or `RESOLVING` Task that has been in the `COMPLETED` state for way too long
+5. The converger will CAS a `RESOLVING` Task to the `COMPLETED` state and notify a Receptor if it has been `RESOLVING` for too long
+	- Perhaps the resolving Receptor died?  If a Task is stuck `RESOLVING` for too long, the Converger gives it another change to resolve by moving it back to `COMPLETED`
+
 ### Harmonizing Tasks with Container State: Rep
+
+The Rep is responsible for ensuring that the BBS is kept up-to-date with what is running.  It does this periodically by fetching containers from the executor and taking actions.
+
+Here is an outline of ow the Rep should act to reconcile the Tasks in the BBS with the set of containers.  In this example, α will represent the Cell performing the reconciliation and ω will represent some (any) other cell:
+
+Container State | Task State | Action | Reason
+----------------|-----------------|--------|-------
+`RESERVED` | No Task | Delete Container | The task has been cancelled, α should not act.
+`RESERVED` | `PENDING` | Do Nothing | α merely has a reservation for the Task and should eventually CAS to `RUNNING on α` (if it doesn't the converger will eventually retry the Task).
+`RESERVED` | `RUNNING on α` | CAS the Task to `COMPLETE + Failed` | BBS thinks α is running the Task but it isn't!
+`RESERVED` | `RUNNING on ω` | Delete Container | Don't start running this task
+`RESERVED` | `COMPLETED` | Delete Container | Don't start running this Task
+`RESERVED` | `RESOLVING` | Delete Container | Don't start running this Task
+`INITIALIZING|CREATED|RUNNING` | No Task | Delete Container | The task has been cancelled, α should stop running it.
+`INITIALIZING|CREATED|RUNNING` | `PENDING` | CAS the Task to `RUNNING on α` | make sure BBS knows we're running the Task.
+`INITIALIZING|CREATED|RUNNING` | `RUNNING on α` | Do Nothing | BBS is up-to-date
+`INITIALIZING|CREATED|RUNNING` | `RUNNING on ω` | Delete Container (and log loudly) | Apparently this Task is running somewhere else!
+`INITIALIZING|CREATED|RUNNING` | `COMPLETED` | Delete Container | The task is `COMPLETED` (perhaps it was cancelled) - delete the container
+`INITIALIZING|CREATED|RUNNING` | `RESOLVING` | Delete Container | The task is `RESOLVING` (perhaps it was cancelled) - delete the container
+`COMPLETED` | No Task | Delete Container | The Task has been cancelled - don't worry about it
+`COMPLETED` | `PENDING` | CAS the Task to `COMPLETED` then Delete Container | make sure BBS knows we've completed the Task
+`COMPLETED` | `RUNNING on α` | CAS the Task to `COMPLETED` then Delete Container | make sure BBS knows we've completed the Task
+`COMPLETED` | `RUNNING on ω` | Delete Container | Apparently this Task is running somewhere else!
+`COMPLETED` | `COMPLETED` | Delete Container | The task has already been marked `COMPLETED` - delete the container
+`COMPLETED` | `RESOLVING` | Delete Container | The task has already been marked `RESOLVING` (perhaps it was cancelled) - delete the container
+No Container | `RUNNING on α` | CAS to `COMPLETED` and `Failed` | Diego thinks α is running the instance, but it is not
+
+Some notes:
+- The "No Container" rows are necessary to ensure that the BBS reflects the reality of what is - and is *not* - running on the Cell.  Note that "No Container" includes "No Reservation".
+- In principal several of these combinations should not be possible.  However in the presence of network partitions and partial failures it is difficult to make such a statement with confidence.  An exhaustive analysis of all possible combinations (such as this) ensures more safety around the Task lifecycle.
