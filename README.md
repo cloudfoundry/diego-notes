@@ -136,7 +136,7 @@ When an ActualLRP needs to be started or restarted (in the case of crashes/evacu
 	- an UNCLAIMED ActualLRP is CREATED
 - if restarting a crashed ActualLRP:
 	- CAS to UNCLAIMED ActualLRPAuctioneer
-- in both cases: a start is sent to the Auctioneer
+- in both cases: upon success, a start is sent to the Auctioneer
 - the Auctioneer picks a Rep
 - the Rep is told to start the ActualLRP
 - the Rep creates a container reservation
