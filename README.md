@@ -137,9 +137,12 @@ When an ActualLRP needs to be started or restarted (in the case of crashes/evacu
 - if restarting a crashed ActualLRP:
 	- CAS to UNCLAIMED ActualLRPAuctioneer
 - in both cases: a start is sent to the Auctioneer
-	- the Auctioneer picks a Rep
-	- the Rep is told to start the ActualLRP
-	- the Rep creates a container reservation, then CAS the ActualLRP to CLAIMED, then starts running the container
+- the Auctioneer picks a Rep
+- the Rep is told to start the ActualLRP
+- the Rep creates a container reservation
+- upon success, the Rep then CAS the ActualLRP from `UNCLAIMED` to `CLAIMED`
+- upon success, the Rep then starts running the container 
+- eventually a `ContainerRunningEvent` causes the Rep to CAS from CLAIMED to RUNNING
 
 #### Stopping ActualLRPs
 
@@ -243,7 +246,7 @@ Here are it's responsibilities and the actions it takes:
 4. Restarting `CRASHED` ActualLRPs
 	- It is the converger's responsibilities to restart `CRASHED` ActualLRPs (see above)  
 5. Re-emitting start requests
-	- The request to start the ActualLRP may have failed.  This can be detected if the ActualLRP remains in the `PENDING` state for longer than some timescale.  The Converger acts by resubmitting a start request.
+	- The request to start the ActualLRP may have failed.  This can be detected if the ActualLRP remains in the `UNCLAIMED` state for longer than some timescale.  The Converger acts by resubmitting a start request.
 
 ### Harmonizing ActualLRPs with Container State: Rep
 
@@ -309,13 +312,15 @@ RESOLVING | The Task is being resolved by a Receptor
 
 ### Task Lifecycle
 
-Here's a happy path overview of the Task lifecycle, just to set the stage.  Many more details will follow.
+Here's a happy path overview of the Task lifecycle:
 
 - When a new Task is created by the Receptor it:
 	+ Creates a Task in the `PENDING` state
 	+ Sends a start request to the Auctioneer
 - The Auctioneer picks a Cell to run the Task
-- The Rep creates a container reservation, CAS the Task to `RUNNING`, then starts the contianer running.
+- The Rep creates a container reservation (and then ACKs the Auctioneer's request)
+- Upon success the Rep CAS the Task from `PENDING` to `RUNNING`
+- Upon success the Rep starts the container running.
 - When the container completes (succesfully or otherwise) the Rep CAS the Task to `COMPLETED`
 	+ If the Task has a `CompletionCallback` URL this sends a message to the Receptor to handle resolving the Task.
 - The Receptor CAS the Task to `RESOLVING` and calls the `CompletionCallback`
