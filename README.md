@@ -149,7 +149,9 @@ When an ActualLRP needs to be started or restarted (in the case of crashes/evacu
 When an ActualLRP should be stopped:
 
 - for `CLAIMED` or `RUNNING` ActualLRPs:
-	- a stop is sent to the corresponding Rep.  The Rep will remove the ActualLRP from the BBS.
+	- a stop is sent to the corresponding Rep.
+	- the Rep deletes the container
+	- the Rep then removes the ActualLRP from the BBS.
 - for `UNCLAIMED` or `CRASHED` ActualLRPs:
  	- compare-and-delete the ActualLRP.
 
@@ -285,8 +287,8 @@ Container State | ActualLRP State | Action | Reason
 `COMPLETED (shutdown)` | `RUNNING on α` | CAD ActualLRP then Delete Container | α was told to stop and should now clean up the BBS
 `COMPLETED (shutdown)` | `RUNNING on ω` | Delete Container | Instance is running elsewhere, leave it be
 `COMPLETED (shutdown)` | `CRASHED` | Delete Container | Nothing to do
-No Container | `CLAIMED by α` | CAS to `UNCLAIMED`, request a start | Diego thinks α is starting the instance, but it is not
-No Container | `RUNNING on α` | CAS to `UNCLAIMED`, request a start | Diego thinks α is starting the instance, but it is not
+No Container | `CLAIMED by α` | CAD ActualLRP | There is no matching container, delete the ActualLRP and allow the converger to determine whether it is still desired
+No Container | `RUNNING on α` | CAD ActualLRP | There is no matching container, delete the ActualLRP and allow the converger to determine whether it is still desired
 
 Some notes:
 - `COMPLETED` comes in two flavors.  `crashed` implies the container died unexpectedly.  `shutdown` implies the container was asked to shut down (e.g. the Rep was sent a stop).
