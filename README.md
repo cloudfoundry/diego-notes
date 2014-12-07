@@ -286,7 +286,7 @@ Container State | ActualLRP State | Action | Reason
 `INITIALIZING|CREATED` | `UNCLAIMED` | CAS to `CLAIMED by α` | α is starting this ActualLRP
 `INITIALIZING|CREATED` | `CLAIMED by α` | Do Nothing | α is starting this ActualLRP, no need to write to the BBS
 `INITIALIZING|CREATED` | `CLAIMED by ω` | Delete Container | The ActualLRP is starting on ω, stop starting it on α
-`INITIALIZING|CREATED` | `RUNNING on α` | Do Nothing | This should not be possible
+`INITIALIZING|CREATED` | `RUNNING on α` | CAS to `STARTING on α` | This should not be possible, but the BBS should be made to reflect hte truth
 `INITIALIZING|CREATED` | `RUNNING on ω` | Delete Container | The ActualLRP is running on ω, stop starting it on α
 `INITIALIZING|CREATED` | `CRASHED` | Delete Container | α is incorrectly starting the instance - some other Cell will pick this up later.
 `RUNNING` | No ActualLRP | CREATE `RUNNING on α` | α is running on this ActualLRP, let Diego know so it can take action appropriately (we don't allow blank ActualLRPs to shut down containers as this would lead to catastrophic fail should the BBS be accidentally purged).
