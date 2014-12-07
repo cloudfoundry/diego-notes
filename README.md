@@ -172,16 +172,24 @@ The Auctioneer is responsible for distributing ActualLRPs optimally.  When reque
 
 #### Managing Availability Zones
 
-There are some important details around how the Auctioneer distributes instances across Availability Zones.  Here are the rules it follows:
+Diego distributes instances of a given DesiredLRP across availability zones.  This provides high availability in the event of a zone failure.  However, the failure of an entire zone is a catastrophic event and shifting all the load from that zone onto the other zones can easily destabilize the entire system (especially if the number of zones is small).
+
+To avoid this, Diego enforces the following policy when placing ActualLRPs: 
+- If an instance has index 0 or 1: always place it.
+- If an instance has index > 1: only place it in its preferred zone.
+
+The Auctioneer distributes instances across Availability Zones.  Here are the rules it follows:
 
 - the Auctioneer is told how many AZs there are (`NZones`).  This is a configuration option
 - when fetching Cell state, the Auctioneer is given the Cell's `zone`
 - when placing instances, the Auctioneer computes the instance's preferred zone (see below)
 - the instance is then placed according to the following rules:
-	- if the instance `index` is `<= 1` it is preferentially placed in its `PreferredZone`.  If there is no room in this zone it is placed in some other zone.
-	- if the instance `index` is `> 1` it must be placed in its `PreferredZone`.  If there is no room in this zone the instance is not placed.  The auctioneer will retry periodically.
+	- if the instance `index` is `<= 1` it is preferentially placed according to the `ZonePreferenceRanking`.
+	- if the instance `index` is `> 1` it must be placed in its `PreferredZone` (the first elemnt of the `ZonePreferenceRanking`.  If there is no room in this zone the instance is not placed.  The auctioneer will retry periodically.
 
-The preferred zone is computed as follows.  Assume we have a deterministic mapping from `ProcessGuid` to `zone`: `f(ProcessGuid) ∈ {1..N}`.  Then `PreferredZone(ProcessGuid, Index) = (f(ProcessGuid) + Index) % NZones`
+The Zone Preferrence Ranking is computed as follows.  Assume we have a deterministic mapping `PreferredZone` from `ProcessGuid` to `zone`: `f(ProcessGuid) ∈ {1..N}`.  Then, the rank order of zones for `Index 0` is `f(ProcessGuid), f(ProcessGuid)+1..N,0..f(ProcessGuid)-1`, the rank order of zones for `Index 1` is offset by 1: `f(ProcessGuid)+1..N,0..f(ProcessGuid)`, etc..
+
+In this way, ActualLRPs with `Index > 1` must be placed in `PreferredZone = (f(ProcessGuid) + Index) % NZones`
 
 #### Communicating Fullness (TBD)
 
