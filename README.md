@@ -135,7 +135,7 @@ When an ActualLRP needs to be started or restarted (in the case of crashes/evacu
 - if starting a missing/new ActualLRP:
 	- an UNCLAIMED ActualLRP is CREATED
 - if restarting a crashed ActualLRP:
-	- CAS to UNCLAIMED ActualLRPAuctioneer
+	- CAS to UNCLAIMED
 - in both cases: upon success, a start is sent to the Auctioneer
 - the Auctioneer picks a Rep
 - the Rep is told to start the ActualLRP
