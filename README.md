@@ -77,7 +77,7 @@ All things LRP.  Here's an outline:
 - `DesiredLRP`s can be created and deleted freely.
 - `DesiredLRP`s can be updated freely, but only a subset of fields may be updated (`instances`, `routes`, `annotation`).  This subset corresponds to changes that can be accomodated *without* restarting any ActualLRPs
 - **Only** consumers can modify `DesiredLRP`s.  Therefore, only the Receptor is allowed to manipulate `DesiredLRP`.
-- `DesiredLRP`s are organized into domains - arbitrary groupings for the consumer's convenience.  Domains have a notion of "freshness" meaning that the Desired state is up-to-date.  The Converger only performs destructive operations if the Desired state is up-to-date.
+- `DesiredLRP`s are organized into domains - arbitrary groupings for the consumer's convenience.  Domains have a notion of "freshness" meaning that the Desired state is up-to-date.  The Converger avoids taking incorrect destructive actions by only shutting down undesired ActualLRPs if the Desired state is "fresh" (i.e. up-to-date).
 
 ### ActualLRPs
 
