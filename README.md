@@ -197,6 +197,18 @@ When an ActualLRP cannot be placed because there are no resources to place it, t
 
 ### Crashes
 
+When an ActualLRP instance crashes, Diego is responsible for restarting the instance.  There is a tension, however, between restarting a failed instance immediately and overloading the system with endless immediate restarts of instances that never succeed.
+
+To strike this balance Diego immediately restarts a crashed instance up to 3 times.  We perform immediate restarts for a few reasons:
+- they make for good demos (look it crashed -- look it's back!)
+- they handle cases where a healthy well-written application has truly crashed and shold be restarted ASAP.
+
+Sometimes, however, an instance crashes because some external dependency is down. In these cases it makes more sense for Diego to wait (and alleviate the strain of a thrashing instance hopping from one Cell to another) between restarts.  So for crashes 3 - 8 Diego applies an exponential backoff in the waittime between restarts.
+
+Finally, we've learned from existing large public installations (PWS, Bluemix) that the vast majority of crashed instances in the system are poorly-written instances that never even manage to come up.  Instead of endlessly restarting them (which puts a substantial strain on the system) Diego will (eventually) give up on these instances.
+
+All that remains is the question of how we reset the exponential backoff.  Instances that thrash and place a heavy load on the system typically crash quickly.  So we apply a simple heuristic: if an instance manages to stay running for > 5 minutes, we reset its crash count.
+
 When the container associated with an ActualLRP enters the `COMPLETED` state the Rep takes actions to ensure the ActualLRP gets restarted.  Let's call this the `RepCrashDance`:
 
 - If `CrashCount` < 3:
@@ -215,8 +227,11 @@ The `CRASHED` ActualLRP is eventually restarted by the converger.  The `WaitTime
 
 It is important that the `CrashCount` be reset eventually.  The Rep does this when marking an ActualLRP as crashed:
 
-- If `LastCrashedAt` is `> 2 * MaxWaitTime` minutes ago then this instance has been running for long enough that it's backoff policy should be reset:
- 	- Reset `CrashCount` to 0 then do the `RepCrashDance`.
+- If the ActualLRP had been `RUNNING` for `>= 5 minutes`:
+	- Reset the `CrashCount` to 0 and the then do the `RepCrashDance`
+- Otherwise
+	- Do the `RepCrashDance`
+
 
 > Note: the Rep is responsbile for immediately restarting `ActualLRP`s that have `CrashCount < 3`.  These `ActualLRP`s never enter the `CRASHED` state.  The Converger is responsible for restarting `ActualLRP`s that are in the `CRASHED` state.
 
@@ -285,7 +300,7 @@ Container State | ActualLRP State | Action | Reason
 `COMPLETED (crashed)` | `UNCLAIMED` | Delete Container | Instance will be scheduled elsewhere
 `COMPLETED (crashed)` | `CLAIMED by α` | Perform `RepCrashDance` then Delete Container | Instance crashed on α while starting
 `COMPLETED (crashed)` | `CLAIMED on ω` | Delete Container | Instance is starting elsewhere, leave it be
-`COMPLETED (crashed)` | `RUNNING on α` | Perform `RepCrashDance` then Delete Container | Instance crashed on α while running
+`COMPLETED (crashed)` | `RUNNING on α` | Perform `RepCrashDance` (see Crash section above for details around resettign the CrashCount) then Delete Container | Instance crashed on α while running
 `COMPLETED (crashed)` | `RUNNING on ω` | Delete Container | Instance is running elsewhere, leave it be
 `COMPLETED (crashed)` | `CRASHED` | Delete Container | The crash has already been noted
 `COMPLETED (shutdown)` | No ActualLRP | Perform `RepCrashDance` then Delete Container | α just saw a crash but the BBS is empty.  Perhaps BBS was accidentally purged?  In that case: update it with what we know to be true.
