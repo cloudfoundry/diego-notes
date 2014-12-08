@@ -135,15 +135,16 @@ The following actions can be taken to start/stop an ActualLRP.
 When an ActualLRP needs to be started or restarted (in the case of crashes/evacuations):
 
 - if starting a missing/new ActualLRP:
-	- an UNCLAIMED ActualLRP is CREATED
+	- an UNCLAIMED ActualLRP is CREATED *(if this fails: do nothing, there's already an ActualLRP there which means Diego is on it)*
 - if restarting a crashed ActualLRP:
-	- CAS to UNCLAIMED
+	- CAS from CRASHED to UNCLAIMED *(if this fails: do nothing, it means the ActualLRP is already being restarted)*
 - in both cases: upon success, a start is sent to the Auctioneer
-- the Auctioneer picks a Rep
+- the Auctioneer picks a Rep *(if this fails: the Auctioneer retries)*
 - the Rep is told to start the ActualLRP
-- the Rep creates a container reservation
-- upon success, the Rep then CAS the ActualLRP from `UNCLAIMED` to `CLAIMED`
-- upon success, the Rep then starts running the container 
+- the Rep creates a container reservation *(if this fails: the Auctioneer is told and placement is retried)**
+- upon success, the Rep responds to the Auctioneer succesfully (this ensure the Auctioneer isn't kept waiting)
+- the Rep then CAS the ActualLRP from `UNCLAIMED` to `CLAIMED`  *(upon failure: the Rep aborts and cleans up the reservation and we rely on the converger to try again)*
+- upon success, the Rep then starts running the container *(upon failure: the Rep aborts, cleans up the reservation, and deletes the ActualLRP.  We rely on the converger to try again)*
 - eventually a `ContainerRunningEvent` causes the Rep to CAS from CLAIMED to RUNNING
 
 #### Stopping ActualLRPs
@@ -152,10 +153,10 @@ When an ActualLRP should be stopped:
 
 - for `CLAIMED` or `RUNNING` ActualLRPs:
 	- a stop is sent to the corresponding Rep.
-	- the Rep deletes the container
-	- the Rep then removes the ActualLRP from the BBS.
+	- the Rep deletes the container *(if this fails: the rep aborts - the converger will pick this up later)*
+	- the Rep then removes the ActualLRP from the BBS *(if this fails: the rep aborts - the rep will retry later in its polling loop)*
 - for `UNCLAIMED` or `CRASHED` ActualLRPs:
- 	- compare-and-delete the ActualLRP.
+ 	- compare-and-delete the ActualLRP *(if this fails: the converger will pick it up later)*
 
 ### Distributing ActualLRPs: Auctioneer
 
