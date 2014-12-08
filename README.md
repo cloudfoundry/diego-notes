@@ -287,53 +287,51 @@ Here are it's responsibilities and the actions it takes:
 
 ### Harmonizing ActualLRPs with Container State: Rep
 
-The Rep is responsible for ensuring that the BBS is kept up-to-date with what is running.  It does this by periodically fetching containers from the executor and taking actions.
+The Rep is responsible for ensuring that the BBS is kept up-to-date with what is running.  It does this by periodically fetching containers from the executor and taking actions.  Here is an outline of how the Rep should act to reconcile the ActualLRPs in the BBS with the set of containers.
 
-Here is an outline of how the Rep should act to reconcile the ActualLRPs in the BBS with the set of containers.  In this example, α will represent the Cell performing the reconciliation and ω will represent some (any) other cell.
+When performing reconciliation the Rep compares the container associated with a `ProcessGuid` and `Index` with the entry in the BBS for that `ProcessGuid` and `Index`.  It then reconciles the state of the container (`RESERVED`, `INITIALIZING`, `CREATED`, `RUNNING`, `COMPLETED`) with the state of the `ActualLRP` (`UNCLAIMED, CLAIMED, RUNNING, CRASHED`).  In addition it must reconcile the `InstanceGuid` and `CellID` associated with the container and the BBS (this covers cases where (e.g.) the ActualLRP at a given index ends up running on two different Cells, or (e.g.) a single Cell has multiple ActualLRPs running on it).  
+
+In the following table we describe the actions the Rep must take to bring the BBS and the containers on a given Cell into harmony.  This table is from the vantage point of a Receptor running on `CellID=A` with a container with `InstanceGuid=A` -- we'll call the `(InstanceGuid=A,CellID=A)` pair `α`.  It's possible that the Rep will see some other pair of identifiers in the BBS.  We call such a pair `ω`: this could be any other pairing including `(InstanceGuid B, Cell B)`, `(InstanceGuid B, Cell A)` or `(InstanceGuid A, Cell B)` -- the same reconciliation logic applies to either case.
 
 Container State | ActualLRP State | Action | Reason
 ----------------|-----------------|--------|-------
-`RESERVED` | `ANY` | Do Nothing | α merely has a reservation for the ActualLRP, no need to act yet.
+`RESERVED` | `ANY` | Do Nothing | The Cell merely has a reservation for the ActualLRP, no need to act yet
 `INITIALIZING|CREATED` | No ActualLRP | Delete Container | The consumer likely stopped desiring this ActualLRP while it was being auctioned
-`INITIALIZING|CREATED` | `UNCLAIMED` | CAS to `CLAIMED by α` | α is starting this ActualLRP
-`INITIALIZING|CREATED` | `CLAIMED by α` | Do Nothing | α is starting this ActualLRP, no need to write to the BBS
-`INITIALIZING|CREATED` | `CLAIMED by ω` | Delete Container | The ActualLRP is starting on ω, stop starting it on α
-`INITIALIZING|CREATED` | `RUNNING on α` | CAS to `STARTING on α` | This should not be possible, but the BBS should be made to reflect hte truth
-`INITIALIZING|CREATED` | `RUNNING on ω` | Delete Container | The ActualLRP is running on ω, stop starting it on α
-`INITIALIZING|CREATED` | `CRASHED` | Delete Container | α is incorrectly starting the instance - some other Cell will pick this up later.
-`RUNNING` | No ActualLRP | CREATE `RUNNING on α` | α is running on this ActualLRP, let Diego know so it can take action appropriately (we don't allow blank ActualLRPs to shut down containers as this would lead to catastrophic fail should the BBS be accidentally purged).
-`RUNNING` | `UNCLAIMED` | CAS to `RUNNING on α` | α is running on this ActualLRP, no need to start it elsewhere
-`RUNNING` | `CLAIMED by α` | CAS to `RUNNING on α` | α is running this ActualLRP
-`RUNNING` | `CLAIMED by ω` | CAS to `RUNNING on α` | α is running this ActualLRP, no need to start it elsewhere
-`RUNNING` | `RUNNING on α` | Do Nothing | α is running on this ActualLRP, no need to write to the BBS
-`RUNNING` | `RUNNING on ω` | Delete Container | Instance is running on ω, stop running it on α
-`RUNNING` | `CRASHED` | CAS to `RUNNING on α` | α is succesfully running this ActualLRP. It's not crashed and need not be restarted.
-`COMPLETED (crashed)` | No ActualLRP | Perform `RepCrashDance` then Delete Container | α just saw a crash but the BBS is empty.  Perhaps BBS was accidentally purged?  In that case: update it with what we know to be true.
+`INITIALIZING|CREATED` | `UNCLAIMED` | CAS to `CLAIMED α` | The Cell is starting this ActualLRP
+`INITIALIZING|CREATED` | `CLAIMED α` | Do Nothing | The Cell is starting this ActualLRP, no need to write to the BBS
+`INITIALIZING|CREATED` | `CLAIMED ω` | Delete Container | The ActualLRP is starting as ω (probably on some other Cell), stop starting it on this Cell.
+`INITIALIZING|CREATED` | `RUNNING α` | CAS to `STARTING α` | This should not be possible, but the BBS should be made to reflect the truth
+`INITIALIZING|CREATED` | `RUNNING ω` | Delete Container | The ActualLRP is running elsewhere, stop starting it on this Cell
+`INITIALIZING|CREATED` | `CRASHED` | Delete Container | This Ceel is incorrectly starting the instance - some other Cell will pick this up later.
+`RUNNING` | No ActualLRP | CREATE `RUNNING α` | This Cell is running th ActualLRP, let Diego know so it can take action appropriately (we don't allow blank ActualLRPs to shut down containers as this would lead to catastrophic fail should the BBS be accidentally purged).
+`RUNNING` | `UNCLAIMED` | CAS to `RUNNING α` | This Cell is running the ActualLRP, no need to start it elsewhere
+`RUNNING` | `CLAIMED α` | CAS to `RUNNING α` | This Cell is running the ActualLRP
+`RUNNING` | `CLAIMED ω` | CAS to `RUNNING α` | This Cell is running the ActualLRP, no need to start it elsewhere
+`RUNNING` | `RUNNING α` | Do Nothing | This Cell is running the ActualLRP, no need to write to the BBS
+`RUNNING` | `RUNNING ω` | Delete Container | The ActualLRP is running elsewher, stop running it on this Cell
+`RUNNING` | `CRASHED` | CAS to `RUNNING α` | This Cell is running the ActualLRP. It's not crashed and need not be restarted.
+`COMPLETED (crashed)` | No ActualLRP | Perform `RepCrashDance` then Delete Container | This Cell just saw a crash but the BBS is empty.  Perhaps BBS was accidentally purged?  In that case: update it with what we know to be true.
 `COMPLETED (crashed)` | `UNCLAIMED` | Delete Container | Instance will be scheduled elsewhere
-`COMPLETED (crashed)` | `CLAIMED by α` | Perform `RepCrashDance` then Delete Container | Instance crashed on α while starting
-`COMPLETED (crashed)` | `CLAIMED on ω` | Delete Container | Instance is starting elsewhere, leave it be
-`COMPLETED (crashed)` | `RUNNING on α` | Perform `RepCrashDance` (see Crash section above for details around resettign the CrashCount) then Delete Container | Instance crashed on α while running
-`COMPLETED (crashed)` | `RUNNING on ω` | Delete Container | Instance is running elsewhere, leave it be
+`COMPLETED (crashed)` | `CLAIMED α` | Perform `RepCrashDance` then Delete Container | Instance crashed on this Cell while starting
+`COMPLETED (crashed)` | `CLAIMED ω` | Delete Container | Instance is starting elsewhere, leave it be
+`COMPLETED (crashed)` | `RUNNING α` | Perform `RepCrashDance` (see Crash section above for details around resettign the CrashCount) then Delete Container | Instance crashed on this Cell while running
+`COMPLETED (crashed)` | `RUNNING ω` | Delete Container | Instance is running elsewhere, leave it be
 `COMPLETED (crashed)` | `CRASHED` | Delete Container | The crash has already been noted
-`COMPLETED (shutdown)` | No ActualLRP | Perform `RepCrashDance` then Delete Container | α just saw a crash but the BBS is empty.  Perhaps BBS was accidentally purged?  In that case: update it with what we know to be true.
+`COMPLETED (shutdown)` | No ActualLRP | Delete Container | Nothing to be done, this Cell was asked to shut the ActualLRP down.
 `COMPLETED (shutdown)` | `UNCLAIMED` | Delete Container | Nothing to be done
-`COMPLETED (shutdown)` | `CLAIMED by α` | CAD ActualLRP then Delete Container  | α was told to stop and should now clean up the BBS
-`COMPLETED (shutdown)` | `CLAIMED on ω` | Delete Container | Instance is starting elsewhere, leave it be
-`COMPLETED (shutdown)` | `RUNNING on α` | CAD ActualLRP then Delete Container | α was told to stop and should now clean up the BBS
-`COMPLETED (shutdown)` | `RUNNING on ω` | Delete Container | Instance is running elsewhere, leave it be
+`COMPLETED (shutdown)` | `CLAIMED α` | CAD ActualLRP then Delete Container  | This Cell was told to stop and should now clean up the BBS
+`COMPLETED (shutdown)` | `CLAIMED ω` | Delete Container | The Instance is starting elsewhere, leave it be
+`COMPLETED (shutdown)` | `RUNNING α` | CAD ActualLRP then Delete Container | This Cell was told to stop and should now clean up the BBS
+`COMPLETED (shutdown)` | `RUNNING ω` | Delete Container | Instance is running elsewhere, leave it be
 `COMPLETED (shutdown)` | `CRASHED` | Delete Container | Nothing to do
-No Container | `CLAIMED by α` | CAD ActualLRP | There is no matching container, delete the ActualLRP and allow the converger to determine whether it is still desired
-No Container | `RUNNING on α` | CAD ActualLRP | There is no matching container, delete the ActualLRP and allow the converger to determine whether it is still desired
+No Container | `CLAIMED α` | CAD ActualLRP | There is no matching container, delete the ActualLRP and allow the converger to determine whether it is still desired
+No Container | `RUNNING α` | CAD ActualLRP | There is no matching container, delete the ActualLRP and allow the converger to determine whether it is still desired
 
 Some notes:
 - `COMPLETED` comes in two flavors.  `crashed` implies the container died unexpectedly.  `shutdown` implies the container was asked to shut down (e.g. the Rep was sent a stop).
 - The "No Container" rows are necessary to ensure that the BBS reflects the reality of what is - and is *not* - running on the Cell.  Note that "No Container" includes "No Reservation".
 - In principal several of these combinations should not be possible.  However in the presence of network partitions and partial failures it is difficult to make such a statement with confidence.  An exhaustive analysis of all possible combinations (such as this) ensures eventual consistency... eventually.
 - When the Action described in this table fails, the Rep should log and do nothing.  In this way we defer to the next polling cycle to retry actions.
-
-In principal it is possible for one Cell to end up running more than one instance of an ActualLRP (i.e. same `ProcessGuid` and `Index` but different `InstanceGuid`).  At most one of these ActualLRPs will be in the BBS.  The table above still applies like so: when processing a container whose `InstanceGuid` is *not* in the BBS, the Rep treats the ActualLRP as if it were on some other Cell (the `ω` cases here).  To be concrete: assume the Cell has two running containers, one with `InstanceGuid` `ig1`, the other with `ig2`.  Suppose further that the BBS lists an ActualLRP running on `α` with `InstanceGuid` `ig1`.  When processing `ig1` the Rep will do nothing.  When processing `ig2` the Rep will see that there is already an ActualLRP running and will delete the container.
-
-It is impossible for multiple containers with the same `InstanceGuid` to run on a Cell as the `InstanceGuid` is the unique-identifier associated with the container.
 
 ## Tasks
 
