@@ -162,7 +162,7 @@ When an ActualLRP should be stopped:
 
 The Auctioneer is responsible for distributing ActualLRPs optimally and efficiently.  There is only one Auctioneer ever handling requests.  Requests are handled on demand: when a request to start work (an ActualLRP or Task) arrives the Auctioneer immediately fetches state from all Cells, picks the optimal placement, and then tells the corresponding Cell to perform its assigned work.
 
-Doing this for each individual piece of work as it arrives incurs a large communication overhead.  Instead, the Auctioneer has a notion of a batch of work.  Incoming work is added to the next batch of work and the entire batch is scheduled on the next scheduling loop.  Batches are heterogenous and include both ActualLRPs and Tasks.
+Doing this for each individual piece of work as it arrives incurs a large communication overhead.  Instead, the Auctioneer has a notion of a batch of work.  Incoming work is added to the next batch of work and the entire batch is scheduled on the next scheduling loop.  Batches are heterogenous and include both ActualLRPs and Tasks.  Batches are deduped before being scheduled -- so identical units of work in a single batch will not be scheduled multiple times.
 
 Here are some details around the scheduling loop.  When a new ActualLRP arrives:
 
