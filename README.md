@@ -432,7 +432,7 @@ Container State | Task State | Action | Reason
 ----------------|-----------------|--------|-------
 `RESERVED` | No Task | Delete Container | The task has been cancelled, α should not act.
 `RESERVED` | `PENDING` | Do Nothing | α merely has a reservation for the Task and should eventually CAS to `RUNNING on α` (if it doesn't the converger will eventually retry the Task).
-`RESERVED` | `RUNNING on α` | CAS the Task to `COMPLETE + Failed` | BBS thinks α is running the Task but it isn't!
+`RESERVED` | `RUNNING on α` | CAS the Task to `COMPLETE + Failed` and Delete Container | BBS thinks α is running the Task but it isn't!
 `RESERVED` | `RUNNING on ω` | Delete Container | Don't start running this task
 `RESERVED` | `COMPLETED` | Delete Container | Don't start running this Task
 `RESERVED` | `RESOLVING` | Delete Container | Don't start running this Task
