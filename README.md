@@ -7,7 +7,7 @@ Also.  I probably missed something(s) ;)
 This document is not concerned with:
 
 - the Receptor API (we have docs for that)
-- the details around how the Exeuctor runs steps/recipes/monitor actions/run actions/etc../etc..
+- the details around how the Executor runs steps/recipes/monitor actions/run actions/etc../etc..
 - anything that begins with "CC"
 - anything to do with emitting routes (though I should add that since it's going to be relevant)
 
@@ -86,6 +86,8 @@ Diego attempts to keep one ActualLRP running per desired index.  To ensure this 
 The BBS stores the ActualLRP under `/v1/actual/:process_guid/:index/instance`
 
 When it is evacuating, the BBS stores the ActualLRP under `/v1/actual/:process_guid/:index/evacuating`.  Only during evacuation is it possible/legal for (at most) 2 ActualLRPs to run at a given index.
+
+Indices are in the range `0..N-1` where `N` is the number of desired instances specified in the DesiredLRP.
 
 Here is the ActualLRP state machine:
 
@@ -178,6 +180,8 @@ To avoid this, Diego enforces the following policy when placing ActualLRPs:
 - If an instance has index 0 or 1: always place it.
 - If an instance has index > 1: only place it in its preferred zone.
 
+Availability zones are numbered `0..N-1` where `N` is the number of availability zones.
+
 The Auctioneer distributes instances across Availability Zones.  Here are the rules it follows:
 
 - the Auctioneer is told how many AZs there are (`NZones`).  This is a configuration option
@@ -187,7 +191,7 @@ The Auctioneer distributes instances across Availability Zones.  Here are the ru
 	- if the instance `index` is `<= 1` it is preferentially placed according to the `ZonePreferenceRanking`.
 	- if the instance `index` is `> 1` it must be placed in its `PreferredZone` (the first elemnt of the `ZonePreferenceRanking`.  If there is no room in this zone the instance is not placed.  The auctioneer will retry periodically.
 
-The Zone Preferrence Ranking is computed as follows.  Assume we have a deterministic mapping `PreferredZone` from `ProcessGuid` to `zone`: `f(ProcessGuid) ∈ {1..N}`.  Then, the rank order of zones for `Index 0` is `f(ProcessGuid), f(ProcessGuid)+1..N,0..f(ProcessGuid)-1`, the rank order of zones for `Index 1` is offset by 1: `f(ProcessGuid)+1..N,0..f(ProcessGuid)`, etc..
+The Zone Preferrence Ranking is computed as follows.  Assume we have a deterministic mapping `PreferredZone` from `ProcessGuid` to `zone`: `f(ProcessGuid) ∈ {0..N-1}`.  Then, the rank order of zones for `Index 0` is `f(ProcessGuid), f(ProcessGuid)+1..N-1,0..f(ProcessGuid)-1`, the rank order of zones for `Index 1` is offset by 1: `f(ProcessGuid)+1..N-1,0..f(ProcessGuid)`, etc..
 
 In this way, ActualLRPs with `Index > 1` must be placed in `PreferredZone = (f(ProcessGuid) + Index) % NZones`
 
