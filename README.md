@@ -417,8 +417,8 @@ Since tasks are guaranteed to run at most once, the Converger never attempts to 
 	- Cells periodically maintain their presence in the BBS.  If a Cell disappears the converger will notice and CAS `RUNNING` Tasks associated with the missing Cell to `COMPLETED` and `Failed`.
 2. The converger will re-emit start requests for Tasks stuck in the `PENDING` state
 	- If a Task is stuck in the `PENDING` state and has been there for a long period of time a start request is re-emitted to the auctioneer
-3. The converger will ask a random receptor to resolve a `COMPLETED` Task that has been in the `COMPLETED` state for too long
-4. The converger will CAD a `COMPLETED` or `RESOLVING` Task that has been in the `COMPLETED` state for way too long
+3. The converger will CAD a `COMPLETED`  Task that has first entered the `COMPLETED` state too long ago (2 minutes ago)
+4. The converger will ask a random receptor to resolve a `COMPLETED` Task that has been in the `COMPLETED` state for too long (30 seconds)
 5. The converger will CAS a `RESOLVING` Task to the `COMPLETED` state and notify a Receptor if it has been `RESOLVING` for too long
 	- Perhaps the resolving Receptor died?  If a Task is stuck `RESOLVING` for too long, the Converger gives it another change to resolve by moving it back to `COMPLETED`
 
