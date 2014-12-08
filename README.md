@@ -249,14 +249,16 @@ It is important that the `CrashCount` be reset eventually.  The Rep does this wh
 When a Cell must be evacuated its ActualLRPs must first transfer to another Cell.  Here's how this works:
 
 - the Rep is told to evacuate.
-- the Rep subsequently refuses to take on any new work
+- the Rep subsequently refuses to take on any new work:
+	+ when the auctioneer requests the Rep's State, the Rep informs the Auctioneer that it is evacuating which takes it out of the pool
+	+ if any work comes in from the auctioneer, the rep immediately returns it all as failed work
 - the Rep destroys ActualLRP containers that are not yet `RUNNING` and requests starts for the corresponding ActualLRPs
 - the Rep moves its `RUNNING` ActualLRPs from `/v1/actual/:process_guid/:index/instance` to `/v1/actual/:process_guid/:index/evacuating`, requesting corresponding starts.
 - the Rep periodically fetches `/v1/actual/:process_guid/:index/instance` from the BBS for the instances it owns under `/evacuating`:
-	- if the ActualLRP under `instance` is missing, `RUNNING` or `CRASHED`: the Rep destroys the container and deletes the `/evacuating` entry
-	- otherwise, the Rep does nothing
+	+ if the ActualLRP under `instance` is missing, `RUNNING` or `CRASHED`: the Rep destroys the container and deletes the `/evacuating` entry
+	+ otherwise, the Rep does nothing
 - the Rep shuts down when either all containers have been destroyed OR an evacuation timeout is exceeded:
-	- in either case, the Rep ensures that any ActualLRPs associated with it are removed from `/evacuating` and that any tasks it still has running transition to `COMPLETED`.
+	+ in either case, the Rep ensures that any ActualLRPs associated with it are removed from `/evacuating` and that any tasks it still has running transition to `COMPLETED`.
 
 When fetching ActualLRPs the receptor always returns the `/evacuating` instance if present.
 
