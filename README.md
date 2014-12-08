@@ -399,12 +399,12 @@ Tasks in the `PENDING` and `RUNNING` state can be cancelled via the Receptor at 
 
 - If the Task is `PENDING` or `RUNNING`:
 	+ The Receptor CAS the Task to `COMPLETED` and `Failed` with `FailureReason = "cancelled"`
-- The Rep's poller will eventually notice that the task has been `COMPLETED` and will delete its container
-	+ This is something that could be optimized via a message send to the Rep by the Receptor
+	+ The Recetpor then sends a cancellation message to the Rep in question
+- The Rep's poller will react to the cancel message and delete its container
 
 The consumer then deletes the `COMPLETED` task.  It is an error to attempt to cancel a Task that is not in the `PENDING` or `RUNNING` states.
 
-> There is a bit of a hole here.  A user could cancel then delete a Task and then request a new Task with the same `TaskGuid` *before* the Rep notices the container should be deleted.  This gap is narrowed by emitting a message to the Rep.  The only way to truly close the gap would be to introduce a `CANCELLING` state but this adds complexity.  (For CF this isn't super important as we have control over the `TaskGuid` and always generate a new one).
+> There is a bit of a hole here.  A user could cancel then delete a Task and then request a new Task with the same `TaskGuid` *before* the Rep notices the container should be deleted.  This gap is narrowed by emitting a message to the Rep.  One option would be to generate a unique InstanceGuid so that the Rep can converge correctly, but this is a relatively minor issue that is unlikely to impact CF.
 
 ### Evacuation
 
