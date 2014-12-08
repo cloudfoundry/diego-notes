@@ -300,7 +300,7 @@ Container State | ActualLRP State | Action | Reason
 `INITIALIZING|CREATED` | `UNCLAIMED` | CAS to `CLAIMED α` | The Cell is starting this ActualLRP
 `INITIALIZING|CREATED` | `CLAIMED α` | Do Nothing | The Cell is starting this ActualLRP, no need to write to the BBS
 `INITIALIZING|CREATED` | `CLAIMED ω` | Delete Container | The ActualLRP is starting as ω (probably on some other Cell), stop starting it on this Cell.
-`INITIALIZING|CREATED` | `RUNNING α` | CAS to `STARTING α` | This should not be possible, but the BBS should be made to reflect the truth
+`INITIALIZING|CREATED` | `RUNNING α` | CAS to `CLAIMED α` | This should not be possible, but the BBS should be made to reflect the truth
 `INITIALIZING|CREATED` | `RUNNING ω` | Delete Container | The ActualLRP is running elsewhere, stop starting it on this Cell
 `INITIALIZING|CREATED` | `CRASHED` | Delete Container | This Ceel is incorrectly starting the instance - some other Cell will pick this up later.
 `RUNNING` | No ActualLRP | CREATE `RUNNING α` | This Cell is running th ActualLRP, let Diego know so it can take action appropriately (we don't allow blank ActualLRPs to shut down containers as this would lead to catastrophic fail should the BBS be accidentally purged).
