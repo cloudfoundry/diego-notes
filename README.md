@@ -160,17 +160,21 @@ When an ActualLRP should be stopped:
 
 ### Distributing ActualLRPs: Auctioneer
 
-The Auctioneer is responsible for distributing ActualLRPs optimally.  When requests to start ActualLRPs arrive the Auctioneer performs the scheduling loop:
+The Auctioneer is responsible for distributing ActualLRPs optimally and efficiently.  There is only one Auctioneer ever handling requests.  Requests are handled on demand: when a request to start work (an ActualLRP or Task) arrives the Auctioneer immediately fetches state from all Cells, picks the optimal placement, and then tells the corresponding Cell to perform its assigned work.
+
+Doing this for each individual piece of work as it arrives incurs a large communication overhead.  Instead, the Auctioneer has a notion of a batch of work.  Incoming work is added to the next batch of work and the entire batch is scheduled on the next scheduling loop.  Batches are heterogenous and include both ActualLRPs and Tasks.
+
+Here are some details around the scheduling loop.  When a new ActualLRP arrives:
 
 - the Auctioneer fetches the state of each Cell.  This includes information about the available capacity on the Cell, the Cell's stack, and the set of ActualLRPs currently running on the Cell.
-- the Auctioneer then distributes the ActualLRPs across the Cells (in-memory).  During this process the Auctioneer optimizes for:
-	- an even distribution of memory and disk usage across Cells
-	- minimizing colocation of ActualLRP instances of a given DesiredLRP on the same Cell.
+- the Auctioneer then distributes the ActualLRPs across the Cells (in-memory).  It ensures that ActualLRPs are only placed on Cells with matching `stack`s.  During this process the Auctioneer optimizes for:
+	- an even distribution of memory, disk, and container usage across Cells (all with equal weighting)
+	- minimizing colocation of ActualLRP instances of a given DesiredLRP on the same Cell (takes precedence over the distribution of memory/disk/etc.).
 	- minimizing colocation of ActualLRP instances of a givne DesiredLRP in the same Availability Zone (see below).
 - the Auctioneer then submits the allocated work to all Cells
 	- any work that could not be allocated is carried over into the next batch
 	- if the Cell responds saying that the work could not be performed, the auctioneer carries the failed work over into the next batch
-	- if the Cell *fails to respond* (e.g. a connection timeout elapses), the auctioneer *does **not*** carry the work over into the next batch.  This is a case of partial failure and the auctioneer defers to the converger to figure out what to do
+	- if the Cell *fails to respond* (e.g. a connection timeout elapses), the auctioneer *does **not*** carry the work over into the next batch.  This is a case of partial failure and the auctioneer defers to the Converger to figure out what to do.
 - any work carried over into the next batch is merged in with work that came in during the previous round of scheduling and the auction repeats the scheduling loop
 
 #### Managing Availability Zones
@@ -363,16 +367,12 @@ Here's a happy path overview of the Task lifecycle:
 
 ### Distributing Tasks: Auctioneer
 
-The Auctioneer is responsible for distributing Tasks optimally.  When requests to start Tasks arrive the Auctioneer performs the scheduling loop:
+Tasks are distributed much like ActualLRPs.  In fact the batch of work performed by the Auctioneer includes both Tasks and ActualLRPs.  The only differences are around how Tasks are optimally placed (unsurprisingly, they are simpler).  For Tasks the Auctioneer only:
 
-- the Auctioneer fetches the state of each Cell.  This includes information about the available capacity on the Cell and the Cell's stack
-- The Auctioneer then distributes the Tasks across the Cells (in-memory).  During the process the Auctioneer optimizes for:
-	+ an even distribution of memory and disk usage across Cells
-- the Auctioneer then submits the allocated work to all Cells
-	- any work that could not be allocated is carried over into the next batch
-	- if the Cell responds saying that the work could not be performed, the auctioneer carries the failed work over into the next batch
-	- if the Cell *fails to respond* (e.g. a connection timeout elapses), the auctioneer *does **not*** carry the work over into the next batch.  This is a case of partial failure and the auctioneer defers to the converger to figure out what to do
-- any work carried over into the next batch is merged in with work that came in during the previous round of scheduling and the auction repeats the scheduling loop
+- ensures the Task lands on a Cell with matching `stack`
+- ensures an even distribution of memory and disk usage across Cells
+
+Tasks arescheduled *after* the ActualLRPs in the batch are scheduled (and, therefore, take lower precedence).
 
 #### Communicating Fullness
 
