@@ -254,6 +254,7 @@ When a Cell must be evacuated its ActualLRPs must first transfer to another Cell
 	+ if any work comes in from the auctioneer, the rep immediately returns it all as failed work
 - the Rep destroys ActualLRP containers that are not yet `RUNNING` and requests starts for the corresponding ActualLRPs
 - the Rep moves its `RUNNING` ActualLRPs from `/v1/actual/:process_guid/:index/instance` to `/v1/actual/:process_guid/:index/evacuating`, requesting corresponding starts.
+	+ The `evacuating` instance should have a TTL equal to the evacuation timeout.
 - the Rep periodically fetches `/v1/actual/:process_guid/:index/instance` from the BBS for the instances it owns under `/evacuating`:
 	+ if the ActualLRP under `instance` is missing, `RUNNING` or `CRASHED`: the Rep destroys the container and deletes the `/evacuating` entry
 	+ otherwise, the Rep does nothing
