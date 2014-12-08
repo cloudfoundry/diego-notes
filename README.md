@@ -317,6 +317,7 @@ Some notes:
 - `COMPLETED` comes in two flavors.  `crashed` implies the container died unexpectedly.  `shutdown` implies the container was asked to shut down (e.g. the Rep was sent a stop).
 - The "No Container" rows are necessary to ensure that the BBS reflects the reality of what is - and is *not* - running on the Cell.  Note that "No Container" includes "No Reservation".
 - In principal several of these combinations should not be possible.  However in the presence of network partitions and partial failures it is difficult to make such a statement with confidence.  An exhaustive analysis of all possible combinations (such as this) ensures eventual consistency... eventually.
+- When the Action described in this table fails, the Rep should log and do nothing.  In this way we defer to the next polling cycle to retry actions.
 
 In principal it is possible for one Cell to end up running more than one instance of an ActualLRP (i.e. same `ProcessGuid` and `Index` but different `InstanceGuid`).  At most one of these ActualLRPs will be in the BBS.  The table above still applies like so: when processing a container whose `InstanceGuid` is *not* in the BBS, the Rep treats the ActualLRP as if it were on some other Cell (the `ω` cases here).  To be concrete: assume the Cell has two running containers, one with `InstanceGuid` `ig1`, the other with `ig2`.  Suppose further that the BBS lists an ActualLRP running on `α` with `InstanceGuid` `ig1`.  When processing `ig1` the Rep will do nothing.  When processing `ig2` the Rep will see that there is already an ActualLRP running and will delete the container.
 
@@ -452,3 +453,4 @@ No Container | `RUNNING on α` | CAS to `COMPLETED` and `Failed` | Diego thinks 
 Some notes:
 - The "No Container" rows are necessary to ensure that the BBS reflects the reality of what is - and is *not* - running on the Cell.  Note that "No Container" includes "No Reservation".
 - In principal several of these combinations should not be possible.  However in the presence of network partitions and partial failures it is difficult to make such a statement with confidence.  An exhaustive analysis of all possible combinations (such as this) ensures more safety around the Task lifecycle.
+- When the Action described in this table fails, the Rep should log and do nothing.  In this way we defer to the next polling cycle to retry actions.
