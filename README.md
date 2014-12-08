@@ -255,8 +255,11 @@ When a Cell must be evacuated its ActualLRPs must first transfer to another Cell
 - the Rep destroys ActualLRP containers that are not yet `RUNNING` and requests starts for the corresponding ActualLRPs
 - the Rep moves its `RUNNING` ActualLRPs from `/v1/actual/:process_guid/:index/instance` to `/v1/actual/:process_guid/:index/evacuating`, requesting corresponding starts.
 	+ The `evacuating` instance should have a TTL equal to the evacuation timeout.
-- the Rep periodically fetches `/v1/actual/:process_guid/:index/instance` from the BBS for the instances it owns under `/evacuating`:
+	+ If there is already an instance under `/evacuating` the Rep should overwrite it
+- the Rep periodically fetches `/v1/actual/:process_guid/:index/instance` and `/v1/actual/:process_guid/:index/instance` from the BBS for any contianers it is running:
 	+ if the ActualLRP under `instance` is missing, `RUNNING` or `CRASHED`: the Rep destroys the container and deletes the `/evacuating` entry
+	+ if the ActualLRP under `evacuating` corresponds to a *different* Cell: the Rep destroys the container.
+	+ if the Rep has an ActualLRP container in the `COMPLETED` state it deletes the container and the `/evacuating` entry
 	+ otherwise, the Rep does nothing
 - the Rep shuts down when either all containers have been destroyed OR an evacuation timeout is exceeded:
 	+ in either case, the Rep ensures that any ActualLRPs associated with it are removed from `/evacuating` and that any tasks it still has running transition to `COMPLETED`.
