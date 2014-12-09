@@ -216,7 +216,7 @@ Sometimes, however, an instance crashes because some external dependency is down
 
 Finally, we've learned from existing large public installations (PWS, Bluemix) that the vast majority of crashed instances in the system are poorly-written instances that never even manage to come up.  Instead of endlessly restarting them (which puts a substantial strain on the system) Diego will (eventually) give up on these instances.
 
-All that remains is the question of how we reset the exponential backoff.  Instances that thrash and place a heavy load on the system typically crash quickly.  So we apply a simple heuristic: if an instance manages to stay running for > 5 minutes, we reset its crash count.
+All that remains is the question of how we reset the exponential backoff.  Instances that thrash and place a heavy load on the system typically crash quickly.  So we apply a simple heuristic: if an instance manages to stay running for > 5 minutes (defined below), we reset its crash count.
 
 When the container associated with an ActualLRP enters the `COMPLETED` state the Rep takes actions to ensure the ActualLRP gets restarted.  Let's call this the `RepCrashDance`:
 
@@ -236,7 +236,7 @@ The `CRASHED` ActualLRP is eventually restarted by the converger.  The `WaitTime
 
 It is important that the `CrashCount` be reset eventually.  The Rep does this when marking an ActualLRP as crashed:
 
-- If the ActualLRP had been `RUNNING` for `>= 5 minutes`:
+- If, at the time the crash occurs, the ActualLRP in the BBS is in the `RUNNING` state with a `LastUpdatedAt` time that is `>= 5 minutes` ago:
 	- Reset the `CrashCount` to 0 and the then do the `RepCrashDance`
 - Otherwise
 	- Do the `RepCrashDance`
