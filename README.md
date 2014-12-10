@@ -358,16 +358,16 @@ RESOLVING | The Task is being resolved by a Receptor
 Here's a happy path overview of the Task lifecycle:
 
 - When a new Task is created by the Receptor it:
-	+ Creates a Task in the `PENDING` state
-	+ Sends a start request to the Auctioneer
-- The Auctioneer picks a Cell to run the Task
-- The Rep creates a container reservation (and then ACKs the Auctioneer's request)
-- Upon success the Rep CAS the Task from `PENDING` to `RUNNING`
-- Upon success the Rep starts the container running.
-- When the container completes (succesfully or otherwise) the Rep CAS the Task to `COMPLETED`
-	+ If the Task has a `CompletionCallback` URL this sends a message to the Receptor to handle resolving the Task.
-- The Receptor CAS the Task to `RESOLVING` and calls the `CompletionCallback`
-- Upon success Receptor Rep CAD the Task
+	+ Creates a Task in the `PENDING` state *(if this fails: the receptor returns an unhappy status code)*
+	+ Sends a start request to the Auctioneer *(if this fails: the receptor does nothing; the converger will eventually resend the message)*
+- The Auctioneer picks a Cell to run the Task *(if this fails: the auctioneer marks the Task completed and failed)*
+- The Rep creates a container reservation (and then ACKs the Auctioneer's request) *(if this fails: the Rep tells the Auctioneer that the Task could not be started and the auctioneer adds the Task to the next batch)*
+- Upon success the Rep CAS the Task from `PENDING` to `RUNNING` *(if this fails: the Rep deletes the reservation -- the converger will eventually see the `PENDING` task and ask the auctioneer to try again)*
+- Upon success the Rep starts the container running *(if this fails: the Rep marks the Task `COMPLETED` and failed)*
+- When the container completes (succesfully or otherwise) the Rep CAS the Task to `COMPLETED` *(if the CAS fails, the Rep will try again in its polling cycle)*
+	+ If the Task has a `CompletionCallback` URL this sends a message to the Receptor to handle resolving the Task (BBS takes care of this)
+- The Receptor CAS the Task to `RESOLVING` and calls the `CompletionCallback` *(if the CAS fails it does not call the `CompletionCallback`)*
+- Upon success Receptor Rep CAD the Task *(if the CAD fails the Receptor does nothing: eventually the converger will demote the Task to `COMPLETE` and we'll try again)*
 
 ### Distributing Tasks: Auctioneer
 
