@@ -167,38 +167,15 @@ Doing this for each individual piece of work as it arrives incurs a large commun
 Here are some details around the scheduling loop.  When a new ActualLRP arrives:
 
 - the Auctioneer fetches the state of each Cell.  This includes information about the available capacity on the Cell, the Cell's stack, and the set of ActualLRPs currently running on the Cell.
-- the Auctioneer then distributes the ActualLRPs across the Cells (in-memory).  It ensures that ActualLRPs are only placed on Cells with matching `stack`s.  During this process the Auctioneer optimizes for:
+- the Auctioneer then distributes the ActualLRPs across the Cells (in-memory).  It ensures that ActualLRPs are only placed on Cells with matching `stack`s that have sufficient resources to host the ActualLRP.  Once the Auctioneer identifies the set of Cells matching this criteria it choses the winning Cell by optimizing for (in increasing priority):
 	- an even distribution of memory, disk, and container usage across Cells (all with equal weighting)
 	- minimizing colocation of ActualLRP instances of a given DesiredLRP on the same Cell (takes precedence over the distribution of memory/disk/etc.).
-	- minimizing colocation of ActualLRP instances of a givne DesiredLRP in the same Availability Zone (see below).
+	- minimizing colocation of ActualLRP instances of a given DesiredLRP in the same Availability Zone
 - the Auctioneer then submits the allocated work to all Cells
 	- any work that could not be allocated is carried over into the next batch
 	- if the Cell responds saying that the work could not be performed, the auctioneer carries the failed work over into the next batch
 	- if the Cell *fails to respond* (e.g. a connection timeout elapses), the auctioneer *does **not*** carry the work over into the next batch.  This is a case of partial failure and the auctioneer defers to the Converger to figure out what to do.
 - any work carried over into the next batch is merged in with work that came in during the previous round of scheduling and the auction repeats the scheduling loop
-
-#### Managing Availability Zones
-
-Diego distributes instances of a given DesiredLRP across availability zones.  This provides high availability in the event of a zone failure.  However, the failure of an entire zone is a catastrophic event and shifting all the load from that zone onto the other zones can easily destabilize the entire system (especially if the number of zones is small).
-
-To avoid this, Diego enforces the following policy when placing ActualLRPs: 
-- If an instance has index 0 or 1: always place it.
-- If an instance has index > 1: only place it in its preferred zone.
-
-Availability zones are numbered `0..N-1` where `N` is the number of availability zones.
-
-The Auctioneer distributes instances across Availability Zones.  Here are the rules it follows:
-
-- the Auctioneer is told how many AZs there are (`NZones`).  This is a configuration option
-- when fetching Cell state, the Auctioneer is given the Cell's `zone`
-- when placing instances, the Auctioneer computes the instance's preferred zone (see below)
-- the instance is then placed according to the following rules:
-	- if the instance `index` is `<= 1` it is preferentially placed according to the `ZonePreferenceRanking`.
-	- if the instance `index` is `> 1` it must be placed in its `PreferredZone` (the first elemnt of the `ZonePreferenceRanking`.  If there is no room in this zone the instance is not placed.  The auctioneer will retry periodically.
-
-The Zone Preferrence Ranking is computed as follows.  Assume we have a deterministic mapping `PreferredZone` from `ProcessGuid` to `zone`: `f(ProcessGuid) ∈ {0..N-1}`.  Then, the rank order of zones for `Index 0` is `f(ProcessGuid), f(ProcessGuid)+1..N-1,0..f(ProcessGuid)-1`, the rank order of zones for `Index 1` is offset by 1: `f(ProcessGuid)+1..N-1,0..f(ProcessGuid)`, etc..
-
-In this way, ActualLRPs with `Index > 1` must be placed in `PreferredZone = (f(ProcessGuid) + Index) % NZones`
 
 #### Communicating Fullness (TBD)
 
