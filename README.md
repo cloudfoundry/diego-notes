@@ -313,6 +313,25 @@ Some notes:
 - In principal several of these combinations should not be possible.  However in the presence of network partitions and partial failures it is difficult to make such a statement with confidence.  An exhaustive analysis of all possible combinations (such as this) ensures eventual consistency... eventually.
 - When the Action described in this table fails, the Rep should log and do nothing.  In this way we defer to the next polling cycle to retry actions.
 
+Alternate view of table above:
+
+BBS | Reserved | I/C | Running | Shutdown | Crashed | No Container
+---|---|---|---|---|---|---
+Missing | Do nothing | Delete Container | Create Running | Delete Container | RCD + Delete Container |
+Unclaimed | Do Nothing | CAS Claimed | CAS Running | Delete Container | Delete Container |
+Claimed-α | Do Nothing | Do nothing | CAS Running | CAD + Delete Container | RCD + Delete Container | CAD
+Claimed-ω | Do Nothing | Delete Container | CAS Running | Delete Container | Delete Container |
+Running-α | Do Nothing | CAS Claimed | Do Nothing | CAD + Delete Container | RCD + Delete Container | CAD
+Running-ω | Do Nothing | Delete Container | Delete Container | Delete Container | Delete Container |
+Crashed | Do Nothing | Delete Container | CAS Running | Delete Container | Delete Container |
+
+```
+I/C = Initializing/Created
+CAS = Compare and Swap
+CAD = Compare and Delete
+RCD = RepCrashDance
+```
+
 ## Tasks
 
 All things Tasks.  Here's an outline:
