@@ -1,15 +1,11 @@
 # Diego: The Big Picture, The Deep Dive
 
-This describes the world *as it will be* when the next pile of stories are completed.
-
-Also.  I probably missed something(s) ;)
+This describes the Diego state machine for running Tasks and LRPs in detail.
 
 This document is not concerned with:
 
-- the Receptor API (we have docs for that)
-- the details around how the Executor runs steps/recipes/monitor actions/run actions/etc../etc..
-- anything that begins with "CC"
-- anything to do with emitting routes (though I should add that since it's going to be relevant)
+- the Receptor API (documented [here](https://github.com/cloudfoundry-incubator/receptor/blob/master/doc/README.md))
+- details around how the Executor runs Actions
 
 ## The Rep-Executor(-Garden) Cycle
 
