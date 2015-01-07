@@ -1,4 +1,4 @@
-# Diego: The Big Picture, The Deep Dive
+# Diego Dev Notes: The Big Picture, The Deep Dive
 
 This describes the Diego state machine for running Tasks and LRPs in detail.
 
