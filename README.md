@@ -42,6 +42,7 @@ It is the Rep's responsibility to delete containers.  Containers can be deleted 
 
 The executor emits two events:
 
+- `ContainerReservedEvent`: triggered when the container is reserved
 - `ContainerRunningEvent`: triggered when the container enters the running state
 - `ContainerCompletedEvent`: triggered when the container enters the completed state
 
