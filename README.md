@@ -50,9 +50,7 @@ The rep should handle events exactly as it handles polling.  Given a container i
 
 #### Polling vs Events
 
-The Rep keeps the BBS up-to-date via two mechanisms: polling and events.  This is complicated by the fact that events can come in while the poller is *fetching* state from its two sources (BBS & Executor).
-
-As a result, when polling the Rep may have a stale copy of the containers and/or a stale copy of the BBS.  To be safe it should always validate a decision it is about to make.  This is *especially* important when deleting an `INITIALIZING/CREATED/RUNNING` container.
+The Rep keeps the BBS up-to-date via two mechanisms: polling and events.  When polling the Rep fetches the list of all containers and reconciles each container with its entry in the BBS.  The Rep serializes this work on a per-container basis, so if an event occurs while the Rep's poller is processing a container there is no race.  At worst the Rep will attempt to reconcile twice - wasteful, perhaps, but safe.  When reconciling the Rep always fetches the latest Container state and BBS state.
 
 ## LRPs
 
@@ -215,7 +213,6 @@ It is important that the `CrashCount` be reset eventually.  The Rep does this wh
 - Otherwise
 	- Do the `RepCrashDance`
 
-
 > Note: the Rep is responsbile for immediately restarting `ActualLRP`s that have `CrashCount < 3`.  These `ActualLRP`s never enter the `CRASHED` state.  The Converger is responsible for restarting `ActualLRP`s that are in the `CRASHED` state.
 
 ### Evacuation
@@ -250,16 +247,20 @@ The converger is responsible for bringing Diego into eventual consistency in the
 
 Here are it's responsibilities and the actions it takes:
 
-1. Reaping ActualLRPs on failed Cells
+1. The Converger will reap ActualLRPs on failed Cells
 	- Cells periodically maintain their presence in the BBS.  If a Cell disappears the converger will notice and CAS `CLAIMED` and `RUNNING` ActualLRPs associated with the missing Cell to `UNCLAIMED`.  The converger will also emit starts for these missing ActualLRPs.
-2. Starting missing ActualLRPs
+2. The Converger will validate that ActualLRPs are actually present on their assigned Cells
+	- It is the Rep's responsibility to keep information about its containers up-to-date in the BBS.  However, it is conceivable for the BBS to enter a state where an ActualLRP exists and is assigned to a cell, but does *not* map onto a container in the cell.
+	- The Converger is responsible for asking Reps whether or not they actually have the containers the BBS thinks they have.  When this comparison is performed the state of the container is irrelevent - only whether or not the Rep has a container is what matters.
+	- If the Rep does not have the container the converger should CAS to `UNCLAIMED` and emit a start.
+3. The Converger will start missing ActualLRPs
 	- If there is no ActualLRP in the BBS for a particular DesiredLRP index, the Converger CREATEs an `UNCLAIMED` ActualLRP and requests a start.
-3. Stopping extra ActualLRPs
+4. The Converger will stop extra ActualLRPs
 	- If there is an ActualLRP (in any state) that does not correspond to a DesiredLRP index, the Converger stops the ActualLRP (see above)
 	- This action is *only* taken if ActualLRP's Domain must be fresh.
-4. Restarting `CRASHED` ActualLRPs
+5. The Converger will restart `CRASHED` ActualLRPs
 	- It is the converger's responsibilities to restart `CRASHED` ActualLRPs (see above)  
-5. Re-emitting start requests
+6. The Converger will re-emit start requests
 	- The request to start the ActualLRP may have failed.  This can be detected if the ActualLRP remains in the `UNCLAIMED` state for longer than some timescale.  The Converger acts by resubmitting a start request.
 
 ### Harmonizing ActualLRPs with Container State: Rep
@@ -301,26 +302,23 @@ Container State | ActualLRP State | Action | Reason
 `COMPLETED (shutdown)` | `RUNNING α` | CAD ActualLRP then Delete Container | This Cell was told to stop and should now clean up the BBS
 `COMPLETED (shutdown)` | `RUNNING ω` | Delete Container | Instance is running elsewhere, leave it be
 `COMPLETED (shutdown)` | `CRASHED` | Delete Container | Nothing to do
-No Container | `CLAIMED α` | CAD ActualLRP | There is no matching container, delete the ActualLRP and allow the converger to determine whether it is still desired
-No Container | `RUNNING α` | CAD ActualLRP | There is no matching container, delete the ActualLRP and allow the converger to determine whether it is still desired
 
 Some notes:
 - `COMPLETED` comes in two flavors.  `crashed` implies the container died unexpectedly.  `shutdown` implies the container was asked to shut down (e.g. the Rep was sent a stop).
-- The "No Container" rows are necessary to ensure that the BBS reflects the reality of what is - and is *not* - running on the Cell.  Note that "No Container" includes "No Reservation".
 - In principal several of these combinations should not be possible.  However in the presence of network partitions and partial failures it is difficult to make such a statement with confidence.  An exhaustive analysis of all possible combinations (such as this) ensures eventual consistency... eventually.
 - When the Action described in this table fails, the Rep should log and do nothing.  In this way we defer to the next polling cycle to retry actions.
 
 Alternate view of table above:
 
-BBS | Reserved | I/C | Running | Shutdown | Crashed | No Container
+BBS | Reserved | I/C | Running | Shutdown | Crashed 
 ---|---|---|---|---|---|---
-Missing | Do nothing | Delete Container | Create Running | Delete Container | RCD + Delete Container |
-Unclaimed | Do Nothing | CAS Claimed | CAS Running | Delete Container | Delete Container |
-Claimed-α | Do Nothing | Do nothing | CAS Running | CAD + Delete Container | RCD + Delete Container | CAD
-Claimed-ω | Do Nothing | Delete Container | CAS Running | Delete Container | Delete Container |
-Running-α | Do Nothing | CAS Claimed | Do Nothing | CAD + Delete Container | RCD + Delete Container | CAD
-Running-ω | Do Nothing | Delete Container | Delete Container | Delete Container | Delete Container |
-Crashed | Do Nothing | Delete Container | CAS Running | Delete Container | Delete Container |
+Missing | Do nothing | Delete Container | Create Running | Delete Container | RCD + Delete Container 
+Unclaimed | Do Nothing | CAS Claimed | CAS Running | Delete Container | Delete Container
+Claimed-α | Do Nothing | Do nothing | CAS Running | CAD + Delete Container | RCD + Delete Container
+Claimed-ω | Do Nothing | Delete Container | CAS Running | Delete Container | Delete Container
+Running-α | Do Nothing | CAS Claimed | Do Nothing | CAD + Delete Container | RCD + Delete Container
+Running-ω | Do Nothing | Delete Container | Delete Container | Delete Container | Delete Container
+Crashed | Do Nothing | Delete Container | CAS Running | Delete Container | Delete Container
 
 ```
 I/C = Initializing/Created
@@ -417,11 +415,15 @@ Since tasks are guaranteed to run at most once, the Converger never attempts to 
 
 1. The converger will CAS Tasks that are `RUNNING` on failed Cells
 	- Cells periodically maintain their presence in the BBS.  If a Cell disappears the converger will notice and CAS `RUNNING` Tasks associated with the missing Cell to `COMPLETED` and `Failed`.
-2. The converger will re-emit start requests for Tasks stuck in the `PENDING` state
+2. The Converger will validate that `RUNNING` Tasks are actually present on their assigned Cells
+	- It is the Rep's responsibility to keep information about its containers up-to-date in the BBS.  However, it is conceivable for the BBS to enter a state where a `RUNNING` Task exists and is assigned to a cell, but does *not* map onto a container in the cell.
+	- The Converger is responsible for asking Reps whether or not they actually have the containers the BBS thinks they have.  When this comparison is performed the state of the container is irrelevent - only whether or not the Rep has a container is what matters.
+	- If the Rep does not have the container the converger should CAS to `COMPLETED` and `Failed`.
+3. The converger will re-emit start requests for Tasks stuck in the `PENDING` state
 	- If a Task is stuck in the `PENDING` state and has been there for a long period of time a start request is re-emitted to the auctioneer
-3. The converger will CAD a `COMPLETED`  Task that has first entered the `COMPLETED` state too long ago (2 minutes ago)
-4. The converger will ask a random receptor to resolve a `COMPLETED` Task that has been in the `COMPLETED` state for too long (30 seconds)
-5. The converger will CAS a `RESOLVING` Task to the `COMPLETED` state and notify a Receptor if it has been `RESOLVING` for too long
+4. The converger will CAD a `COMPLETED`  Task that has first entered the `COMPLETED` state too long ago (2 minutes ago)
+5. The converger will ask a random receptor to resolve a `COMPLETED` Task that has been in the `COMPLETED` state for too long (30 seconds)
+6. The converger will CAS a `RESOLVING` Task to the `COMPLETED` state and notify a Receptor if it has been `RESOLVING` for too long
 	- Perhaps the resolving Receptor died?  If a Task is stuck `RESOLVING` for too long, the Converger gives it another change to resolve by moving it back to `COMPLETED`
 
 ### Harmonizing Tasks with Container State: Rep
@@ -450,9 +452,7 @@ Container State | Task State | Action | Reason
 `COMPLETED` | `RUNNING on ω` | Delete Container | Apparently this Task is running somewhere else!
 `COMPLETED` | `COMPLETED` | Delete Container | The task has already been marked `COMPLETED` - delete the container
 `COMPLETED` | `RESOLVING` | Delete Container | The task has already been marked `RESOLVING` (perhaps it was cancelled) - delete the container
-No Container | `RUNNING on α` | CAS to `COMPLETED` and `Failed` | Diego thinks α is running the instance, but it is not
 
 Some notes:
-- The "No Container" rows are necessary to ensure that the BBS reflects the reality of what is - and is *not* - running on the Cell.  Note that "No Container" includes "No Reservation".
 - In principal several of these combinations should not be possible.  However in the presence of network partitions and partial failures it is difficult to make such a statement with confidence.  An exhaustive analysis of all possible combinations (such as this) ensures more safety around the Task lifecycle.
 - When the Action described in this table fails, the Rep should log and do nothing.  In this way we defer to the next polling cycle to retry actions.
