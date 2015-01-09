@@ -93,6 +93,8 @@ Here's an example that supports the CF Router and a DNS service (e.g. skydns):
 
 The important thing here is that Diego does not care about what goes into  `DesiredLRP.Routes` at all.  This frees the user to cook up whatever schema they deem fit.
 
+Diego should be defensive and apply a limit to the size of each value.  I propose a(n arbitrary) 4K limit for now.
+
 #### Route-Emitter Changes
 
 ##### Supporting multiple ports
