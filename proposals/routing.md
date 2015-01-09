@@ -83,7 +83,7 @@ Here's an example that supports the CF Router and a DNS service (e.g. skydns):
 {
     ...
     "routes": {
-        "cf-router": "{4000: [\"foo.com\", \"bar.com\"], 5000: [\"admin.foo.com\"]}",
+        "cf-router": "[{\"port\": 4000, \"routes\": [\"foo.com\", \"bar.com\"]}, {\"port\": 5000, \"routes\":n[\"admin.foo.com\"]}]",
         "skydns" "[{\"port\":5000, \"host\":\"admin-api.service.skydns.local\", \"priority\":20}]"
     },
     "ports": [4000, 5000],
@@ -102,10 +102,16 @@ The most basic modification to the route-emitter that I would propose would be t
 For this the schema for `cf-router`'s entry in `DesiredLRP.Routes` would look like (from above):
 
 ```
-{
-    4000: ["foo.com", "bar.com"],
-    5000: ["admin.foo.com"]
-}
+[
+    {
+        "port": 4000,
+        "routes": ["foo.com", "bar.com"]
+    },
+    {
+        "port": 5000,
+        "routes": ["admin.foo.com"]
+    }
+]
 ```
 
 Given the sample `ActualLRP` given above, requests to `admin.foo.com` will now be routed to `10.10.1.2:59002`
@@ -115,10 +121,48 @@ Given the sample `ActualLRP` given above, requests to `admin.foo.com` will now b
 Another (straightforward) addition to route-emitter would be support for routing to a *particular* container index.  This might be useful (for example) to target admin/metric panels for a particular instance or (alternatively) to deterministically refer to specific instances of a database (e.g. giving individual member addresses to an etcd cluster).  The schema for `cf-router` might look like:
 
 ```
-{
-    4000: {"routes": ["foo.com", "bar.com"]},
-    5000: {"routes": ["admin.foo.com"], "route_to_instances": true},
-}
+[
+    {
+        "port": 4000,
+        "routes": ["foo.com", "bar.com"]
+    },
+    {
+        "port": 5000,
+        "routes": ["admin.foo.com"],
+        "route_to_instances": true
+    }
+]
 ```
 
 Now requests to `admin.foo.com` will be balanced across all containers, but requests to `0.admin.foo.com` will *only* go to the container at index 0.
+
+##### Future Extensions
+
+The aforementioned additions can be trivially implementd with the existing gorouter.  Potential future features can also be expressed easily with this flexible schema.  Consider two features:
+
+1. The ability to require `ssl` for a given route.
+2. The ability to route `tcp`/`udp` traffic.
+
+These could be expressed via (for example)
+
+```
+[
+    {
+        "port": 4000,
+        "protocol": "tcp",
+        "incoming_port": 62312
+    },
+    {
+        "port": 4000,
+        "protocol": "udp",
+        "incoming_port": 43218
+    },
+    {
+        "port": 5000,
+        "routes": ["admin.foo.com"],
+        "ssl": true
+    }
+]
+```
+
+> As an aside: `incoming_port` here reflects a potential implementation of `tcp/udp` routing whereby a user first checks out a load-balancer port.  This checked-out port can then be associated with a particular application - the gorouter could use the incoming port, and the information expresed in the schema above, to figure out which application to route to.
