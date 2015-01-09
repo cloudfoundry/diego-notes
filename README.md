@@ -190,6 +190,8 @@ To mitigate these issue the Auctioneer first sorts the batch of work it is opera
 
 Within each priority group, work is sorted in order of decreasing memory (so larger units of work are placed before smaller units of work).
 
+It is important to note that this prioritization only applies within an Auctioneer's single batch of work.  Since applications can arrive in arbitrary order the effectiveness of this scheme is somewhat limited.  However, since communication around starts is generally distributed in batches - this prioritization will apply when (for example) a cell is evacuating or when the converger is submitting a batch of work.
+
 #### Communicating Fullness (TBD)
 
 When an ActualLRP cannot be placed because there are no resources to place it, the Auctioneer can communicate this back to the user somehow.  The mechanism for this is TBD.  A new `ActualLRP` state (e.g. `FAILED` or `UNPLACEABLE`) could be the best way forward.  Diego could retry starting `FAILED` `ActualLRPs` periodically.  TBD.
