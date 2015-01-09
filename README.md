@@ -158,7 +158,10 @@ When an ActualLRP should be stopped:
 
 The Auctioneer is responsible for distributing ActualLRPs optimally and efficiently.  There is only one Auctioneer ever handling requests.  Requests are handled on demand: when a request to start work (an ActualLRP or Task) arrives the Auctioneer immediately fetches state from all Cells, picks the optimal placement, and then tells the corresponding Cell to perform its assigned work.
 
-Doing this for each individual piece of work as it arrives incurs a large communication overhead.  Instead, the Auctioneer has a notion of a batch of work.  Incoming work is added to the next batch of work and the entire batch is scheduled on the next scheduling loop.  Batches are heterogenous and include both ActualLRPs and Tasks.  Batches are deduped before being scheduled -- so identical units of work in a single batch will not be scheduled multiple times.
+Doing this for each individual piece of work would incur a large communication overhead.  As such the entire flow of information around starting Tasks and LRPs supports batching.  There are two notions of "batch":
+
+1. When a component knows it must request many starts it submits a batch request ot the Auctioneer.  For example, if the Receptor needs to scale an application to 100 instances it submits a single batched request to the Auctioneer.  Similarly if the Converger needs to start a number of missing LRPs, it sends a single batch request to the Auctioneer.  The Auctioneer in turn submits work to Reps in batches.
+2. Work sent to the Auctioneer is added to the next batch of work.  The entire batch is scheduled on the next scheduling loop.  Batches are heterogenous and include both ActualLRPs and Tasks.  Batches are deduped before being scheduled -- so identical units of work in a single batch will not be scheduled multiple times.
 
 Here are some details around the scheduling loop.  When a new ActualLRP arrives:
 
@@ -172,6 +175,20 @@ Here are some details around the scheduling loop.  When a new ActualLRP arrives:
 	- if the Cell responds saying that the work could not be performed, the auctioneer carries the failed work over into the next batch
 	- if the Cell *fails to respond* (e.g. a connection timeout elapses), the auctioneer *does **not*** carry the work over into the next batch.  This is a case of partial failure and the auctioneer defers to the Converger to figure out what to do.
 - any work carried over into the next batch is merged in with work that came in during the previous round of scheduling and the auction repeats the scheduling loop
+
+#### Auction Work Prioritization
+
+When the Auctioneer receives a batch of work it must decide the order in which the work must be distributed.  This is important.  When scheduling heterogenous work the Auctioneer could, incorrectly, fill the Cells with small units of work before attempting to place large units of work.  As a result, these large units may fail to place even if - in principal - there is sufficient capacity in the cluster. However, naively prioritizing large units of work over small units of work could lead to a situation in which, for example, a single large application fills the cells and prevents a smaller application from having *any* instances running.
+
+To mitigate these issue the Auctioneer first sorts the batch of work it is operating on in the following order (high priority to low priority):
+
+1. Index 0 LRPs
+2. Tasks
+3. Index 1 LRPs
+4. Index 2 LRPs
+5. etc...
+
+Within each priority group, work is sorted in order of decreasing memory (so larger units of work are placed before smaller units of work).
 
 #### Communicating Fullness (TBD)
 
@@ -367,8 +384,6 @@ Tasks are distributed much like ActualLRPs.  In fact the batch of work performed
 
 - ensures the Task lands on a Cell with matching `stack`
 - ensures an even distribution of memory and disk usage across Cells
-
-Tasks arescheduled *after* the ActualLRPs in the batch are scheduled (and, therefore, take lower precedence).
 
 #### Communicating Fullness
 
