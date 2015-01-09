@@ -37,4 +37,4 @@ We are moving away from etcd watches for three reasons:
 
 But we are only primarily concerned with not watching for changes in our *data* (DesiredLRPs, ActualLRPs, Tasks).
 
-Watching for *services* (e.g. CellPresence) is fine.  In the event that we move our data out of etcd we are likely to continue to use etcd (or consul, which also supports watch-like semantics) for our services.
+Watching for *services* (e.g. CellPresence) is fine.  In the event that we move our data out of etcd we are likely to continue to use etcd (or consul, which also supports watch-like semantics) for our services.  Note that moving our data out of etcd also dramatically reduces the write-pressure which makes reducing the `PRESENCE_TTL` to 5 seconds a lot more feasible even in very large deployments (>1000 cells).
