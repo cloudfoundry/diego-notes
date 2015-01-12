@@ -20,8 +20,8 @@ I propose the following:
 
 - We decrease `PRESENCE_TTL` to 5 seconds.
 - We modify the Converger to watch for expiring Cell presences and respond immediately:
-    + This would entail removing the responsibility for identifying missing Cells out of the convergence loop...
-    + ...and into a new method that is triggered by an expiring Cell presence.
+    + This would entail adding a new method that is triggered by an expiring Cell presence.
+    + The Converger's convergence loop would maintain its responsiblity for identifying missing Cells (in case a watch event is missed)
 
 In this way we can reduce the maximum recovery time from 1 minute to ~5 seconds.
 
