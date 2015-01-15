@@ -270,6 +270,7 @@ Here are it's responsibilities and the actions it takes:
 
 1. Reaping ActualLRPs on failed Cells
 	- Cells periodically maintain their presence in the BBS.  If a Cell disappears the converger will notice and CAS `CLAIMED` and `RUNNING` ActualLRPs associated with the missing Cell to `UNCLAIMED`.  The converger will also emit starts for these missing ActualLRPs.
+	- In addition to polling periodically, the Converger actively watches for Cells disappearing.  When a Cell goes away the convergence loop is triggered immediately.  This was covered in #11.
 2. Starting missing ActualLRPs
 	- If there is no ActualLRP in the BBS for a particular DesiredLRP index, the Converger CREATEs an `UNCLAIMED` ActualLRP and requests a start.
 3. Stopping extra ActualLRPs
