@@ -57,7 +57,7 @@ As a result, when polling the Rep may have a stale copy of the containers and/or
 
 All things LRP.  Here's an outline:
 
-- **DesiredLRPs** discusses the DesiredLRP side of things. 
+- **DesiredLRPs** discusses the DesiredLRP side of things.
 - **ActualLRPs** discusses the various states that ActualLRPs can be in.
 - **LRP Lifecycle** An overview
 - **Computing ∆s** discusses the rules used to determine how Desired and Actual ought to be reconciled.  The Receptor and Converger do this.
@@ -71,7 +71,7 @@ All things LRP.  Here's an outline:
 ### DesiredLRPs
 
 - `DesiredLRP`s can be created and deleted freely.
-- `DesiredLRP`s can be updated freely, but only a subset of fields may be updated (`instances`, `routes`, `annotation`).  This subset corresponds to changes that can be accomodated *without* restarting any ActualLRPs
+- `DesiredLRP`s can be updated freely, but only a subset of fields may be updated (`instances`, `routes`, `annotation`).  This subset corresponds to changes that can be accommodated *without* restarting any ActualLRPs
 - **Only** consumers can modify `DesiredLRP`s.  Therefore, only the Receptor is allowed to manipulate `DesiredLRP`.
 - `DesiredLRP`s are organized into domains - arbitrary groupings for the consumer's convenience.  Domains have a notion of "freshness" meaning that the Desired state is up-to-date.  The Converger avoids taking incorrect destructive actions by only shutting down undesired ActualLRPs if the Desired state is "fresh" (i.e. up-to-date).
 
@@ -138,7 +138,7 @@ When an ActualLRP needs to be started or restarted (in the case of crashes/evacu
 - the Auctioneer picks a Rep *(if this fails: the Auctioneer retries)*
 - the Rep is told to start the ActualLRP
 - the Rep creates a container reservation *(if this fails: the Auctioneer is told and placement is retried)**
-- upon success, the Rep responds to the Auctioneer succesfully (this ensure the Auctioneer isn't kept waiting)
+- upon success, the Rep responds to the Auctioneer successfully (this ensure the Auctioneer isn't kept waiting)
 - the Rep then CAS the ActualLRP from `UNCLAIMED` to `CLAIMED`  *(upon failure: the Rep aborts and cleans up the reservation and we rely on the converger to try again)*
 - upon success, the Rep then starts running the container *(upon failure: the Rep aborts, cleans up the reservation, and deletes the ActualLRP.  We rely on the converger to try again)*
 - eventually a `ContainerRunningEvent` causes the Rep to CAS from CLAIMED to RUNNING
@@ -248,7 +248,7 @@ When a Cell must be evacuated its ActualLRPs must first transfer to another Cell
 - the Rep moves its `RUNNING` ActualLRPs from `/v1/actual/:process_guid/:index/instance` to `/v1/actual/:process_guid/:index/evacuating`, requesting corresponding starts.
 	+ The `evacuating` instance should have a TTL equal to the evacuation timeout.
 	+ If there is already an instance under `/evacuating` the Rep should overwrite it
-- the Rep periodically fetches `/v1/actual/:process_guid/:index/instance` and `/v1/actual/:process_guid/:index/instance` from the BBS for any contianers it is running:
+- the Rep periodically fetches `/v1/actual/:process_guid/:index/instance` and `/v1/actual/:process_guid/:index/evacuating` from the BBS for any contianers it is running:
 	+ if the ActualLRP under `instance` is missing, `RUNNING` or `CRASHED`: the Rep destroys the container and deletes the `/evacuating` entry
 	+ if the ActualLRP under `evacuating` corresponds to a *different* Cell: the Rep destroys the container.
 	+ if the Rep has an ActualLRP container in the `COMPLETED` state it deletes the container and the `/evacuating` entry
@@ -298,12 +298,12 @@ Container State | ActualLRP State | Action | Reason
 `INITIALIZING|CREATED` | `RUNNING α` | CAS to `CLAIMED α` | This should not be possible, but the BBS should be made to reflect the truth
 `INITIALIZING|CREATED` | `RUNNING ω` | Delete Container | The ActualLRP is running elsewhere, stop starting it on this Cell
 `INITIALIZING|CREATED` | `CRASHED` | Delete Container | This Ceel is incorrectly starting the instance - some other Cell will pick this up later.
-`RUNNING` | No ActualLRP | CREATE `RUNNING α` | This Cell is running th ActualLRP, let Diego know so it can take action appropriately (we don't allow blank ActualLRPs to shut down containers as this would lead to catastrophic fail should the BBS be accidentally purged).
+`RUNNING` | No ActualLRP | CREATE `RUNNING α` | This Cell is running the ActualLRP, let Diego know so it can take action appropriately (we don't allow blank ActualLRPs to shut down containers as this would lead to catastrophic fail should the BBS be accidentally purged).
 `RUNNING` | `UNCLAIMED` | CAS to `RUNNING α` | This Cell is running the ActualLRP, no need to start it elsewhere
 `RUNNING` | `CLAIMED α` | CAS to `RUNNING α` | This Cell is running the ActualLRP
 `RUNNING` | `CLAIMED ω` | CAS to `RUNNING α` | This Cell is running the ActualLRP, no need to start it elsewhere
 `RUNNING` | `RUNNING α` | Do Nothing | This Cell is running the ActualLRP, no need to write to the BBS
-`RUNNING` | `RUNNING ω` | Delete Container | The ActualLRP is running elsewher, stop running it on this Cell
+`RUNNING` | `RUNNING ω` | Delete Container | The ActualLRP is running elsewhere, stop running it on this Cell
 `RUNNING` | `CRASHED` | CAS to `RUNNING α` | This Cell is running the ActualLRP. It's not crashed and need not be restarted.
 `COMPLETED (crashed)` | No ActualLRP | Perform `RepCrashDance` then Delete Container | This Cell just saw a crash but the BBS is empty.  Perhaps BBS was accidentally purged?  In that case: update it with what we know to be true.
 `COMPLETED (crashed)` | `UNCLAIMED` | Delete Container | Instance will be scheduled elsewhere
