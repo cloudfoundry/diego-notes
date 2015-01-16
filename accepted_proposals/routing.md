@@ -73,6 +73,8 @@ Given this, requests to the router for `foo.com` and `bar.com` will both proxy t
 
 #### Diego Changes
 
+[Tracker Story](https://www.pivotaltracker.com/story/show/86337946)
+
 The fact that `DesiredLRP`'s `Routes` is an array of strings is an accident of history.  What Diego supports today is the minimum necessary to get the CF usecase to work.  In truth, Diego is routing agnostic and we can leave it up to the consumer to encode routing information as they see fit.  This opens up several possibilities, including implementing custom service discovery solutions on top of Diego.
 
 The first part of this proposal, then, is to make Diego less restrictive around what can go into `DesiredLRP.Routes`.  I propose turning `DesiredLRP.Routes` into (in Go parlance) a `map[string]string`.  The key in the map would correspond to a routes provider and the string would correspond to arbitrary metadata associated with said provider.  This allows multiple service-discovery/routing providers to live alongside one-another in Diego.  It also frees up the consumer to define an arbitrary schema to suit their needs
@@ -93,11 +95,13 @@ Here's an example that supports the CF Router and a DNS service (e.g. skydns):
 
 The important thing here is that Diego does not care about what goes into  `DesiredLRP.Routes` at all.  This frees the user to cook up whatever schema they deem fit.
 
-Diego should be defensive and apply a limit to the size of each value.  I propose a(n arbitrary) 4K limit for now.
+Diego should be defensive and apply a limit to the size of the `routes` entry.  I propose a(n arbitrary) 4K limit for now.
 
 #### Route-Emitter Changes
 
 ##### Supporting multiple ports
+
+[Tracker Story](https://www.pivotaltracker.com/story/show/86338588)
 
 The most basic modification to the route-emitter that I would propose would be to support routing to multiple ports on the same container.
 
@@ -119,6 +123,8 @@ For this the schema for `cf-router`'s entry in `DesiredLRP.Routes` would look li
 Given the sample `ActualLRP` given above, requests to `admin.foo.com` will now be routed to `10.10.1.2:59002`
 
 ##### Supporting Index-Specific-Routing
+
+[Tracker Story](https://www.pivotaltracker.com/story/show/86338996)
 
 Another (straightforward) addition to route-emitter would be support for routing to a *particular* container index.  This might be useful (for example) to target admin/metric panels for a particular instance or (alternatively) to deterministically refer to specific instances of a database (e.g. giving individual member addresses to an etcd cluster).  The schema for `cf-router` might look like:
 
