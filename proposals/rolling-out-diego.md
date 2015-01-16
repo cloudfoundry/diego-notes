@@ -22,3 +22,7 @@ Operators will use the CC API (we may need to add to it?) to:
 - modify the stack for an application (and trigger a restage?)
 
 OSS tooling can be built on top of this to slowly bleed load from the DEAs onto Diego.  For example, PWS might use this tooling to move applications from the DEAs to Diego in a controlled manner.  We could investigate downtime-less approaches to doing this.  Such a tool would not be necessary for the initial PCF release.
+
+## What about .Net support?
+
+The .Net team uses `stack` to run applications on windows.  We have options here, for example any stack matching `diego*` would go through the diego codepath in CC - the .Net team would then use `diego-dot-net` (there are probably less terrible ideas out there too).
