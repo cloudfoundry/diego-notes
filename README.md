@@ -192,9 +192,13 @@ Within each priority group, work is sorted in order of decreasing memory (so lar
 
 It is important to note that this prioritization only applies within an Auctioneer's single batch of work.  Since applications can arrive in arbitrary order the effectiveness of this scheme is somewhat limited.  However, since communication around starts is generally distributed in batches - this prioritization will apply when (for example) a cell is evacuating or when the converger is submitting a batch of work.
 
-#### Communicating Fullness (TBD)
+#### Communicating Fullness
 
-When an ActualLRP cannot be placed because there are no resources to place it, the Auctioneer can communicate this back to the user somehow.  The mechanism for this is TBD.  A new `ActualLRP` state (e.g. `FAILED` or `UNPLACEABLE`) could be the best way forward.  Diego could retry starting `FAILED` `ActualLRPs` periodically.  TBD.
+When an ActualLRP cannot be placed because there are no resources to place it, the Auctioneer leaves the `ActualLRP` in the `UNCLAIMED` state and sets the `PlacementError` field.  Whenever the `ActualLRP` transitions out of the `UNCLAIMED` state the `PlacementError` should be cleared.
+
+There are multiple reasons why an `ActualLRP` may fail to be placed; these should be communicated to the user.  For example, in the presence of placement pool rules it is possible that the Auctioneer simply cannot find appropriate host Cells (`PlacementError="found no compatible cells"`).  Alternatively, the Auctioneer may *find* appropriate Cells but all those Cells might be full (`PlacementError="insufficient capacity"`).
+
+Diego continues to attempt to attempt to schedule `UNCLAIMED` `ActualLRP`s.  Should an operator add spare capacity, Diego will automatically schedule the `ActualLRP`s.
 
 ### Crashes
 
