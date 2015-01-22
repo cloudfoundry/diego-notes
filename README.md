@@ -196,7 +196,7 @@ It is important to note that this prioritization only applies within an Auctione
 
 When an ActualLRP cannot be placed because there are no resources to place it, the Auctioneer leaves the `ActualLRP` in the `UNCLAIMED` state and sets the `PlacementError` field.  Whenever the `ActualLRP` transitions out of the `UNCLAIMED` state the `PlacementError` should be cleared.
 
-There are multiple reasons why an `ActualLRP` may fail to be placed; these should be communicated to the user.  For example, in the presence of placement pool rules it is possible that the Auctioneer simply cannot find appropriate host Cells (`PlacementError="found no compatible cells"`).  Alternatively, the Auctioneer may *find* appropriate Cells but all those Cells might be full (`PlacementError="insufficient capacity"`).
+There are multiple reasons why an `ActualLRP` may fail to be placed; these should be communicated to the user.  For example, in the presence of placement pool rules it is possible that the Auctioneer simply cannot find appropriate host Cells (`PlacementError="found no compatible cells"`).  Alternatively, the Auctioneer may *find* appropriate Cells but all those Cells might be full (`PlacementError="insufficient resources"`).
 
 Diego continues to attempt to schedule `UNCLAIMED` `ActualLRP`s.  Should an operator add spare capacity, Diego will automatically schedule the `ActualLRP`s.
 
