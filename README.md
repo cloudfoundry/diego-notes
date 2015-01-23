@@ -27,7 +27,7 @@ State | Meaning
 `INITIALIZING` | A container is being created in Garden
 `CREATED` | A container has been created and the executor is starting to run the Setup/Action/Monitor actions. If there is no Monitor action the container will transition to `RUNNING` almost immediately.  If there is a Monitor action it will only transition when the Monitor says the container is ready.
 `RUNNING` | The container is running.
-`COMPLETED` | The container is no longer running.  `container.Result` will include details around whether the work the container performed succeeded or failed.
+`COMPLETED` | The container is no longer running.  `container.Result` will include details around whether the work the container performed succeeded or failed, or if the container was explicitly stopped.
 
 Allowed transitions:
 
@@ -38,10 +38,20 @@ Allowed transitions:
 
 It is the Rep's responsibility to delete containers.  Containers can be deleted regardless of current state.
 
+### RunResult
+
+When a container is in `COMPLETED` state, information about its result is available in `RunResult`.
+
+* `Failed`: true if container's recipe completed with failure
+* `FailureReason`: if `Failed` is true this contains a message describing the failure
+* `Stopped`: true if container was explicitly stopped. If true, `Failed` and `FailureReason` will not be set.
+
+
 #### Container Events
 
-The executor emits two events:
+The executor emits the following events:
 
+- `ContainerReservedEvent`: triggered when the container is initially reserved
 - `ContainerRunningEvent`: triggered when the container enters the running state
 - `ContainerCompletedEvent`: triggered when the container enters the completed state
 
@@ -335,7 +345,7 @@ No Container | `RUNNING α` | CAD ActualLRP | **Conceivable**: There is no match
 
 Some notes:
 
-- `COMPLETED` comes in two flavors.  `crashed` implies the container died unexpectedly.  `shutdown` implies the container was asked to shut down (e.g. the Rep was sent a stop).
+- `COMPLETED` comes in two flavors.  `crashed` implies the container died unexpectedly.  `shutdown` implies the container was asked to shut down (e.g. the Rep was sent a stop). This can be determined by looking at `RunResult.Stopped`.
 - The "No Container" rows are necessary to ensure that the BBS reflects the reality of what is - and is *not* - running on the Cell.  Note that "No Container" includes "No Reservation".
 - In principal several of these combinations should not be possible.  However in the presence of network partitions and partial failures it is difficult to make such a statement with confidence.  An exhaustive analysis of all possible combinations (such as this) ensures eventual consistency... eventually.
 - When the Action described in this table fails, the Rep should log and do nothing.  In this way we defer to the next polling cycle to retry actions.
