@@ -94,7 +94,7 @@ State | Meaning
 `RUNNING` | The ActualLRP is runing on a Cell and is ready to receive traffic/work.
 `CRASHED` | The ActualLRP has crashed and is no longer on a Cell.  It should be restarted (eventually).
 
-In addition, the ActualLRP includes two pieces of data: `CrashCount` and `LastCrashedAt`.  These are used to implement a backoff policy when restarting crashes.
+In addition, the ActualLRP includes two pieces of data: `CrashCount` (keeping track of the number of crashes) and `Since` (keeping track of the time when `State` was last updated). These are used to implement a backoff policy when restarting crashes.
 
 An evacuating ActualLRP will always be in the `RUNNING` state.
 
@@ -217,22 +217,22 @@ All that remains is the question of how we reset the exponential backoff.  Insta
 When the container associated with an ActualLRP enters the `COMPLETED` state the Rep takes actions to ensure the ActualLRP gets restarted.  Let's call this the `RepCrashDance`:
 
 - If `CrashCount` < 3:
-	-  Increment the `CrashCount` and bump `LastCrashedAt`,  CAS the ActualLRP to `UNCLAIMED`, and emit a start to the Auctioneer.
+	-  Increment the `CrashCount` and bump `Since`,  CAS the ActualLRP to `UNCLAIMED`, and emit a start to the Auctioneer.
 - If `CrashCount` > 3:
-	- Increment the `CrashCount` and bump `LastCrashedAt`.  CAS the ActualLRP to `CRASHED`.
+	- Increment the `CrashCount` and bump `Since`.  CAS the ActualLRP to `CRASHED`.
 
 The `CRASHED` ActualLRP is eventually restarted by the converger.  The `WaitTime` is computed like so:
 
 - If `CrashCount < 8`
-	- the Converger should restart the ActualLRP `N` seconds after `LastCrashedAt` (exponential backoff in [this story](https://www.pivotaltracker.com/story/show/83638710))
+	- the Converger should restart the ActualLRP `N` seconds after `Since` (exponential backoff in [this story](https://www.pivotaltracker.com/story/show/83638710))
 - If `CrashCount >= 8`
-	- the Converger should restart the ActualLRP `MaxWaitTime = 16` minutes after `LastCrashedAt`
+	- the Converger should restart the ActualLRP `MaxWaitTime = 16` minutes after `Since`
 - If `CrashCount > 200`
 	- the ActualLRP is never restarted
 
 It is important that the `CrashCount` be reset eventually.  The Rep does this when marking an ActualLRP as crashed:
 
-- If, at the time the crash occurs, the ActualLRP in the BBS is in the `RUNNING` state with a `LastUpdatedAt` time that is `>= 5 minutes` ago:
+- If, at the time the crash occurs, the ActualLRP in the BBS is in the `RUNNING` state with a `Since` time that is `>= 5 minutes` ago:
 	- Reset the `CrashCount` to 0 and the then do the `RepCrashDance`
 - Otherwise
 	- Do the `RepCrashDance`
