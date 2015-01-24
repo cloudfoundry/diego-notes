@@ -33,7 +33,7 @@ App Name | No. Applications | No. Instances/App | Memory | App-Bits Size | Detai
 ---------|------------------|-------------------|--------|---------------|-------
 Westley | N*54 | 1 | 128 | ~1M | A simple Hello World application: not chatty (one log-line/second)
 Max | N*12 | 2 | 512 | ~10M | An HA low-load microservice: moderately chatty logs (10 log-lines/second)
-Princess | N*2  | 4 | 1024 | ~1GB | Web application: very chatty (20 log-lines/second)
+Princess | N*2  | 4 | 1024 | ~200M | Web application: very chatty (20 log-lines/second)
 Humperdink | N*10 | 1 | 128 | ~1M | A perpetually crashing application (no logs).  This app should start, wait for 30 seconds, then crash.
 
 Where N is the number of cells (so for the 10-Cell case we'd push 540 simple hello world apps).  All these applications should have the same disk limit (something low like 1 GB should be good enough).
