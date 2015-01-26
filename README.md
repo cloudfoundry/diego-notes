@@ -252,7 +252,9 @@ It is important that the `CrashCount` be reset eventually.  The Rep does this wh
 
 ### Evacuation
 
-When a Cell must be evacuated its ActualLRPs must first transfer to another Cell.  Here's how this works:
+When a Cell must be evacuated its ActualLRPs must first transfer to another Cell.  Here's how this works.
+
+#### The Rep's Role during Evacuation
 
 - the Rep is told to evacuate.
 - the Rep subsequently refuses to take on any new work:
@@ -270,7 +272,18 @@ When a Cell must be evacuated its ActualLRPs must first transfer to another Cell
 - the Rep shuts down when either all containers have been destroyed OR an evacuation timeout is exceeded:
 	+ in either case, the Rep ensures that any ActualLRPs associated with it are removed from `/evacuating` and that any tasks it still has running transition to `COMPLETED`.
 
-When fetching ActualLRPs the receptor always returns the `/evacuating` instance if present.
+#### The Receptor's Role during Evacuation
+
+When queried for ActualLRPs the receptor follows the following rules:
+
+- If there is no `evacuating` instance, always return the `instance` instance.
+- If there *is* an `evacuating` instance, return it if:
+	+ There is no `instance` instance
+	+ The `instance` instance is `UNCLAIMED` or `CLAIMED` (to be clear: if `instance` is `RUNNING` or `CRASHED`, return `instance` instead of `evacuating`)
+
+#### The Converger's Role during Evacuation
+
+None.  As far as the Converger is concerned `/evacuating` need not exist.
 
 > Note: the Converger plays no special role during evacuation
 
