@@ -4,9 +4,9 @@ A common feature request in CF is to have finer-grained control over how applica
 
 Diego can easily support this.
 
-## Crash Policy
+## Crash Restart Policy
 
-A crash policy in Diego can be expressed as:
+A CrashRestartPolicy in Diego can be expressed as:
 
 ```
 {
@@ -48,7 +48,7 @@ The crash policy is part of the `DesiredLRP`:
 {
    ProcessGuid:...,
    ...
-   CrashPolicy: {
+   CrashRestartPolicy: {
         ...
     },
     ...
@@ -56,19 +56,19 @@ The crash policy is part of the `DesiredLRP`:
 ```
 
 - The crash policy can be updated after-the fact and, therefore, is part of `DesiredLRPUpdateRequest`.
-- `CrashPolicy` is optional.  If unspecified, the default will be used (see below).
+- `CrashRestartPolicy` is optional.  If unspecified, the default will be used (see below).
 
 ## Setting the Default Crash Policy
 
-The `DefaultCrashPolicy` is stored in the BBS and can be modified via the Receptor API on a *per-domain-basis* (note: this is not a BOSH property - the `DefaultCrashPolicy` can be modified at runtime!)
+The `DefaultCrashRestartPolicy` is stored in the BBS and can be modified via the Receptor API on a *per-domain-basis* (note: this is not a BOSH property - the `DefaultCrashRestartPolicy` can be modified at runtime!)
 
-Only `DesiredLRP`s with *no* `CrashPolicy` use the `DefaultCrashPolicy`.  If the `DefaultCrashPolicy` is not specified via the Receptor API, Diego will use the hard-coded values listed above.
+Only `DesiredLRP`s with *no* `CrashRestartPolicy` use the `DefaultCrashRestartPolicy`.  If the `DefaultCrashRestartPolicy` is not specified via the Receptor API, Diego will use the hard-coded values listed above.
 
 ## Required CF Work
 
 We propose that only CF admins/operators will be allowed to set/modify crash policies.  So:
 
-- As a CF Admin/Operator I can use the CC API to set the `DefaultCrashPolicy`.
-- As a CF Admin/Operator I can set up a CrashPolicy on an Org/Space/App level.
+- As a CF Admin/Operator I can use the CC API to set the `DefaultCrashRestartPolicy`.
+- As a CF Admin/Operator I can set up a CrashRestartPolicy on an Org/Space/App level.
 
-> Notes: in addition to flowing an event through to NSYNC's listeneer, we'll probably want the NSYNC bulker to periodically (re)set the `DefaultCrashPolicy` to make sure it's up-to-date.
+> Notes: in addition to flowing an event through to NSYNC's listeneer, we'll probably want the NSYNC bulker to periodically (re)set the `DefaultCrashRestartPolicy` to make sure it's up-to-date.
