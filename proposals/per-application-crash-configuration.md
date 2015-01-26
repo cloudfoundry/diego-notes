@@ -30,6 +30,7 @@ This particular set of numbers constitutes Diego's default policy.  Here's what 
 
 - Allowed to be 0 (means never restart immediately)
 - Must be less than `MaxRestartAttempts`
+- Must be less than 10
 
 #### `MaxTimeBetweenRestarts`
 
@@ -48,13 +49,26 @@ The crash policy is part of the `DesiredLRP`:
    ProcessGuid:...,
    ...
    CrashPolicy: {
-
+        ...
     },
     ...
 }
 ```
 
 - The crash policy can be updated after-the fact and, therefore, is part of `DesiredLRPUpdateRequest`.
-- `CrashPolicy` is optional.  If unspecified, the default will be used.  This default is bosh-configurable and can be modified at runtime via a redeploy by the operator.
+- `CrashPolicy` is optional.  If unspecified, the default will be used (see below).
 
+## Setting the Default Crash Policy
 
+The `DefaultCrashPolicy` is stored in the BBS and can be modified via the Receptor API on a *per-domain-basis* (note: this is not a BOSH property - the `DefaultCrashPolicy` can be modified at runtime!)
+
+Only `DesiredLRP`s with *no* `CrashPolicy` use the `DefaultCrashPolicy`.  If the `DefaultCrashPolicy` is not specified via the Receptor API, Diego will use the hard-coded values listed above.
+
+## Required CF Work
+
+We propose that only CF admins/operators will be allowed to set/modify crash policies.  So:
+
+- As a CF Admin/Operator I can use the CC API to set the `DefaultCrashPolicy`.
+- As a CF Admin/Operator I can set up a CrashPolicy on an Org/Space/App level.
+
+> Notes: in addition to flowing an event through to NSYNC's listeneer, we'll probably want the NSYNC bulker to periodically (re)set the `DefaultCrashPolicy` to make sure it's up-to-date.
