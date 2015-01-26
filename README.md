@@ -285,8 +285,6 @@ When queried for ActualLRPs the receptor follows the following rules:
 
 None.  As far as the Converger is concerned `/evacuating` need not exist.
 
-> Note: the Converger plays no special role during evacuation
-
 ### Harmonizing DesiredLRPs with Actual LRPs: Converger
 
 Messages get lost.  Connections time out.  Components fail.  Bugs happen.
