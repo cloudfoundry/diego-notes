@@ -12,7 +12,7 @@ For the following scales:
 - 50 32-Gig Cells, 8 CCs, 8 dopplers
 - 100 32-Gig Cells, 16 CCs, 16 dopplers
 
-1. Deploy a Diego+CF environment to diego-1
+1. Deploy a Diego+CF environment to diego-1 (make sure we deploy an etcd cluster -- etcd is much faster when not running in clustered mode)
 2. Run the experiments 1 and 2
 3. Let the cluster sit for a day
 4. Run experiment 3
