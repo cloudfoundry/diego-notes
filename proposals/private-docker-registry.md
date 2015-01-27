@@ -45,3 +45,4 @@ Once this approach is validated we can make the registry more robust and add new
 - highly-available private docker registry
 - ability to stage *private* images (i.e. images that require auth to download.  Basic idea: user supplies credentials which we use *at staging time* to fetch their dockerimage - a short-lived token is OK since we only need it for staging)
 - support for [Docker's V2 API](https://github.com/docker/distribution) -- currently not ready for primetime, but when it is we'll want our private registry to speak V2 and use the new Docker go codebase
+- ability to prune the private registry of unused Dockerimages (e.g. grab DesiredLRPs in fresh domains and flag any unused layers for removal)?
