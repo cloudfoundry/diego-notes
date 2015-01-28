@@ -256,21 +256,8 @@ When a Cell must be evacuated its ActualLRPs must first transfer to another Cell
 
 #### The Rep's Role during Evacuation
 
-- the Rep is told to evacuate.
-- the Rep subsequently refuses to take on any new work:
-	+ when the auctioneer requests the Rep's State, the Rep informs the Auctioneer that it is evacuating which takes it out of the pool
-	+ if any work comes in from the auctioneer, the rep immediately returns it all as failed work
-- the Rep destroys ActualLRP containers that are not yet `RUNNING` and requests starts for the corresponding ActualLRPs
-- the Rep moves its `RUNNING` ActualLRPs from `/v1/actual/:process_guid/:index/instance` to `/v1/actual/:process_guid/:index/evacuating`, requesting corresponding starts.
-	+ The `evacuating` instance should have a TTL equal to the evacuation timeout.
-	+ If there is already an instance under `/evacuating` the Rep should overwrite it
-- the Rep periodically fetches `/v1/actual/:process_guid/:index/instance` and `/v1/actual/:process_guid/:index/evacuating` from the BBS for any contianers it is running:
-	+ if the ActualLRP under `instance` is missing, `RUNNING` or `CRASHED`: the Rep destroys the container and deletes the `/evacuating` entry
-	+ if the ActualLRP under `evacuating` corresponds to a *different* Cell: the Rep destroys the container.
-	+ if the Rep has an ActualLRP container in the `COMPLETED` state it deletes the container and the `/evacuating` entry
-	+ otherwise, the Rep does nothing
-- the Rep shuts down when either all containers have been destroyed OR an evacuation timeout is exceeded:
-	+ in either case, the Rep ensures that any ActualLRPs associated with it are removed from `/evacuating` and that any tasks it still has running transition to `COMPLETED`.
+After the rep is signaled to evacuate, it communicates the evacuating state to the rest of its components and periodically attempts to resolve its containers. For the details of all the resolution cases, consult the ["Harmonizing during evacuation"](#harmonizing-during-evacuation) section below. The rep shuts down once all of its containers have been destroyed or it reaches its evacuation timeout.
+
 
 #### The Receptor's Role during Evacuation
 
@@ -379,6 +366,51 @@ CAS = Compare and Swap
 CAD = Compare and Delete
 RCD = RepCrashDance
 ```
+
+#### Harmonizing during evacuation
+
+- the Rep is told to evacuate.
+- the Rep subsequently refuses to take on any new work:
+	+ when the auctioneer requests the Rep's State, the Rep informs the Auctioneer that it is evacuating which takes it out of the pool
+	+ if any work comes in from the auctioneer, the rep immediately returns it all as failed work
+- the Rep then periodically attempts to resolve its remaining containers according to their container states:
+
+
+Assuming a `RUNNING` container on α, the α-rep performs these actions, always ensuring that keys under /evacuating have their TTL set to the evacuation timeout. `β` and `ω` represent other cells in the cluster.
+
+Instance key state | Evacuating key state | Action | Reason
+---|---|---|---
+`UNCLAIMED` | - | CREATE /e: `RUNNING-α` | **Inconceivable?**: Ensure routing to our running instance
+`UNCLAIMED` | `RUNNING-α` | Do Nothing | **Expected**: Waiting for other rep to win auction
+`UNCLAIMED` | `RUNNING-ω` | Delete container | **Conceivable**: `ω` ran our evacuated instance, then evacuated itself
+`CLAIMED-α` | - | CREATE /e: `RUNNING α`, CAS /i: `UNCLAIMED` | **Conceivable**: α has a RUNNING container but didn't get to update the BBS to `RUNNING` yet
+`CLAIMED-α` | `RUNNING-α` | CAS /i: `UNCLAIMED` | **Conceivable**: α failed to update the BBS to UNCLAIMED while evacuating
+`CLAIMED-α` | `RUNNING-ω` | CREATE /e: `RUNNING α`, CAS /i: `UNCLAIMED` | **Conceivable**: ω evacuated the container, α CLAIMED it, ran it and began evacuating but hasn't yet updated the BBS to `RUNNING`
+`CLAIMED-ω` | - | CREATE /e: `RUNNING α` | **Inconceivable?**: Ensure routing to our running instance
+`CLAIMED-ω` | `RUNNING-α` | Do Nothing | **Expected**: Waiting for ω to start running instance
+`CLAIMED-ω` | `RUNNING-β` | Delete container | **Conceivable**: `ω` ran our evacuated instance, then evacuated itself
+`RUNNING-α` | - | CREATE /e: `RUNNING α`, CAS /i: `UNCLAIMED` | **Expected**: This is the initial action during evacuation
+`RUNNING-α` | `RUNNING-α` | CAS /i: `UNCLAIMED` | **Conceivable**: α failed to update the BBS to UNCLAIMED while evacuating
+`RUNNING-α` | `RUNNING-β` | CREATE /e: `RUNNING α`, CAS /i: `UNCLAIMED` | **Conceivable**: β evacuated the container, α CLAIMED it, ran it, and then began evacuating
+`RUNNING-ω` | - | Delete container | **Conceivable**: The actualLRP is now running elsewhere but the /e was somehow lost
+`RUNNING-ω` | `RUNNING-α` | CAD /e && Delete container | **Expected**: Cleanup after successful evacuation
+`RUNNING-ω` | `RUNNING-β` | Delete container | **Conceivable**: β evacuated the container, ω CLAIMED it, ran it, and then began evacuating, and then α noticed
+`CRASHED` | - | Delete container | **Conceivable**: The actualLRP is now running elsewhere but the /e was somehow lost
+`CRASHED` | `RUNNING-α` | CAD /e && Delete container | **Expected**: Cleanup after successful evacuation (but then the new instance crashed)
+`CRASHED` | `RUNNING-β` | Delete container | **Conceivable**: β evacuated the container, some rep CLAIMED it, ran it, `CRASHED` it, and then α noticed
+- | - | Delete container | **Conceivable**: The actualLRP is now running elsewhere but the /e was somehow lost
+- | `RUNNING-α` | CAD /e && Delete container | **Expected**: Cleanup after scaling down during evacuation 
+- | `RUNNING-β` | Delete container | **Conceivable**: β evacuated the container, the actualLRP was scaled down, and then α noticed
+
+When the /instance ActualLRP changes to the `UNCLAIMED` state, the BBS will also request a new auction for it.
+
+- In container states that are not `RUNNING` or `COMPLETED`, the rep destroys the container, CADs the /evacuating ActualLRP if is `RUNNING-α`, and request a new auction for the ActualLRP by CASing /instance to `UNCLAIMED`
+- In a `COMPLETED (SHUTDOWN)` container state, the rep destroys the container and CADs the /evacuating ActualLRP if is `RUNNING-α`, and CADs the /instance ActualLRP as usual.
+- In a `COMPLETED (CRASHED)` container state, the rep destroys the container and CADs the /evacuating ActualLRP if is `RUNNING-α`, and performs the RepCrashDance on the /instance ActualLRP as usual.
+
+- the Rep shuts down when either all containers have been destroyed OR an evacuation timeout is exceeded:
+	+ in either case, the Rep ensures that any ActualLRPs associated with it are removed from `/evacuating` and that any tasks it still has running transition to `COMPLETED`.
+
 
 ## Tasks
 
