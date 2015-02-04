@@ -382,16 +382,16 @@ Instance key state | Evacuating key state | Action | Reason
 ---|---|---|---
 `UNCLAIMED` | - | CREATE /e: `RUNNING-α` | **Inconceivable?**: Ensure routing to our running instance
 `UNCLAIMED` | `RUNNING-α` | Do Nothing | **Expected**: Waiting for other rep to win auction
-`UNCLAIMED` | `RUNNING-ω` | Delete container | **Conceivable**: `ω` ran our evacuated instance, then evacuated itself
+`UNCLAIMED` | `RUNNING-β` | Delete container | **Conceivable**: `β` ran our evacuated instance, then evacuated itself
 `CLAIMED-α` | - | CREATE /e: `RUNNING α`, CAS /i: `UNCLAIMED` | **Conceivable**: α has a RUNNING container but didn't get to update the BBS to `RUNNING` yet
 `CLAIMED-α` | `RUNNING-α` | CAS /i: `UNCLAIMED` | **Conceivable**: α failed to update the BBS to UNCLAIMED while evacuating
-`CLAIMED-α` | `RUNNING-ω` | CREATE /e: `RUNNING α`, CAS /i: `UNCLAIMED` | **Conceivable**: ω evacuated the container, α CLAIMED it, ran it and began evacuating but hasn't yet updated the BBS to `RUNNING`
+`CLAIMED-α` | `RUNNING-β` | CAS /e: `RUNNING α`, CAS /i: `UNCLAIMED` | **Conceivable**: ω evacuated the container, α CLAIMED it, ran it and began evacuating but hasn't yet updated the BBS to `RUNNING`
 `CLAIMED-ω` | - | CREATE /e: `RUNNING α` | **Inconceivable?**: Ensure routing to our running instance
 `CLAIMED-ω` | `RUNNING-α` | Do Nothing | **Expected**: Waiting for ω to start running instance
-`CLAIMED-ω` | `RUNNING-β` | Delete container | **Conceivable**: `ω` ran our evacuated instance, then evacuated itself
+`CLAIMED-ω` | `RUNNING-β` | Delete container | **Conceivable**: `β` ran our evacuated instance, then evacuated itself
 `RUNNING-α` | - | CREATE /e: `RUNNING α`, CAS /i: `UNCLAIMED` | **Expected**: This is the initial action during evacuation
 `RUNNING-α` | `RUNNING-α` | CAS /i: `UNCLAIMED` | **Conceivable**: α failed to update the BBS to UNCLAIMED while evacuating
-`RUNNING-α` | `RUNNING-β` | CREATE /e: `RUNNING α`, CAS /i: `UNCLAIMED` | **Conceivable**: β evacuated the container, α CLAIMED it, ran it, and then began evacuating
+`RUNNING-α` | `RUNNING-β` | CAS /e: `RUNNING α`, CAS /i: `UNCLAIMED` | **Conceivable**: β evacuated the container, α CLAIMED it, ran it, and then began evacuating
 `RUNNING-ω` | - | Delete container | **Conceivable**: The actualLRP is now running elsewhere but the /e was somehow lost
 `RUNNING-ω` | `RUNNING-α` | CAD /e && Delete container | **Expected**: Cleanup after successful evacuation
 `RUNNING-ω` | `RUNNING-β` | Delete container | **Conceivable**: β evacuated the container, ω CLAIMED it, ran it, and then began evacuating, and then α noticed
