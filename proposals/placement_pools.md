@@ -99,6 +99,12 @@ Also, you cannot change the tags on a running Cell.  You will need to perform a 
 
 Because of these constraints we do not need to make the converger aware about Placement Pools: they can't change so there's nothing to keep consistent once ActualLRPs are scheduled on Cells.
 
+#### Querying Diego for `tags`
+
+For MVP we propose using the `/v1/cells` Receptor API to fetch all Cells and derive the set of tags.
+
+If/when we switch to a relational database we will be able to support `/v1/tags` to fetch all tags cheaply.
+
 ## Changes to Diego
 
 #### Task/DesiredLRP
@@ -124,11 +130,11 @@ The only subtelty here is around the `PlacementError` that the `auctioneer` appl
 
 There are two phases to the CF/CC work.  The first entails getting the existing behavior (stacks) to work with Placement Pools.  The second entails adding support for Placement Pools to the CC itself.
 
-#### Phase 1: Stack
+### Phase 1: Stack
 
 I propose not modifying the CC for this.  Instead both stager and NSYNC will be updated to translate the `stack` parameter on incoming requests to `stack:X` constraints.
 
-#### Phase 2: CC Support
+### Phase 2: CC Support
 
 Like Application Security Groups (ASG), Placement Pools (PP) will be a assigned on a per-space basis.  I imagine we would mirror the organization of ASGs as closely as possible with the difference that the PP associated with an application will apply to staging and running applications.  Looking at the [CC API docs](http://apidocs.cloudfoundry.org/197/) for ASG this would entail APIs that support:
 
@@ -145,8 +151,38 @@ PP = {
 }
 ```
 
-For MVP I don't think that CC should enforce any rules on PP (one could imagine a world in which the CC is taught by an operator about which `tags` are deployed -- I don't think we need to go there).
-
 As with ASGs, modifications to a PP will only go through once applications are restarted.
 
-Finally: I imagine stack will remain a first-class concept in the CC.  Either the CC-Bridge or the CC itself will need to fold the stack into the PP by appending it to the `Require` field.
+#### Validations
+
+For MVP I don't think that CC should enforce any rules on PlacementPools - though see below for one proviso around stacks.
+
+One could imagine a world in which the CC is taught by an operator about which `tags` are deployed (or reaches out to Diego to learn about available tags) -- I don't think we need to go there quite yet.
+
+#### Placement Pools & Restarts vs Restages
+
+The CC is somewhat unclear (and confused) about what actions must trigger restages and what actions must trigger restarts.
+
+We propose that modifications to Placement Pools need only trigger a restart.
+
+#### Placement Pools & Stacks
+
+Stacks will remain a first-class concept in the CC.
+
+Consumers of the CC API will see to independent concepts: Stacks and Placement Pools.  CC will maintain both of these as separate pieces of state associated with spaces/applications.
+
+However, when communicating with the backend CC will merge the Stack associated with an application with the Placement Pool associated with said application's space to construct the final placement pool that is sent to Diego.  This looks like (in pseudocode):
+
+```
+FinalPlacementPool = {
+    Require: append(app.space.PlacementPool.Require, "stack:{app.stack}"),
+    Disallow: app.space.PlacementPool.Disallow
+}
+```
+
+To support this the CC will require that PlacementPools are not allowed to specify tags of the form `stack:.*`.
+
+Also, the CC will be responsible for distinguishing between changes that require a restart and changes that require a restage.  In short:
+
+- if `app.space.PlacementPool` is modified - only a restart is required
+- if `app.stack` is modified - a restage is required
