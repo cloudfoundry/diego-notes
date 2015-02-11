@@ -305,7 +305,7 @@ Container State | ActualLRP State | Action | Reason
 ----------------|-----------------|--------|-------
 `RESERVED` | No ActualLRP | Delete Container | **Conceivable**: This ActualLRP is no longer desired (maybe because the DesiredLRP was scaled down or deleted)
 `RESERVED` | `UNCLAIMED` | CAS to `CLAIMED α` **THEN** Run Container | **Expected**: α has a reservation for this LRP and should claim it and then run it in the container.
-`RESERVED` | `CLAIMED α` | Run Container | **Conceivable**: We already claimed it and should make sure we've started running the container 
+`RESERVED` | `CLAIMED α` | Run Container | **Conceivable**: We already claimed it and should make sure we've started running the container
 `RESERVED` | `CLAIMED ω` | Delete Container | **Conceivable**: Don't run this container, since a different rep got farther than us
 `RESERVED` | `RUNNING α` | CAS to `CLAIMED α` **THEN** Run Container | **Inconceivable**: We shouldn't have been able to get to this state, but if we have correct the BBS and run anyway
 `RESERVED` | `RUNNING ω` | Delete Container | **Conceivable**: Don't run this container, since a different rep got farther than us
@@ -376,12 +376,14 @@ RCD = RepCrashDance
 - the Rep then periodically attempts to resolve its remaining containers according to their container states:
 
 
-Assuming a `RUNNING` container on α, the α-rep performs these actions, always ensuring that keys under /evacuating have their TTL set to the evacuation timeout. `β` and `ω` represent other cells in the cluster.
+Assuming a `RUNNING` container on α, the α-rep performs these actions, always ensuring that keys under /evacuating have their TTL set to the evacuation timeout. `β` and `ω` represent other cells in the cluster. `ε` indicates that the UNCLAIMED ActualLRP has a placement error set.
 
 Instance key state | Evacuating key state | Action | Reason
 ---|---|---|---
 `UNCLAIMED` | - | CREATE /e: `RUNNING-α` | **Inconceivable?**: Ensure routing to our running instance
+`UNCLAIMED+ε` | - | Delete Container | **Inconceivable?**: No one won the auction, so this instance will not evacuate successfully. Accept the inevitable.
 `UNCLAIMED` | `RUNNING-α` | Do Nothing | **Expected**: Waiting for other rep to win auction
+`UNCLAIMED+ε` | `RUNNING-α` | CAD /e && Delete Container | **Conceivable**: No one won the auction, so this instance will not evacuate successfully. Accept the inevitable.
 `UNCLAIMED` | `RUNNING-β` | Delete container | **Conceivable**: β ran our evacuated instance, then evacuated itself
 `CLAIMED-α` | - | CREATE /e: `RUNNING α`, CAS /i: `UNCLAIMED` | **Conceivable**: α has a RUNNING container but didn't get to update the BBS to `RUNNING` yet
 `CLAIMED-α` | `RUNNING-α` | CAS /i: `UNCLAIMED` | **Conceivable**: α failed to update the BBS to UNCLAIMED while evacuating
@@ -399,7 +401,7 @@ Instance key state | Evacuating key state | Action | Reason
 `CRASHED` | `RUNNING-α` | CAD /e && Delete container | **Expected**: Cleanup after successful evacuation (but then the new instance crashed)
 `CRASHED` | `RUNNING-β` | Delete container | **Conceivable**: β evacuated the container, some rep CLAIMED it, ran it, `CRASHED` it, and then α noticed
 - | - | Delete container | **Conceivable**: The actualLRP is now running elsewhere but the /e was somehow lost
-- | `RUNNING-α` | CAD /e && Delete container | **Expected**: Cleanup after scaling down during evacuation 
+- | `RUNNING-α` | CAD /e && Delete container | **Expected**: Cleanup after scaling down during evacuation
 - | `RUNNING-β` | Delete container | **Conceivable**: β evacuated the container, the actualLRP was scaled down, and then α noticed
 
 When the /instance ActualLRP changes to the `UNCLAIMED` state, the BBS will also request a new auction for it.
@@ -558,5 +560,3 @@ Completed-α | Delete Container          | Delete Container          | Delete Co
 Completed-ω | Delete Container          | Delete Container          | Delete Container          |
 Resolving-α | Delete Container          | Delete Container          | Delete Container          | Do Nothing
 Resolving-ω | Delete Container          | Delete Container          | Delete Container          |
-
-
