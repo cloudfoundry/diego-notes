@@ -80,13 +80,35 @@ The host passed with `-dockerRegistryURL` is always added to the list of insecur
 
 ### Docker Registry URL
 
-We shall register the private docker registry with Consul (as we do with the file server). Then we shall pass `-dockerRegistryURL=http(s)://private_docker_registry.service.dc1.consul:PORT` to the Stager and Builder.
+We shall register the private docker registry with Consul (as we do with the file server). Then we shall pass `-dockerRegistryURL=http(s)://docker_registry.service.dc1.consul:PORT` to the Stager and Builder.
 
 ### Egress rules
 
 To open up the container we have these options:
 
-- Stager fetches a list of all registered `private_docker_registry` services. This would return all registered IPs and ports and we shall poke holes allowing access to all those IPs and ports.
+- Stager fetches a list of all registered `docker_registry` services. This would return all registered IPs and ports and we shall poke holes allowing access to all those IPs and ports.
 - We pick a unique port for the private docker registry that doesn't conflict with anything else in the VPC (hard/tricky!) and then open up that port on the entire VPC.
 
 If we use the first option, there's a small race in that a new Docker registry may appear/disappear while we are staging. This would result in a staging failure but this should be very infrequent.
+
+To enable discovery of all service instances we shall use [Consul service nodes endpoint](http://www.consul.io/docs/agent/http.html#_v1_catalog_service_lt_service_gt_) (/v1/catalog/service/<service>). This will return the following JSON:
+```
+[
+  {
+    "Node": "foobar",
+    "Address": "10.1.10.12",
+    "ServiceID": "redis",
+    "ServiceName": "redis",
+    "ServiceTags": null,
+    "ServicePort": 8000
+  }
+]
+```
+
+To execute the above request we need additional consul agent URL command line argument in Stager: `-consulAgentURL`.
+
+Currently `ServicePort` is always 0 since we do not register a concrete port and rely on hardcoded one. Using different ports requires changes in:
+- consul agent scripts (to register service with different ports)
+- stager task create request (to add several egress rules)
+
+For MVP0 we can hardcod the port and make the needed changes for all services later.
