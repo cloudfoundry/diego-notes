@@ -32,11 +32,23 @@ The configuration goals are:
 
 ### Proposal
 
+#### Stager
+
 We shall use `-dockerRegistryURL` to specify the private Docker Registry location.
 
-The URL shall include the scheme (HTTP or HTTPS) so that the Stager and Builder can guess if we host insecure registry in case we have provided HTTP scheme.
+The URL shall include the scheme (HTTP or HTTPS) so that the Stager can guess if we host insecure registry in case we have provided HTTP scheme such as: `http://docker_registry.service.dc1.consul:8080`
 
-We may host a registry that is protected with self-signed certificate. In this case we shall provide `--skip-ssl-validation` flag to instruct the builder to add the HTTPS scheme private registry to the list with insecure hosts.
+We may also host a registry that is protected with self-signed certificate. In this case we shall provide `--skip-ssl-validation` flag to instruct the builder to add the HTTPS scheme private registry to the list with insecure hosts.
+
+#### Builder
+
+Builder shall read the optional command line argument `-insecureDockerRegistries` to configure Docker Registry Client and allow access to any insecure hosts. The argument shall accepts comma separated list of \<ip\>:\<port\> pairs. 
+
+Docker client needs a list of all insecure registry service instances. The list is available in Consul but Builder is running inside a container with no access to Consul Agent. That's why the `-insecureDockerRegistries` list is built by Stager. 
+
+The `-dockerRegistryURL` scheme is used to determine if the registry is insecure (if using HTTP). Additionally Stager uses `--skip-ssl-validation` argument to add HTTPS registry to the insecure list.
+
+As a side effect the docker app life-cycle builder may provide access to public registries that are insecure (either HTTP or self-signed cert HTTPS) if they are listed in `-insecureDockerRegistries`. This however will require also forking/modifying Stager code.
 
 **Pros:**
 
@@ -47,49 +59,22 @@ We may host a registry that is protected with self-signed certificate. In this c
 
 - No support for external insecure registries
 
-### Alternatives
+## Consul service
 
-The following alternative solutions might be used instead of providing a list of insecure hosts:
+We shall register the private docker registry with Consul (as we do with the file server). Then we shall privide the Docker Registry configuration in the form: `-dockerRegistryURL=http(s)://docker_registry.service.dc1.consul:8080` to the Stager.
 
-#### Insecure hosts white-list
+This will help us easily discover the service instances. We do not need to specify concrete IPs of the service nodes in the BOSH manifests as well.
 
-We could use additional command line argument `-insecureRegistryHosts` to instruct the Builder to configure Docker Registry Client to allow access to the insecure hosts.
+## Egress rules
 
-The argument shall accepts comma separated list of hosts. In this way we could also allow the docker app life-cycle builder to provide access to public registries that are insecure (either HTTP or self-signed cert HTTPS).
-
-**Pros:**
-
-- Access to insecure private and external registries
-
-**Cons:**
-
-- Complex configuration
-
-#### Private Registry is always considered insecure
-
-The host passed with `-dockerRegistryURL` is always added to the list of insecure hosts.
-
-**Pros:**
-
-- Simple configuration
-
-**Cons:**
-
-- No support for secure private registry
-- No support for external insecure registries
-
-### Docker Registry URL
-
-We shall register the private docker registry with Consul (as we do with the file server). Then we shall pass `-dockerRegistryURL=http(s)://docker_registry.service.dc1.consul:PORT` to the Stager and Builder.
-
-### Egress rules
-
-To open up the container we have these options:
+To be able to access the private Docker Registry we have to open up the container. We have these options:
 
 - Stager fetches a list of all registered `docker_registry` services. This would return all registered IPs and ports and we shall poke holes allowing access to all those IPs and ports.
 - We pick a unique port for the private docker registry that doesn't conflict with anything else in the VPC (hard/tricky!) and then open up that port on the entire VPC.
 
 If we use the first option, there's a small race in that a new Docker registry may appear/disappear while we are staging. This would result in a staging failure but this should be very infrequent.
+
+### Staging
 
 To enable discovery of all service instances we shall use [Consul service nodes endpoint](http://www.consul.io/docs/agent/http.html#_v1_catalog_service_lt_service_gt_) (/v1/catalog/service/<service>). This will return the following JSON:
 ```
@@ -108,7 +93,16 @@ To enable discovery of all service instances we shall use [Consul service nodes 
 To execute the above request we need additional consul agent URL command line argument in Stager: `-consulAgentURL`.
 
 Currently `ServicePort` is always 0 since we do not register a concrete port and rely on hardcoded one. Using different ports requires changes in:
+
 - consul agent scripts (to register service with different ports)
 - stager task create request (to add several egress rules)
 
-For MVP0 we can hardcod the port and make the needed changes for all services later.
+For MVP0 we can hardcode the port and make the needed changes for all services later.
+
+Once we find all service instances of the registry we add them explicitly to the staging task container. This presents some problems since we are opening access to the registry even if the desired egress rules (the default CF configuration) does not allow this.
+
+### Running
+
+The egress rules has to allow access to the Docker Registry instances to allow Garden to fetch an image stored there. We shall dynamically add egress rules with all discovered Registry instances on start request.
+
+Once again the new egress rules may conflict with the desired rules (CF defaults).
