@@ -103,6 +103,4 @@ Once we find all service instances of the registry we add them explicitly to the
 
 ### Running
 
-The egress rules has to allow access to the Docker Registry instances to allow Garden to fetch an image stored there. We shall dynamically add egress rules with all discovered Registry instances on start request.
-
-Once again the new egress rules may conflict with the desired rules (CF defaults).
+We don't need to add egress rules to allow access to the Docker Registry instances since Garden fetches the image outside of the container.
