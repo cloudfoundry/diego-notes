@@ -95,7 +95,7 @@ We can extending the code in garden-linux that is used to fetch the rootfs by ad
  
 ### Docker daemon
 
-We can run Docker daemon and request its public REST API. 
+We can run Docker daemon and request its public REST API. To do this we shall run the daemon as root or in priviledged container.
 
 **Pros:**
 
@@ -105,3 +105,4 @@ We can run Docker daemon and request its public REST API.
 
 - additional process and memory overhead
 - more complex provisioning (configuration, scripts, manifests)
+- root access or priviliged container
