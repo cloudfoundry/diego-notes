@@ -50,10 +50,11 @@ We'll want to run several `cf push`es in parallel.  I propose the following:
       - Round C: In parallel, push 14 Westley, 3 Max, 1 Princess, 2 Humperdink
       - Round D: In parallel, push 14 Westley, 3 Max, 0 Princess, 2 Humperdink
 3. Each push should verify that we can route to the pushed applications.
-4. We'll want to record the following timings:
+4. We'll want to record the following timings and info:
    - how long each application took to push.
-   - how long each round took to push.
-   - how long all the rounds took.
+   - how long it takes to successfully curl each application.
+   - CF_TRACE logs for all the pushes
+   - applications logs during the push and curl of each application
    we'll want to aggregate these from all pushers.
 
 Westley, Max, Princess, and Humperdink should all be Go applications and we should specify the Go buildpack to avoid the overhead of copying all the buildpacks in.
