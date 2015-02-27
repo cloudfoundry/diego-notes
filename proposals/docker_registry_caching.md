@@ -78,7 +78,7 @@ The Builder can drive the caching steps (pull, tag, push) by using API remotely 
 ## Implementation details
 
 We can take two approaches to implement the caching process (pull, tag and push steps): 
-- programmaticly drive docker
+- programmatically drive [docker code](https://github.com/docker/)
 - use docker client & daemon
  
 Both approaches require privileged process to be able to mount the docker graph file system.
