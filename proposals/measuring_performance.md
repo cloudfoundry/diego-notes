@@ -29,12 +29,14 @@ Fezzik excercises the Receptor API and launches very many Tasks and LRPs in tand
 
 CF Push the following distribution of applications:
 
-App Name | No. Applications | No. Instances/App | Memory | App-Bits Size | Details
+App Name | No. Applications | No. Instances/App | Memory | App-Bits Size | Details*
 ---------|------------------|-------------------|--------|---------------|-------
 Westley | N*54 | 1 | 128 | ~1M | A simple Hello World application: not chatty (one log-line/second)
 Max | N*12 | 2 | 512 | ~10M | An HA low-load microservice: moderately chatty logs (10 log-lines/second)
 Princess | N*2  | 4 | 1024 | ~200M | Web application: very chatty (20 log-lines/second)
 Humperdink | N*10 | 1 | 128 | ~1M | A perpetually crashing application (no logs).  This app should start, wait for 30 seconds, then crash.
+
+(* After running this experiment at the 10-Cell scale, we found log chattiness put a lot of pressure on the Cells and slowed down many things, especially Garden Info calls.  In subsequent runs of this experiment, we removed the logging behaviour from all the apps.)
 
 Where N is the number of cells (so for the 10-Cell case we'd push 540 simple hello world apps).  All these applications should have the same disk limit (something low like 1 GB should be good enough).
 
