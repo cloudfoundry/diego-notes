@@ -105,4 +105,8 @@ We can run Docker daemon and request its public REST API. To do this we shall ru
 
 - additional process and memory overhead
 - more complex provisioning (configuration, scripts, manifests)
-- root access or priviliged container
+- root access **and** priviliged container
+
+Docker daemon requires container root access to mount its graph root. Privileged container is required to access files owned by the real `root` user which has different user id (uid). The daemon tries to create:
+- `/dev/mapper` - debug
+- `/etc/docker` - fatal
