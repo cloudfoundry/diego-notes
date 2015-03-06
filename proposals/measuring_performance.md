@@ -65,7 +65,11 @@ Once the applications are up we'll want to collect a day's worth of datadog metr
 
 ## Experiment 3: Fault-recovery
 
-After a day, kill N/10 cells (in various zones) and see how long it takes to recover the missing applications (datadog plots should be enough to tell us when we've recovered).
+After a day, kill N/10 cells (in various zones) and see how long it takes to recover the missing applications.
+
+We'll want:
+- Datadog plots to see how long recovery takes
+- Converger logs to analyze how long the converger takes to handle this scenario.
 
 ## Experiment 4: Tolerating catastrophic etcd failure
 
