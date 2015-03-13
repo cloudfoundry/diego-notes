@@ -71,6 +71,12 @@ We'll want:
 - Datadog plots to see how long recovery takes
 - Converger logs to analyze how long the converger takes to handle this scenario.
 
-## Experiment 4: Tolerating catastrophic etcd failure
+Leave those cells dead for the next experiment.
 
-Shut down etcd and bring it back empty.  How long does it take for us to recover?  How does the routing table handle this?
+## Experiment 4: Tolerating catastrophic cell and etcd failure
+
+Kill another N/10 cells (in various zone).  At this point, the workload will exceed capacity.  Anything running (except Humperdinks) should continue to run, and anything not running should continue to fail to be scheduled (unless it sneaks in after a Humperdink crashes).  See that this is the case.
+
+Kill all the etcd nodes.  Make sure they (and the N/5 dead cells) are down for a while, long enough for several convergence ticks.
+
+`bosh cck` to recover the missing Cells and etcd cluster.  How long does it take for us to recover?  How does the routing table handle this?
