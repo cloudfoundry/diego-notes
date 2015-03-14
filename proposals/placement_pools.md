@@ -1,3 +1,123 @@
+# Supporting multiple RootFSes.  AKA what is Stack?
+
+Stack has been a confusing concept in the CC.  I'd like to propose that stack simply correlates with the RootFS.  I also propose that a single Cell should be able to support multiple RootFSes (this has many benefits including, for example, simplifying the process of upgrading from one RootFS to another).
+
+Where we need to head in the short-term is support for the following:
+
+- `lucid64` - a preloaded tarball based on `lucid`
+- `cflinxfs2` - a preloaded tarball based on `trusty`
+- `docker` - a dynamically download RootFS.
+
+I propose making this clearer in the Diego API by dropping `Stack` from the `DesiredLRP/Task` and, instead, beefing up the existing `RootFS` field.  Here are two potential options:
+
+#### Option A
+
+Something unstructured like:
+
+```
+type DesiredLRP struct {
+    RootFSProvider RootFSProvider,
+    RootFSResource string,
+}
+```
+
+which would take on the values:
+
+```
+lucid64: {
+    RootFSProvider: PreloadedRootFSProvider,
+    RootFSResource: "lucid64",
+}
+
+cflinxfs2: {
+    RootFSProvider: PreloadedRootFSProvider,
+    RootFSResource: "cflinxfs2",
+}
+
+docker: {
+    RootFSProvider: DockerRootFSProvider,
+    RootFSResource: "docker:///foo/bar#baz"
+}
+```
+
+#### Option B
+
+Something more structured like:
+
+```
+type DesiredLRP struct {
+    RootFS RootFS
+}
+
+type RootFS interface {
+    Provider() RootFSProvider
+}
+
+type DockerRootFS struct {
+    Registry string
+    Repository string
+    Tag string
+}
+
+type PreloadedRootFS struct {
+    Identifier string
+}
+```
+
+the idea being that you cast `RootFS` to an appropriate type by first interrogating `Provider()`.  This is more structured but is obviously more complex.  It does give us a bit more future-proofing however but may be more than we need.
+
+## Supporting multiple RootFSes
+
+Once the `DesiredLRP/Task` has this information we would modify the components as follows.
+
+### Garden
+
+Garden would take a mapping of Name:RootFS paths and would know how to create a container with the named RootFS.  For example:
+
+```
+garden-linux --root-filesystems='{"lucid64":"/path/to/lucid64", "cflinuxfs2":"/path/to/cflinuxfs2"}'
+```
+
+### Rep
+
+The Rep would take a list of preloaded RootFSes and a list of supported RootFSProviders.  For example:
+
+```
+rep --preloaded-rootfses='lucid64,cflinuxfs2' --supported-root-fs-providers="preloaded,docker"
+```
+
+Alternatively the Rep could get this information by asking Garden.
+
+### Auction
+
+During the auction the Auctioneer will be given the RootFS-related information and the Rep will furnish its available preloaded RootFSes and supported RootFS providers in its response to `State` requests:
+
+```
+State: {
+    RootFSProviders = [PreloadedRootFSProvider, DockerRootFSProvider],
+    PreloadedRootFSes = ["lucid64", "cflinuxfs2"],
+}
+```
+
+The Auctioneer would then know whether or not a Cell could support the requested RootFS.  In pseudocode for option A:
+
+```
+func (c Cell) CanRunTask(task Task) bool {
+    if task.RootFSProvider == PreloadedRootFSProvider {
+        return c.RootFSProviders.Contains(PreloadedRootFSProvider) &&
+            c.PreloadedRootFSes.Contains(task.RootFSResource)
+    } else {
+        return c.RootFSProviders.Contains(task.RootFSProvider)
+    }
+}
+```
+
+### Stager/NSYNC
+
+Stager/NSYNC would translate CC's "Stack" requests to appropriate values for the two RootFS fields (option A).
+
+---
+
 # Placement Pools
 
 Placement Pools are going to be one of the first new features that Diego brings to the platform.  This proposal is intended to get that ball rolling.
@@ -80,14 +200,9 @@ Constraint: {
 ```
 No cells could possiby satisfy these particular `constraint`s.  Diego is not in the business of identifying these sorts of inconsistencies -- it is up to the consumer to coordinate their Placement Pool `tags` and `constraint`s.  Diego will, however, inform the user (asynchronously after a failed attempt to auction) when it fails to satisfy a constraint.
 
-#### Where does this leave `stack`?
+#### How does this interact with `Stack`?
 
-I say we burn it with fire as a concept within Diego -- it's not a meaningful first-class concept once we have Placement Pools.
-
-It is, however, a concept at the CF layer.  So, I propose having `stack` be just another tag and teaching CC(-Bridge) to request the `stack` appropriately. Concretely I propose that we: 
-
-- tell BOSH to add the `stack:lucid64` tag to our Cells
-- have CC-Bridge construct the `{Require:["stack:lucid64"]}` constraint.
+It does not need to.  CC's `Stack` is related to the RootFS (discussed above).
 
 #### Are Placement Pools dynamic?
 
@@ -109,17 +224,17 @@ If/when we switch to a relational database we will be able to support `/v1/tags`
 
 #### Task/DesiredLRP
 
-We replace `stack` on Tasks and DesiredLRPs with `constraint`.  `constraint` will be **immutable** and is optional (leaving it off means "run this anywhere").
+We add `constraint` to Tasks and DesiredLRPs.  `constraint` will be **immutable** and is optional (leaving it off means "run this anywhere").
 
 #### Rep
 
-The `rep` should take accept a new command line flag `-tags` -- a comma separated list of tags.  We should make these tags bosh configurable and should include `stack:lucid64` as one of the bosh-configured tags.  We drop `-stack`.
+The `rep` should take accept a new command line flag `-tags` -- a comma separated list of tags.  We should make these tags bosh configurable.
 
 The `rep` will include the list of `tags` in `CellPresence` and responses to `State` requests from the Auctioneer.
 
 #### Auctioneer
 
-The `auctioneer` will be responsible for enforcing `constraint`s.  It does this today with `stack` -- extending it to apply the rules outlined above should be fairly straightforward.
+The `auctioneer` will be responsible for enforcing `constraint`s in addition to `rootfs` (see above).  Extending it to apply the rules outlined above should be fairly straightforward.
 
 The only subtelty here is around the `PlacementError` that the `auctioneer` applies to ActualLRPs and Tasks that fail to be placed.  There are two and these should be strictly interpreted as follows:
 
@@ -127,14 +242,6 @@ The only subtelty here is around the `PlacementError` that the `auctioneer` appl
 - `diego_errors.INSUFFICIENT_RESOURCES_MESSAGE`: should be returned only if there *are* Cells satisfying the required `constraint` but those Cells do not have sufficient capacity to to run the requested work.
 
 ## Changes to CF/CC
-
-There are two phases to the CF/CC work.  The first entails getting the existing behavior (stacks) to work with Placement Pools.  The second entails adding support for Placement Pools to the CC itself.
-
-### Phase 1: Stack
-
-I propose not modifying the CC for this.  Instead both stager and NSYNC will be updated to translate the `stack` parameter on incoming requests to `stack:X` constraints.
-
-### Phase 2: CC Support
 
 Like Application Security Groups (ASG), Placement Pools (PP) will be a assigned on a per-space basis.  I imagine we would mirror the organization of ASGs as closely as possible with the difference that the PP associated with an application will apply to staging and running applications.  Looking at the [CC API docs](http://apidocs.cloudfoundry.org/197/) for ASG this would entail APIs that support:
 
@@ -155,34 +262,10 @@ As with ASGs, modifications to a PP will only go through once applications are r
 
 #### Validations
 
-For MVP I don't think that CC should enforce any rules on PlacementPools - though see below for one proviso around stacks.
-
-One could imagine a world in which the CC is taught by an operator about which `tags` are deployed (or reaches out to Diego to learn about available tags) -- I don't think we need to go there quite yet.
+For MVP I don't think that CC should enforce any rules on PlacementPools.  One could imagine a world in which the CC is taught by an operator about which `tags` are deployed (or reaches out to Diego to learn about available tags) -- I don't think we need to go there quite yet.
 
 #### Placement Pools & Restarts vs Restages
 
 The CC is somewhat unclear (and confused) about what actions must trigger restages and what actions must trigger restarts.
 
 We propose that modifications to Placement Pools need only trigger a restart.
-
-#### Placement Pools & Stacks
-
-Stacks will remain a first-class concept in the CC.
-
-Consumers of the CC API will see to independent concepts: Stacks and Placement Pools.  CC will maintain both of these as separate pieces of state associated with spaces/applications.
-
-However, when communicating with the backend CC will merge the Stack associated with an application with the Placement Pool associated with said application's space to construct the final placement pool that is sent to Diego.  This looks like (in pseudocode):
-
-```
-FinalPlacementPool = {
-    Require: append(app.space.PlacementPool.Require, "stack:{app.stack}"),
-    Disallow: app.space.PlacementPool.Disallow
-}
-```
-
-To support this the CC will require that PlacementPools are not allowed to specify tags of the form `stack:.*`.
-
-Also, the CC will be responsible for distinguishing between changes that require a restart and changes that require a restage.  In short:
-
-- if `app.space.PlacementPool` is modified - only a restart is required
-- if `app.stack` is modified - a restage is required
