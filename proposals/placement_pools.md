@@ -8,16 +8,14 @@ Where we need to head in the short-term is support for the following:
 - `cflinxfs2` - a preloaded tarball based on `trusty`
 - `docker` - a dynamically download RootFS.
 
-I propose making this clearer in the Diego API by dropping `Stack` from the `DesiredLRP/Task` and, instead, beefing up the existing `RootFS` field.  Here are two potential options:
-
-#### Option A
-
-Something unstructured like:
+I propose making this clearer in the Diego API by dropping `Stack` from the `DesiredLRP/Task` and, instead, beefing up the existing `RootFS` field:
 
 ```
 type DesiredLRP struct {
+    ...
     RootFSProvider RootFSProvider,
     RootFSResource string,
+    ...
 }
 ```
 
@@ -31,7 +29,7 @@ lucid64: {
 
 cflinxfs2: {
     RootFSProvider: PreloadedRootFSProvider,
-    RootFSResource: "cflinxfs2",
+    RootFSResource: "cflinuxfs2",
 }
 
 docker: {
@@ -39,32 +37,6 @@ docker: {
     RootFSResource: "docker:///foo/bar#baz"
 }
 ```
-
-#### Option B
-
-Something more structured like:
-
-```
-type DesiredLRP struct {
-    RootFS RootFS
-}
-
-type RootFS interface {
-    Provider() RootFSProvider
-}
-
-type DockerRootFS struct {
-    Registry string
-    Repository string
-    Tag string
-}
-
-type PreloadedRootFS struct {
-    Identifier string
-}
-```
-
-the idea being that you cast `RootFS` to an appropriate type by first interrogating `Provider()`.  This is more structured but is obviously more complex.  It does give us a bit more future-proofing however but may be more than we need.
 
 ## Supporting multiple RootFSes
 
@@ -99,7 +71,7 @@ State: {
 }
 ```
 
-The Auctioneer would then know whether or not a Cell could support the requested RootFS.  In pseudocode for option A:
+The Auctioneer would then know whether or not a Cell could support the requested RootFS.  In pseudocode:
 
 ```
 func (c Cell) CanRunTask(task Task) bool {
@@ -114,7 +86,7 @@ func (c Cell) CanRunTask(task Task) bool {
 
 ### Stager/NSYNC
 
-Stager/NSYNC would translate CC's "Stack" requests to appropriate values for the two RootFS fields (option A).
+Stager/NSYNC would translate CC's "Stack" requests to appropriate values for the two RootFS fields.
 
 ---
 
