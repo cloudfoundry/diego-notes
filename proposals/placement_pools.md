@@ -8,33 +8,19 @@ Where we need to head in the short-term is support for the following:
 - `cflinxfs2` - a preloaded tarball based on `trusty`
 - `docker` - a dynamically download RootFS.
 
-I propose making this clearer in the Diego API by dropping `Stack` from the `DesiredLRP/Task` and, instead, beefing up the existing `RootFS` field:
-
-```
-type DesiredLRP struct {
-    ...
-    RootFSProvider RootFSProvider,
-    RootFSResource string,
-    ...
-}
-```
-
-which would take on the values:
+I propose making this clearer in the Diego API by dropping `Stack` from the `DesiredLRP/Task` and, instead, relying on the existing `RootFS` field which would take on the values (e.g.):
 
 ```
 lucid64: {
-    RootFSProvider: PreloadedRootFSProvider,
-    RootFSResource: "lucid64",
+    RootFS: "preloaded://lucid64",
 }
 
 cflinxfs2: {
-    RootFSProvider: PreloadedRootFSProvider,
-    RootFSResource: "cflinuxfs2",
+    RootFS: "preloaded://cflinuxfs2",
 }
 
 docker: {
-    RootFSProvider: DockerRootFSProvider,
-    RootFSResource: "docker:///foo/bar#baz"
+    RootFS: "docker:///foo/bar#baz",
 }
 ```
 
@@ -42,31 +28,23 @@ docker: {
 
 Once the `DesiredLRP/Task` has this information we would modify the components as follows.
 
-### Garden
-
-Garden would take a mapping of Name:RootFS paths and would know how to create a container with the named RootFS.  For example:
-
-```
-garden-linux --root-filesystems='{"lucid64":"/path/to/lucid64", "cflinuxfs2":"/path/to/cflinuxfs2"}'
-```
-
 ### Rep
 
 The Rep would take a list of preloaded RootFSes and a list of supported RootFSProviders.  For example:
 
 ```
-rep --preloaded-rootfses='lucid64,cflinuxfs2' --supported-root-fs-providers="preloaded,docker"
+rep --preloaded-rootfses='{"lucid64":"/path/to/lucid64", "cflinuxfs2":"/path/to/cflinuxfs2"} --supported-root-fs-providers="docker"
 ```
 
-Alternatively the Rep could get this information by asking Garden.
+This information could make its way onto the Cell Presence.  Not strictly necessary at this point, though it is convenient to have access to this information from the API.
 
 ### Auction
 
-During the auction the Auctioneer will be given the RootFS-related information and the Rep will furnish its available preloaded RootFSes and supported RootFS providers in its response to `State` requests:
+During the auction the Auctioneer will be given the RootFS and the Rep will furnish its available preloaded RootFSes and supported RootFS providers in its response to `State` requests:
 
 ```
 State: {
-    RootFSProviders = [PreloadedRootFSProvider, DockerRootFSProvider],
+    RootFSProviders = ["docker"],
     PreloadedRootFSes = ["lucid64", "cflinuxfs2"],
 }
 ```
@@ -75,11 +53,10 @@ The Auctioneer would then know whether or not a Cell could support the requested
 
 ```
 func (c Cell) CanRunTask(task Task) bool {
-    if task.RootFSProvider == PreloadedRootFSProvider {
-        return c.RootFSProviders.Contains(PreloadedRootFSProvider) &&
-            c.PreloadedRootFSes.Contains(task.RootFSResource)
+    if task.RootFS.Scheme == "preloaded" {
+        return c.PreloadedRootFSes.Contains(task.RootFSResource)
     } else {
-        return c.RootFSProviders.Contains(task.RootFSProvider)
+        return c.RootFSProviders.Contains(task.RootFS.Scheme)
     }
 }
 ```
