@@ -99,7 +99,7 @@ Constraint: {
 ```
 This says that *no* tags are required or disallowed.  Cells 1-9 satisfy this `constraint`.
 
-Here is a `constrant` that requires a workload run on `staging` Cells:
+Here is a `constraint` that requires a workload run on `staging` Cells:
 ```
 Constraint: {
     Require: ["staging"],
