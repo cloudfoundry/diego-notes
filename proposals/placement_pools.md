@@ -94,57 +94,30 @@ Here is an empty `constraint`:
 ```
 Constraint: {
     Require: [],
-    Disallow: []
 }
 ```
-This says that *no* tags are required or disallowed.  Cells 1-9 satisfy this `constraint`.
+This says that *no* tags are required.  Cells 1-9 satisfy this `constraint`.
 
 Here is a `constraint` that requires a workload run on `staging` Cells:
 ```
 Constraint: {
     Require: ["staging"],
-    Disallow: []
 }
 ```
 Cells 1-4 satisfy this `constraint`.
-
-Here is a subtly different `constraint` that disallows a workload from running on `production` Cells:
-```
-Constraint: {
-    Require: [],
-    Disallow: ["production"]
-}
-```
-Cells 1-4,9 satisfy this `constraint`.
 
 Here is a `constraint` that only runs on `staging` Cells allocated to the `skynet` corporation:
 ```
 Constraint: {
     Require: ["staging", "skynet"],
-    Disallow: []
 }
 ```
 Cells 1-2 satisfy this `constraint`.
 
-And here is a `constraint` that only runs on `staging` Cells that are *not* associated with the `skynet` corporation:
-```
-Constraint: {
-    Require: ["staging"],
-    Disallow: ["skynet"]
-}
-```
-Cells 3-4 satisfy this `constraint`.
-
 Finally, here are some `constraint`s that cannot be satisfied with the given Cell setup:
 ```
 Constraint: {
-    Require: ["staging"],
-    Disallow: ["staging"]
-}
-
-Constraint: {
     Require: ["alfalfa"],
-    Disallow: []
 }
 ```
 No cells could possiby satisfy these particular `constraint`s.  Diego is not in the business of identifying these sorts of inconsistencies -- it is up to the consumer to coordinate their Placement Pool `tags` and `constraint`s.  Diego will, however, inform the user (asynchronously after a failed attempt to auction) when it fails to satisfy a constraint.
@@ -203,7 +176,6 @@ For CC, a PP would look like identical to a Diego `constraint`:
 ```
 PP = {
     Require: [],
-    Disallow: []
 }
 ```
 
