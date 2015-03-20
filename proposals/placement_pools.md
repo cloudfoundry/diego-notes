@@ -67,13 +67,13 @@ Stager/NSYNC would translate CC's "Stack" requests to appropriate values for the
 
 ---
 
-# Placement Pools
+# Placement Constraints (née Placement Pools)
 
-Placement Pools are going to be one of the first new features that Diego brings to the platform.  This proposal is intended to get that ball rolling.
+Placement Constraints are going to be one of the first new features that Diego brings to the platform.  This proposal is intended to get that ball rolling.
 
-## What are Placement Pools?
+## What are Placement Constraints?
 
-At the highest level Placement Pools will allow operators to group Cells arbitrarily by painting them with tags.  Diego workloads can then be constrainted to run on a certain set of tags.
+At the highest level Placement Constraints will allow operators to group Cells arbitrarily by painting them with tags.  Diego workloads can then be constrainted to run on a certain set of tags.
 
 #### Tags
 
@@ -120,13 +120,13 @@ Constraint: {
     Require: ["alfalfa"],
 }
 ```
-No cells could possiby satisfy these particular `constraint`s.  Diego is not in the business of identifying these sorts of inconsistencies -- it is up to the consumer to coordinate their Placement Pool `tags` and `constraint`s.  Diego will, however, inform the user (asynchronously after a failed attempt to auction) when it fails to satisfy a constraint.
+No cells could possiby satisfy these particular `constraint`s.  Diego is not in the business of identifying these sorts of inconsistencies -- it is up to the consumer to coordinate their Placement Constraint `tags` and `constraint`s.  Diego will, however, inform the user (asynchronously after a failed attempt to auction) when it fails to satisfy a constraint.
 
 #### How does this interact with `Stack`?
 
 It does not need to.  CC's `Stack` is related to the RootFS (discussed above).
 
-#### Are Placement Pools dynamic?
+#### Are Placement Constraints dynamic?
 
 No.  Not for MVP.
 
@@ -134,7 +134,7 @@ You cannot change the `constraint` on a DesiredLRP.  You must request a new Desi
 
 Also, you cannot change the tags on a running Cell.  You will need to perform a rolling deploy to change the tags.
 
-Because of these constraints we do not need to make the converger aware about Placement Pools: they can't change so there's nothing to keep consistent once ActualLRPs are scheduled on Cells.
+Because of these constraints we do not need to make the converger aware about Placement Constraints: they can't change so there's nothing to keep consistent once ActualLRPs are scheduled on Cells.
 
 #### Querying Diego for `tags`
 
@@ -165,28 +165,28 @@ The only subtelty here is around the `PlacementError` that the `auctioneer` appl
 
 ## Changes to CF/CC
 
-Like Application Security Groups (ASG), Placement Pools (PP) will be a assigned on a per-space basis.  I imagine we would mirror the organization of ASGs as closely as possible with the difference that the PP associated with an application will apply to staging and running applications.  Looking at the [CC API docs](http://apidocs.cloudfoundry.org/197/) for ASG this would entail APIs that support:
+Like Application Security Groups (ASG), Placement Constraints (PC) will be a assigned on a per-space basis.  I imagine we would mirror the organization of ASGs as closely as possible with the difference that the PC associated with an application will apply to staging and running applications.  Looking at the [CC API docs](http://apidocs.cloudfoundry.org/197/) for ASG this would entail APIs that support:
 
-- CRUDding PPs
-- Associating/disassociating spaces with a PP
-- Specifying a default PP
+- CRUDding PCs
+- A space has one StagingPC and one RunningPC
+- Specifying a default StagingPC and a default RunningPC
 
-For CC, a PP would look like identical to a Diego `constraint`:
+For CC, a PC would look like identical to a Diego `constraint`:
 
 ```
-PP = {
+PC = {
     Require: [],
 }
 ```
 
-As with ASGs, modifications to a PP will only go through once applications are restarted.
+As with ASGs, modifications to a PC will only go through once applications are restarted.
 
 #### Validations
 
-For MVP I don't think that CC should enforce any rules on PlacementPools.  One could imagine a world in which the CC is taught by an operator about which `tags` are deployed (or reaches out to Diego to learn about available tags) -- I don't think we need to go there quite yet.
+For MVP I don't think that CC should enforce any rules on PlacementConstraints.  One could imagine a world in which the CC is taught by an operator about which `tags` are deployed (or reaches out to Diego to learn about available tags) -- I don't think we need to go there quite yet.
 
-#### Placement Pools & Restarts vs Restages
+#### Placement Constraints & Restarts vs Restages
 
 The CC is somewhat unclear (and confused) about what actions must trigger restages and what actions must trigger restarts.
 
-We propose that modifications to Placement Pools need only trigger a restart.
+We propose that modifications to Placement Constraints need only trigger a restart.
