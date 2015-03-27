@@ -77,13 +77,15 @@ The Builder can drive the caching steps (pull, tag, push) by using API remotely 
 
 ## Implementation details
 
+### Caching process
+
 We can take two approaches to implement the caching process (pull, tag and push steps): 
 - programmatically drive [docker code](https://github.com/docker/)
 - use docker client & daemon
  
 Both approaches require privileged process to be able to mount the docker graph file system.
 
-### Programmatic
+#### Programmatic
 
 We can extending the code in garden-linux that is used to fetch the rootfs by adding pull image, tag image and push image functionality
 
@@ -97,7 +99,7 @@ We can extending the code in garden-linux that is used to fetch the rootfs by ad
 - dependency on Docker internals
 
  
-### Docker daemon
+#### Docker daemon
 
 We can run Docker daemon and request its public REST API. To do this we shall run the daemon as root or in priviledged container.
 
@@ -110,3 +112,41 @@ We can run Docker daemon and request its public REST API. To do this we shall ru
 - additional process and memory overhead
 - more complex provisioning (configuration, scripts, manifests)
 - root access **and** priviliged container
+
+##### Processes
+
+We need two processes:  
+- Docker daemon  
+- Builder  
+
+We have to launch the two processes in parallel since there is no point in waiting for the daemon to finish.
+
+The Builder is responsible for:  
+- wait the daemon to start by reading the response from daemon's `_ping` access point  
+- fetch metadata  
+- cache image by invoking `docker` CLI:  
+   - pull image
+   - tag image
+   - push image
+
+The Docker daemon accepts requests made directly from Builder or triggered by the `docker` client.
+
+The processes are launched as [ifrit](https://github.com/tedsuo/ifrit) group, which guarantees that if one of them exits or crashes the other one will be terminated. We also use ifrit to be able to terminate both of them if the parent process is signalled.
+
+## Cached images
+
+### URL
+
+The images that are pushed to the private registry are stored as `<ip>:<port>/<GUID>:latest`, where GUID is a generated V4 uuid.
+
+### Tag
+
+The cached images are stored in `library/` with tag `latest`
+
+## Cloud Controller
+
+Cloud Controller table `droplets` is extended with `cached_docker_image` that stores the image URL returned by the staging process.
+
+When desire app request is generated, the `cached_docker_image` is sent, instead of the user provided `docker_image` in `app` table.
+
+If the user opts-out of caching the image, on restage we have to nil the `cached_docker_image` since this will disable the caching on desire app request.
