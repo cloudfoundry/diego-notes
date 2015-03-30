@@ -118,7 +118,7 @@ The app environment is propagated all the way to the stager, which configures th
 If the `-cacheDockerImage` is present the builder:  
 - generates cached docker image GUID  
 - caches the image in the private registry (pull, tag & push)  
-- includes the cached image metadata (<ip>:<port>/<guid>:latest) in the staging response
+- includes the cached image metadata (`<ip>:<port>/<guid>:latest`) in the staging response
 
 The stager returns the generated staging response back to Cloud Controller (CC). CC stores the cached image metadata in the CCDB.
 
