@@ -104,3 +104,22 @@ Once we find all service instances of the registry we add them explicitly to the
 ### Running
 
 We don't need to add egress rules to allow access to the Docker Registry instances since Garden fetches the image outside of the container.
+
+## Opt-in
+
+Image caching in private docker registry will not be enabled by default. User can opt-in by:
+
+```
+cf set-env <app> DIEGO_DOCKER_CACHE=true
+```
+
+The app environment is propagated all the way to the stager, which configures the docker lifecycle builder accordingly with the help of the `-cacheDockerImage` command line flag.
+
+If the `-cacheDockerImage` is present the builder:  
+- generates cached docker image GUID  
+- caches the image in the private registry (pull, tag & push)  
+- includes the cached image metadata (<ip>:<port>/<guid>:latest) in the staging response
+
+The stager returns the generated staging response back to Cloud Controller (CC). CC stores the cached image metadata in the CCDB.
+
+If the user opt-out then the cached image metadata is cleared to enable restage with the user-provided docker image.
