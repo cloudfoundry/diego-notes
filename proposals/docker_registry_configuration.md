@@ -110,7 +110,7 @@ We don't need to add egress rules to allow access to the Docker Registry instanc
 Image caching in private docker registry will not be enabled by default. User can opt-in by:
 
 ```
-cf set-env <app> DIEGO_DOCKER_CACHE=true
+cf set-env <app> DIEGO_DOCKER_CACHE true
 ```
 
 The app environment is propagated all the way to the stager, which configures the docker lifecycle builder accordingly with the help of the `-cacheDockerImage` command line flag.
