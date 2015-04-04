@@ -73,3 +73,8 @@ A limitation or possible enhancement to discuss with Hashicorp would be to perfo
 
 It seems that if data exists, we should also be checking the Leader(Session) of the data to determine if its still owned. Given the data may still exist in the KV store, it may not however be acquired (see above, 2 step process).
 
+### Presence
+
+An alternative for presence can be done via Services. One can register/deregister a service instance that will be accumulated into a given Service. Health checks can be added to manage the lifetime of the service. The check can be script, HTTP or TTL. Script and HTTP checks are performed on an interval. TTL checks must be updated via the UpdateTTL with a status.
+
+We will need to decide how much we allow Consul to do versus ourselves. There is obviously a balance of coupling between the ability to change our implementation and relying on something else.
