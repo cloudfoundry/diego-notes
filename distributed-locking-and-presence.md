@@ -71,4 +71,5 @@ Locks and presence become nothing more than acquiring and releasing a key/value 
 
 A limitation or possible enhancement to discuss with Hashicorp would be to perform a release&delete which is currently two operations. This may not be needed if all we ever do is just whack the session which will auto-destruct all our data.
 
+It seems that if data exists, we should also be checking the Leader(Session) of the data to determine if its still owned. Given the data may still exist in the KV store, it may not however be acquired (see above, 2 step process).
 
