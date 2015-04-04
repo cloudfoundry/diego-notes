@@ -46,3 +46,30 @@ The desired behavior here is:
 2b and 2c are working.  2a does not work as specified (a convergence loop is triggered when the cell presence is taken away) -- this is OK if not ideal.
 
 1a, 1b, and 1c are not working at all.  This is a substantial regression and we should add inigo coverage to make sure we have this important edge case covered.
+
+## Current implementation of locks using Consul API
+
+Distributed Locking and Presence are using the same set of APIs. The Consul Lock API is used to acquire and release some piece of data. In the case of a lock, the data is meaningless. For presence, any useful presence information is stored.
+
+At the center of Consul is the concept of a Session. A session some important characteristics including a TTL, LockDelay, Checks, and a Behavior. 
+If a session expires, exceeds its TTL, it is invalidated. 
+The Behavior describes how data owned by the session is handled when invalidated. It can be released (default) or deleted. 
+The LockDelay is used to mark certain locks as unacquirable. When a lock is forcefully released (failing health check, destroyed session, etc), it is subject to the LockDelay impossed by the session. This prevents another session from acquiring the lock for some period of time as a protection against split-brains.
+It is not clear how Checks interact with Sessions. They do refer to defined checks but I am not sure if they are on the node or a service, so we will ignore them for now since I do not believe we need to be concerned with them (yet).
+
+The current code creates locks to represent a lock or presence. The lock api will create a session if one is not provided. If a session is created, it is also automatically renewed on an interval of ttl/2. A key/value is then acquired. If already acquired, the lock will keep retrying until it becomes available. Any error will fail the Lock(). A conflict may be returned if you are locking a semaphore. The retry has a fixed delay of 5s. On acquisition, the lock is monitored. If for any reason, this fails, you are notified that the lock is lost. Note that if the connection to the agent times out (which it does), you will think you lost the lock prematurely.
+
+An Unlock() does the reverse. If a session is being automatically renewed, it is stopped. The key/value is released, not deleted.
+
+A Destroy() assumes you have Unlock()ed and remove the key/value if possible.
+
+## Where do we need to go
+
+Its pretty obvious that we need to center around a Session. There should only be one session per process. The ideal solution would allow us to create or re-acquire the session for a process. Our behavior would be to delete rather than release. For presence, a lock delay of 0 makes perfect sense since there is no concern for split brain. We can argue whether we need some lock delay for locks but we can begin with 0. If we require a lock delay for locks, then we will need a separate session for locks.
+
+Locks and presence become nothing more than acquiring and releasing a key/value beyond this point. The focus is all about keeping the session current.
+
+A limitation or possible enhancement to discuss with Hashicorp would be to perform a release&delete which is currently two operations.
+
+## Known issues
+[Leader lock re-acquisition](https://github.com/hashicorp/consul/issues/430)
