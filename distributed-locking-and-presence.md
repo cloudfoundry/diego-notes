@@ -69,7 +69,6 @@ Its pretty obvious that we need to center around a Session. There should only be
 
 Locks and presence become nothing more than acquiring and releasing a key/value beyond this point. The focus is all about keeping the session current.
 
-A limitation or possible enhancement to discuss with Hashicorp would be to perform a release&delete which is currently two operations.
+A limitation or possible enhancement to discuss with Hashicorp would be to perform a release&delete which is currently two operations. This may not be needed if all we ever do is just whack the session which will auto-destruct all our data.
 
-## Known issues
-[Leader lock re-acquisition](https://github.com/hashicorp/consul/issues/430)
+
