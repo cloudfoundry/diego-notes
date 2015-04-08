@@ -7,7 +7,7 @@ This document is not concerned with:
 - the Receptor API (documented [here](https://github.com/cloudfoundry-incubator/receptor/blob/master/doc/README.md))
 - details around how the Executor runs Actions
 
-## The Rep-Executor(-Garden) Cycle
+## Cell Organelles: The Rep-Executor(-Garden) Cycle
 
 The Rep is responsible for representing the containers in Garden to BBS.  The Rep gets updates about container status by **polling** the executor and by listening for **events**.  In both cases, the Rep ends up with a container object that it must reconcile with the BBS.  It does this by either:
 
@@ -77,6 +77,7 @@ All things LRP.  Here's an outline:
 - **Evacuation** discusses how a Rep evacuates.  Only the Rep plays a role here.
 - **Harmonizing DesiredLRPs with Actual LRPs: Converger** discusses the Converger's responsibilities.
 - **Harmonizing ActualLRPs with Container State: Rep** outlines (exhaustively) how the Rep keeps the ActualLRPs in the BBS and the set of running containers on its Cell in sync.
+- **Detecting Cell Failure** describes the defenses Diego has in place to handle various types of Cell failure.
 
 ### DesiredLRPs
 
@@ -413,6 +414,21 @@ When the /instance ActualLRP changes to the `UNCLAIMED` state, the BBS will also
 - the Rep shuts down when either all containers have been destroyed OR an evacuation timeout is exceeded:
 	+ in either case, the Rep ensures that any ActualLRPs associated with it are removed from `/evacuating` and that any tasks it still has running transition to `COMPLETED`.
 
+### Detecting Cell Failures
+
+Cells can fail for a variety of reasons and in a variety of ways.  When a Cell fails Diego must respond by 1) rescuing LRPs that were running on the Cell and 2) ensuring that no new work gets scheduled on the failed Cell.
+
+We support handling two failure modes:
+
+1. When a Cell disappears
+
+  Cells periodically heartbeat their `CellPresence` into Consul.  If a Cell fails to report in time it is considered lost and the Cell's LRPs are rescheduled.  This responsibility is handled by the converger which is notified immediately by Consul (via a watch) if a Cell disappears.
+
+2. When a Cell fails to create new containers
+
+  We have seen issues crop up where a Cell may enter a bad state and consistently fail to create containers.  These have typically been bugs in Garden.  When this occurs existing LRPs on the Cell are likely OK, however new LRPs should not be placed on the Cell.  This is a catastrophic failure mode when the Cell is relatively empty - as the auctioneer will consistently place work on the busted Cell.
+
+  To avoid this, the Rep periodically runs a self-test health check that verifies that containers and network bridges can be created.  If this self-test health check fails repeatedly, the Rep marks it self as unavailable to perform work and informs the Auctioneer of this when providing its State.
 
 ## Tasks
 
