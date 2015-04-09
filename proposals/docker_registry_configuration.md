@@ -144,3 +144,5 @@ Therefore we can implement two possible flows in Diego:
 * user provides authentication token and email
  
 The second option should be safer since the authentication token is supposed to be temporary, while user/password credentials can be used to generate new token and gain access to Docker Hub account.
+
+The authentication token and the email provided by the user should flow from the CLI through CC to Diego. Since the auth token is temporary we need to provide it on application start rather than save it as part of the staging data (the `droplet` table).
