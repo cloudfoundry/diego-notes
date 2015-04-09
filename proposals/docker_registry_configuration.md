@@ -1,4 +1,4 @@
-# Private Docker Registry
+# Configuration settings for using private Docker Registry
 
 Private Docker Registry aims to:
 - guarantee that we fetch the same layers when the user scales an application up.
@@ -123,3 +123,24 @@ If the `-cacheDockerImage` is present the builder:
 The stager returns the generated staging response back to Cloud Controller (CC). CC stores the cached image metadata in the CCDB.
 
 If the user opt-out then the cached image metadata is cleared to enable restage with the user-provided docker image.
+
+## Private images
+
+Users need to provide credentials to access the Docker Hub private images. The default flow is as follows:
+* user provides credentials to `docker login -u <user> -p <password>`
+* the login generates ~/.dockercfg file with the following content:
+```
+{
+	"https://index.docker.io/v1/": {
+		"auth": "aHNpbGlldjpSZW0wdGVwYXNz",
+		"email": "<user email>"
+	}
+}
+```
+* `docker pull` can now use the authentication token in the configuration file
+ 
+Therefore we can implement two possible flows in Diego:
+* user provides user/password
+* user provides authentication token and email
+ 
+The second option should be safer since the authentication token is supposed to be temporary, while user/password credentials can be used to generate new token and gain access to Docker Hub account.
