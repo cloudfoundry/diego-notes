@@ -32,21 +32,25 @@ The configuration goals are:
 
 ### Proposal
 
+## Consul service
+
+We shall register the private docker registry with Consul (as we do with the file server). The Docker Registry shall be registered as `-dockerRegistryURL=http(s)://docker_registry.service.consul:8080`.
+
+This will help us easily discover the service instances. We do not need to specify concrete IPs of the service nodes in the BOSH manifests as well.
+
 #### Stager
 
-We shall use `-dockerRegistryURL` to specify the private Docker Registry location.
+The Docker Registry instance IPs are obtained from Consul cluster. The Stager shall be provided with URL to the Consul Agent with `-consulCluster=http://localhost:8500`.
 
-The URL shall include the scheme (HTTP or HTTPS) so that the Stager can guess if we host insecure registry in case we have provided HTTP scheme such as: `http://docker_registry.service.dc1.consul:8080`
-
-We may also host a registry that is protected with self-signed certificate. In this case we shall provide `--skip-ssl-validation` flag to instruct the builder to add the HTTPS scheme private registry to the list with insecure hosts.
+The Stager shall be instructed to add the registry service instances as insecure with the help of `-insecureDockerRegistry` flag. This flag shall be provided if the registry is accessed by HTTP or HTTPS with self-signed certificate.
 
 #### Builder
 
-Builder shall read the optional command line argument `-insecureDockerRegistries` to configure Docker Registry Client and allow access to any insecure hosts. The argument shall accepts comma separated list of \<ip\>:\<port\> pairs. 
+The `-dockerRegistryAddresses` argument is used to provide a comma separated list of \<ip\>:\<port\> pairs to access all Docker Registry instances.
 
-Docker client needs a list of all insecure registry service instances. The list is available in Consul but Builder is running inside a container with no access to Consul Agent. That's why the `-insecureDockerRegistries` list is built by Stager. 
+Docker client needs a list of all insecure registry service instances. That's why Builder shall read the optional command line argument `-insecureDockerRegistries` to configure Docker Registry Client and allow access to any insecure hosts. The argument shall accepts comma separated list of \<ip\>:\<port\> pairs. 
 
-The `-dockerRegistryURL` scheme is used to determine if the registry is insecure (if using HTTP). Additionally Stager uses `--skip-ssl-validation` argument to add HTTPS registry to the insecure list.
+The list is available in Consul cluster, but Builder is running inside a container with no access to Consul Agent. That's why the `-insecureDockerRegistries` list is built by Stager. 
 
 As a side effect the docker app life-cycle builder may provide access to public registries that are insecure (either HTTP or self-signed cert HTTPS) if they are listed in `-insecureDockerRegistries`. This however will require also forking/modifying Stager code.
 
@@ -58,12 +62,6 @@ As a side effect the docker app life-cycle builder may provide access to public 
 **Cons:**
 
 - No support for external insecure registries
-
-## Consul service
-
-We shall register the private docker registry with Consul (as we do with the file server). Then we shall privide the Docker Registry configuration in the form: `-dockerRegistryURL=http(s)://docker_registry.service.dc1.consul:8080` to the Stager.
-
-This will help us easily discover the service instances. We do not need to specify concrete IPs of the service nodes in the BOSH manifests as well.
 
 ## Egress rules
 
