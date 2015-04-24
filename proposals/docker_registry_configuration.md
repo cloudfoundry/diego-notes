@@ -32,7 +32,7 @@ The configuration goals are:
 
 ### Proposal
 
-## Consul service
+#### Consul service
 
 We shall register the private docker registry with Consul (as we do with the file server). The Docker Registry shall be registered as `-dockerRegistryURL=http(s)://docker_registry.service.consul:8080`.
 
@@ -53,6 +53,8 @@ Docker client needs a list of all insecure registry service instances. That's wh
 The list is available in Consul cluster, but Builder is running inside a container with no access to Consul Agent. That's why the `-insecureDockerRegistries` list is built by Stager. 
 
 As a side effect the docker app life-cycle builder may provide access to public registries that are insecure (either HTTP or self-signed cert HTTPS) if they are listed in `-insecureDockerRegistries`. This however will require also forking/modifying Stager code.
+
+The `-dockerDaemonExecutablePath=<path>` is used to configure the correct path to the Docker executable in different environments (Inigo, different Cells, unit testing).
 
 **Pros:**
 
@@ -88,9 +90,7 @@ To enable discovery of all service instances we shall use [Consul service nodes 
 ]
 ```
 
-To execute the above request we need additional consul agent URL command line argument in Stager: `-consulAgentURL`.
-
-Currently `ServicePort` is always 0 since we do not register a concrete port and rely on hardcoded one. Using different ports requires changes in:
+To execute the above request we use the `-consulAgentURL` flag. Currently `ServicePort` is always 0 since we do not register a concrete port and rely on hardcoded one. Using different ports requires changes in:
 
 - consul agent scripts (to register service with different ports)
 - stager task create request (to add several egress rules)
@@ -113,7 +113,7 @@ cf set-env <app> DIEGO_DOCKER_CACHE true
 
 The app environment is propagated all the way to the stager, which configures the docker lifecycle builder accordingly with the help of the `-cacheDockerImage` command line flag.
 
-If the `-cacheDockerImage` is present the builder:  
+If the `-cacheDockerImage` is present, the builder:  
 - generates cached docker image GUID  
 - caches the image in the private registry (pull, tag & push)  
 - includes the cached image metadata (`<ip>:<port>/<guid>:latest`) in the staging response
