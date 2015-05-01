@@ -69,3 +69,43 @@ This results in two simple rules for operators:
 
 1. You **SHOULD** run the migration errand *after* deploying N + 1.
 2. You **MUST** run the migration errand *before* deploying N + 2.
+
+
+An alternative BBS Schema Migration Approach
+--------------------------------------------
+
+![diagram](diego_versioning.svg)
+
+# Steps
+
+1. Bosh deploy Diego Release version N + 1.
+2. Run migration errand
+
+# Changes to Jobs
+
+Jobs need a way to detect if they're running in a mode where they dont' have to
+worry about backwards compatibility. We could model that as a flag on the
+command line or we could find a way to do it in the BBS. Any of those
+mechanisms could work...
+
+With that in place:
+
+1. Version N + 1 Jobs read from version N BBS first, then read from version N +
+	 1 if that operation fails
+2. Version N + 1 Jobs to write to version N and N + 1 BBS 
+3. Version N + 1 jobs to read/write from/to version N + 1 BBS when the
+	 migration flag is turned off.  Migration flag is turned off when version N
+	 BBS is not available.
+
+
+# Migration Errand
+
+1. Build version N + 1 BBS
+2. Scan version N BBS nodes for discrepencies by comparing its node index to
+   N + 1 BBS nodes (version N nodes are always going to be greater than or equal
+	 to version N + 1 nodes) 
+3. Update out of sync node in N + 1 BBS
+4. Build a nodes-in-sync lookup table for nodes with the same node index
+	 between version N and N + 1.
+5. Repeat 2 until all nodes are in sync
+6. Delete version N BBS
