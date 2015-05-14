@@ -78,6 +78,7 @@ All things LRP.  Here's an outline:
 - **Harmonizing DesiredLRPs with Actual LRPs: Converger** discusses the Converger's responsibilities.
 - **Harmonizing ActualLRPs with Container State: Rep** outlines (exhaustively) how the Rep keeps the ActualLRPs in the BBS and the set of running containers on its Cell in sync.
 - **Detecting Cell Failure** describes the defenses Diego has in place to handle various types of Cell failure.
+- **Pruning Corrupt/Invalid Data** describes how Diego deals with corrupt LRP data, or old data that has become invalid (this is relevant until we have stable versions for our data schema).  The Converger does this.
 
 ### DesiredLRPs
 
@@ -430,6 +431,10 @@ We support handling two failure modes:
 
   To avoid this, the Rep periodically runs a self-test health check that verifies that containers and network bridges can be created.  If this self-test health check fails repeatedly, the Rep marks it self as unavailable to perform work and informs the Auctioneer of this when providing its State.
 
+### Pruning Corrupt/Invalid Data
+
+The Converger loops fetches all ActualLRP and DesiredLRP data, and pre-processes it before determining what convergence actions to take.  As part of this process, it prunes any data that has become corrupt (e.g. the raw data cannot be deserialized into an object) or invalid (an unversioned BBS schema change may make existing data invalid).  Currently this is done as part of the main convergence loop, but it is **not** critical to convergence behaviour.
+
 ## Tasks
 
 All things Tasks.  Here's an outline:
@@ -576,3 +581,7 @@ Completed-α | Delete Container          | Delete Container          | Delete Co
 Completed-ω | Delete Container          | Delete Container          | Delete Container          |
 Resolving-α | Delete Container          | Delete Container          | Delete Container          | Do Nothing
 Resolving-ω | Delete Container          | Delete Container          | Delete Container          |
+
+### Pruning Corrupt/Invalid Data
+
+The Converger loops fetches all Task data, and pre-processes it before determining what convergence actions to take.  As part of this process, it prunes any data that has become corrupt (e.g. the raw data cannot be deserialized into an object) or invalid (an unversioned BBS schema change may make existing data invalid).  Currently this is done as part of the main convergence loop, but it is **not** critical to convergence behaviour.
