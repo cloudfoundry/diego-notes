@@ -9,6 +9,7 @@ Install the following:
 - VirtualBox https://www.virtualbox.org/wiki/Downloads
 - Slack https://itunes.apple.com/app/slack/id803453959?ls=1&mt=12
 - Spiff (install binary at `/usr/local/bin/spiff`) https://github.com/cloudfoundry-incubator/spiff/releases
+- Wraparound http://www.macupdate.com/app/mac/19599/wraparound
 
 ## Bash-It
 Install Bash-It with plugins and other garbage disabled.
