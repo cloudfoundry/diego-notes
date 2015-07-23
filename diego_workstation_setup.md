@@ -42,6 +42,7 @@ Install the following packages.  Don't forget to look for instructions to comple
 - brew install jq
 - brew tap git-duet/tap && brew install git-duet
 - brew install fasd
+- brew install aria2
 
 ### Brew Cask
 - brew install caskroom/cask/brew-cask
