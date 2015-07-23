@@ -112,3 +112,14 @@ Add the following line to ~/.bash_profile:
 ```
 eval "$(fasd --init auto)"
 ```
+
+## setup git
+copy workstation ~/.gitconfig and ~/.git-authors
+
+## set up arrow-up partial bash completion
+```
+echo '# arrow up
+"\e[A":history-search-backward
+## arrow down
+"\e[B":history-search-forward' > ~/.inputrc
+```
