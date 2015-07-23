@@ -40,6 +40,7 @@ Install the following packages.  Don't forget to look for instructions to comple
 - brew install tmate
 - brew install jq
 - brew tap git-duet/tap && brew install git-duet
+- brew install fasd
 
 ### Brew Cask
 - brew install caskroom/cask/brew-cask
@@ -103,4 +104,10 @@ Full instructions can be found at http://luansantos.com/vimfiles/
 git clone --depth=1 http://github.com/luan/vimfiles.git ~/.vim
 cd ~/.vim
 ./install
+```
+
+## Enable fasd
+Add the following line to ~/.bash_profile:
+```
+eval "$(fasd --init auto)"
 ```
