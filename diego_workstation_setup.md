@@ -113,10 +113,10 @@ Add the following line to ~/.bash_profile:
 eval "$(fasd --init auto)"
 ```
 
-## setup git
+## Set up git
 copy workstation ~/.gitconfig and ~/.git-authors
 
-## set up arrow-up partial bash completion
+## Set up arrow-up partial bash completion
 ```
 echo '# arrow up
 "\e[A":history-search-backward
