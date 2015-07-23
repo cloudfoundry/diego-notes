@@ -25,24 +25,26 @@ ruby -e "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/
 ```
 
 Install the following packages.  Don't forget to look for instructions to complete manual steps as part of each install (like adding the sql db's to launchctl):
-- brew install git
-- brew install ruby-install
-- brew install chruby
-- brew install go --with-cc-common
-- brew install mysql
-- brew install postgres
-- brew install direnv
-- brew install ack
-- brew install ag
-- brew install bash-completion
-- brew install python
-- brew install tmux
-- brew tap nviennot/tmate
-- brew install tmate
-- brew install jq
-- brew tap git-duet/tap && brew install git-duet
-- brew install fasd
-- brew install aria2
+```
+brew install git
+brew install ruby-install
+brew install chruby
+brew install go --with-cc-common
+brew install mysql
+brew install postgres
+brew install direnv
+brew install ack
+brew install ag
+brew install bash-completion
+brew install python
+brew install tmux
+brew tap nviennot/tmate
+brew install tmate
+brew install jq
+brew tap git-duet/tap && brew install git-duet
+brew install fasd
+brew install aria2
+```
 
 ### Brew Cask
 - brew install caskroom/cask/brew-cask
@@ -53,8 +55,10 @@ Install the following packages.  Don't forget to look for instructions to comple
 ruby-install ruby 2.1.6
 chruby ruby-2.1.6
 ```
-- gem install bosh_cli
-- gem install bundler
+```
+gem install bosh_cli
+gem install bundler
+```
 
 ## Go Packages
 
@@ -65,10 +69,12 @@ export PATH=$PATH:$HOME/go/bin
 export GOPATH=$HOME/go
 ```
 
-- go get golang.org/x/tools/cmd/goimports
-- go get github.com/vito/boosh
-- go get github.com/vito/spiff
-- go get github.com/tools/godep
+```
+go get golang.org/x/tools/cmd/goimports
+go get github.com/vito/boosh
+go get github.com/vito/spiff
+go get github.com/tools/godep
+```
 
 ## Python Packages
 
