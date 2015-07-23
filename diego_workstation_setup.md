@@ -47,8 +47,10 @@ brew install aria2
 ```
 
 ### Brew Cask
-- brew install caskroom/cask/brew-cask
-- brew cask install flycut
+```
+brew install caskroom/cask/brew-cask
+brew cask install flycut
+```
 
 ## Ruby Packages
 ```
