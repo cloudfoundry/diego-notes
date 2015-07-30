@@ -14,20 +14,21 @@ Install the following:
 
 ## Bash-It
 Install Bash-It with plugins and other garbage disabled.
-```
+```bash
 git clone --depth=1 https://github.com/Bash-it/bash-it.git ~/.bash_it
 ~/.bash_it/install.sh --none
 ```
 
 ## Homebrew
 Install Howebrew:
-```
+```bash
 ruby -e "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install)"
 ```
 
 Install the following packages.  Don't forget to look for instructions to complete manual steps as part of each install (like adding the sql db's to launchctl):
-```
+```bash
 brew install git
+brew install git-duet
 brew install ruby-install
 brew install chruby
 brew install go --with-cc-common
@@ -48,17 +49,17 @@ brew install aria2
 ```
 
 ### Brew Cask
-```
+```bash
 brew install caskroom/cask/brew-cask
 brew cask install flycut
 ```
 
 ## Ruby Packages
-```
+```bash
 ruby-install ruby 2.1.6
 chruby ruby-2.1.6
 ```
-```
+```bash
 gem install bosh_cli
 gem install bundler
 ```
@@ -67,12 +68,12 @@ gem install bundler
 
 `mkdir $HOME/go` add the following the following to .bash_profile:
 
-```
+```bash
 export PATH=$PATH:$HOME/go/bin
 export GOPATH=$HOME/go
 ```
 
-```
+```bash
 go get golang.org/x/tools/cmd/goimports
 go get github.com/vito/boosh
 go get github.com/vito/spiff
@@ -93,14 +94,14 @@ import urllib.request,os,hashlib; h = 'eb2297e1a458f27d836c04bb0cbaf282' + 'd0e7
 
 - Package Install: gosublime
 - Package Install: spacegray
-```
-GoSublime Settings
+```json
+// GoSublime Settings
 {
 	"fmt_cmd": ["goimports"]
 }
 ```
-```
-User Settings
+```json
+// User Settings
 {
   "theme": "Spacegray Eighties.sublime-theme",
   "save_on_focus_lost": false
@@ -111,7 +112,7 @@ User Settings
 ## Vim
 Full instructions can be found at http://luansantos.com/vimfiles/ 
 
-```
+```bash
 git clone --depth=1 http://github.com/luan/vimfiles.git ~/.vim
 cd ~/.vim
 ./install
@@ -119,15 +120,19 @@ cd ~/.vim
 
 ## Enable fasd
 Add the following line to ~/.bash_profile:
-```
+```bash
 eval "$(fasd --init auto)"
 ```
 
 ## Set up git
-copy workstation ~/.gitconfig and ~/.git-authors
+copy workstation ~/.gitconfig and ~/.git-authors and add the following to ~/.bash_profile:
+```bash
+export GIT_DUET_GLOBAL=true
+export GIT_DUET_ROTATE_AUTHOR=true
+```
 
 ## Set up arrow-up partial bash completion
-```
+```bash
 echo '# arrow up
 "\e[A":history-search-backward
 ## arrow down
