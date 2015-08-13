@@ -378,6 +378,8 @@ RCD = RepCrashDance
 - the Rep then periodically attempts to resolve its remaining containers according to their container states:
 
 
+##### When the container is in the Running state
+
 Assuming a `RUNNING` container on α, the α-rep performs these actions, always ensuring that keys under /evacuating have their TTL set to the evacuation timeout. `β` and `ω` represent other cells in the cluster. `ε` indicates that the UNCLAIMED ActualLRP has a placement error set.
 
 Instance key state | Evacuating key state | Action | Reason
@@ -405,6 +407,8 @@ Instance key state | Evacuating key state | Action | Reason
 - | - | Delete container | **Conceivable**: The actualLRP is now running elsewhere but the /e was somehow lost
 - | `RUNNING-α` | CAD /e && Delete container | **Expected**: Cleanup after scaling down during evacuation
 - | `RUNNING-β` | Delete container | **Conceivable**: β evacuated the container, the actualLRP was scaled down, and then α noticed
+
+##### When the container is not Running
 
 When the /instance ActualLRP changes to the `UNCLAIMED` state, the BBS will also request a new auction for it.
 
