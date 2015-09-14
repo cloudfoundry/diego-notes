@@ -15,7 +15,7 @@ This flow should be the only supported one for the CF authenticator, and we shou
 
 Implementing this flow and removing the old one requires the following stories:
 
------
+---
 
 The Diego SSH Proxy can receive an authorization code as the SSH password to access a CF app instance
 
@@ -32,7 +32,7 @@ Acceptance:
 L: ssh
 
 
------
+---
 
 CC presents the Diego SSH Proxy client name in the /v2/info endpoint
 
@@ -42,7 +42,7 @@ CC presents the Diego SSH Proxy client name in the /v2/info endpoint
 L: ssh
 
 
------
+---
 
 The SSH plugin establishes SSH connections to CF app instances by sending an authorization code as the SSH password
 
@@ -53,7 +53,7 @@ The SSH plugin establishes SSH connections to CF app instances by sending an aut
 L: ssh
 
 
------
+---
 
 The Diego SSH Proxy no longer accepts a user's access token as an SSH password for CF app instances
 
@@ -64,5 +64,5 @@ Acceptance:
 
 L: ssh
 
------
+---
 
