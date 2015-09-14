@@ -55,6 +55,18 @@ L: ssh
 
 ---
 
+The SSH plugin provides a command to print a one-time authorization code issued for the SSH proxy client
+
+Acceptance:
+
+- I can run `cf get-ssh-code` and use the output as my password for connection with the OpenSSH `ssh` and `scp` clients.
+- This command should also look up client info from CC's `/v2/info` endpoint.
+
+L: ssh
+
+
+---
+
 The Diego SSH Proxy no longer accepts a user's access token as an SSH password for CF app instances
 
 Acceptance:
