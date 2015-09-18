@@ -179,12 +179,15 @@ type Version struct {
 
 When a BBS comes up it exercises the following state-machine control loop:
 
-- Attempt to grab the lock
+- Attempt to acquire the lock
     + Upon failure, keep trying.
-- Upon success, fetch `/version`
-    + If the database version is more modern than the BBS version shut down. (see table below)
+- Upon acquiring the lock, fetch `/version`.
+- Upon fetching an existing `/version` value:
+    + If the database version is more recent than the BBS version, shut down. (see table below)
     + If the database version equals the BBS version, start serving requests. (see table below)
-    + If the database version is less modern than the BBS version, start/continue the migration then serve requests. (see table below)
+    + If the database version is less recent than the BBS version, start/continue the migration, then serve requests. (see table below)
+- Upon failing to fetch a `/version` value:
+    + Assume that the BBS is empty, end the migration by writing the BBS version, and serve requests. (see table below)
 - During a migration a 503 response is returned to all requests.  Clients should be taught either to retry on a backoff or (perhaps more simply) forward the 503 along.
 - Upon a successful migration, all requests should be handled.
 
@@ -192,7 +195,7 @@ Here's the comprehensive logic table for handling the various states of `Version
 
 `CurrentVersion` | `TargetVersion` | Action | Reason
 ----------------|-----------------|--------|-------
-`nil` | `nil` | `END_MIGRATION` then `SERVE_REQUESTS` | **Expected**: a new BBS is talking to an empty database.  Mark the version as current and start handling requests.
+(no key) | (no key) | `END_MIGRATION` then `SERVE_REQUESTS` | **Expected**: a new BBS is talking to an empty database.  Mark the version as current and start handling requests.
 `< BBSDataVersion` | `< BBSDataVersion` | `BEGIN_MIGRATION` then `END_MIGRATION` then `SERVE_REQUESTS` | **Expected**: a new BBS has been elected master for the first time and sees a database that needs migration.
 `< BBSDataVersion` | `== BBSDataVersion` | `CONTINUE_MIGRATION` then `END_MIGRATION` then `SERVE_REQUESTS` | **Conceivable**: a new BBS failed mid-migration.  Let's try again.
 `< BBSDataVersion` | `> BBSDataVersion` | `CONTINUE_MIGRATION` then `END_MIGRATION` then `SERVE_REQUESTS` | **Conceivable**: an operator took a cluster that had formerly failed to migrate and attempted to upgrade it to an intermediate version. This may happen if an operator first tries to jump across many major release versions and, on migration failure, instead advances through versions more incrementally. The `CurrentVersion` data should still be preserved, though, so use it to conduct the migration to `BBSDataVersion`.
