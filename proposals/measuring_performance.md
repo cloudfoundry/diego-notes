@@ -33,7 +33,7 @@ App Name | No. Applications | No. Instances/App | Memory | App-Bits Size | Detai
 ---------|------------------|-------------------|--------|---------------|-------
 Westley | N*54 | 1 | 128 | ~1M | A simple Hello World application: not chatty (one log-line/second)
 Max | N*12 | 2 | 512 | ~10M | An HA low-load microservice: moderately chatty logs (10 log-lines/second)
-Princess | N*2  | 4 | 1024 | ~200M | Web application: very chatty (20 log-lines/second)
+Buttercup | N*2  | 4 | 1024 | ~200M | Web application: very chatty (20 log-lines/second)
 Humperdink | N*10 | 1 | 128 | ~1M | A perpetually crashing application (no logs).  This app should start, wait for 30 seconds, then crash.
 
 (* After running this experiment at the 10-Cell scale, we found log chattiness put a lot of pressure on the Cells and slowed down many things, especially Garden Info calls.  In subsequent runs of this experiment, we removed the logging behaviour from all the apps.)
@@ -47,10 +47,10 @@ We'll want to run several `cf push`es in parallel.  I propose the following:
 1. Spin up N/10 AWS instances.  Let's call these *pusher* instances.
 2. On each *pusher* instance perform 40 rounds of parallel pushes:
   - Perform the following 10 times:
-      - Round A: In parallel, push 13 Westley, 3 Max, 1 Princess, 3 Humperdink
-      - Round B: In parallel, push 13 Westley, 3 Max, 0 Princess, 3 Humperdink
-      - Round C: In parallel, push 14 Westley, 3 Max, 1 Princess, 2 Humperdink
-      - Round D: In parallel, push 14 Westley, 3 Max, 0 Princess, 2 Humperdink
+      - Round A: In parallel, push 13 Westley, 3 Max, 1 Buttercup, 3 Humperdink
+      - Round B: In parallel, push 13 Westley, 3 Max, 0 Buttercup, 3 Humperdink
+      - Round C: In parallel, push 14 Westley, 3 Max, 1 Buttercup, 2 Humperdink
+      - Round D: In parallel, push 14 Westley, 3 Max, 0 Buttercup, 2 Humperdink
 3. Each push should verify that we can route to the pushed applications.
 4. We'll want to record the following timings and info:
    - how long each application took to push.
@@ -59,7 +59,7 @@ We'll want to run several `cf push`es in parallel.  I propose the following:
    - applications logs during the push and curl of each application
    we'll want to aggregate these from all pushers.
 
-Westley, Max, Princess, and Humperdink should all be Go applications and we should specify the Go buildpack to avoid the overhead of copying all the buildpacks in.
+Westley, Max, Buttercup, and Humperdink should all be Go applications and we should specify the Go buildpack to avoid the overhead of copying all the buildpacks in.
 
 Once the applications are up we'll want to collect a day's worth of datadog metrics and use them as a basis to figure out what we should investigate (either via papertrail logs or some other sort of deep dive).
 
