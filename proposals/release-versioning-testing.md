@@ -60,7 +60,7 @@ With the system in its initial state, we seed it with an instance of Dora, Grace
 
 During the upgrade of the BBS to `V2`, we verify that the Dora instance is always routable.
 
-After upgrading the BBS to `V2`, we verify that the rest of the system functions correctly:
+After upgrading the BBS to `V2`, we verify that the system functions correctly:
 
 - The existing Dora scales up to 2 instances that are all routable, then back down to 1.
 - Stage and run a new instance of Dora, verify that it is routable, scale it up and down, then delete it.
@@ -70,7 +70,7 @@ After upgrading the BBS to `V2`, we verify that the rest of the system functions
 
 During the upgrade of the `D3` cells to `V2` and the shutdown of the `D4` cells, we verify that the Dora instance is always routable.
 
-With all the active Cells at `V2`, we verify that the rest of the system functions correctly:
+With all the active Cells at `V2`, we verify that the system functions correctly:
 
 - The existing Dora scales up to 2 instances that are all routable, then back down to 1.
 - Stage and run a new instance of Dora, verify that it is routable, scale it up and down, then delete it.
@@ -84,7 +84,7 @@ During the upgrade of the CF deployment to `V2`, the gorouter and HAproxy will l
 
 During the re-start of the `D4` cells and the stop of the `D3` cells, the Dora instance should be routable, as it will evacuate from the `D3` cells to the `D4` cells.
 
-With all the active Cells at `V1` and the rest of the system, we verify that the rest of the system functions correctly:
+With all the active Cells at `V1` and the rest of the system at `V2`, we verify that the system functions correctly:
 
 - The existing Dora scales up to 2 instances that are all routable, then back down to 1.
 - Stage and run a new instance of Dora, verify that it is routable, scale it up and down, then delete it.
@@ -94,7 +94,7 @@ With all the active Cells at `V1` and the rest of the system, we verify that the
 
 ### `C4`: BBS, Cells, and Brain/Bridge/CF all at `V2`
 
-With the entire system at `V2`, we verify that the rest of the system functions correctly:
+With the entire system at `V2`, we verify that the system functions correctly:
 
 - The existing Dora scales up to 2 instances that are all routable, then back down to 1.
 - Stage and run a new instance of Dora, verify that it is routable, scale it up and down, then delete it.
