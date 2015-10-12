@@ -11,6 +11,7 @@ Install the following:
 - Spiff (install binary at `/usr/local/bin/spiff`) https://github.com/cloudfoundry-incubator/spiff/releases
 - Wraparound http://www.macupdate.com/app/mac/19599/wraparound
 - CF cli https://github.com/cloudfoundry/cli/releases
+- Flycut - Flycut https://github.com/TermiT/Flycut
 
 ## Bash-It
 Install Bash-It with plugins and other garbage disabled.
