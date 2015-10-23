@@ -24,13 +24,14 @@ We have yet to set a precedent for publishing major versions of Diego, and to a 
 For a given upgradable version pair `(V1, V2)`, we intend to conduct a battery of tests to ensure that deployments with different combinations of components at `V1` and `V2` function correctly. These tests should include being able to run, scale up, and scale down existing apps created in the `V1` deployment, and to stage and run apps created in the mixed deployment. It will be most important to verify that `V1` cells are compatible with `V2` inputs and vice-versa, so we will test these operations against the following combinations of components:
 
 
-| Configuration  | BBS  | Cells | Brain/Bridge/CF |
-|----------------|------|-------|-----------------|
-| `C0` (Initial) | `V1` | `V1`  | `V1`            |
-| `C1`           | `V2` | `V1`  | `V1`            |
-| `C2`           | `V2` | `V2`  | `V1`            |
-| `C3`           | `V2` | `V1`  | `V2`            |
-| `C4`           | `V2` | `V2`  | `V2`            |
+| Configuration  | BBS  | Cells | Brain/Bridge | CF   |
+|----------------|------|-------|---------------------|
+| `C0` (Initial) | `V1` | `V1`  | `V1`         | `V1` |
+| `C1`           | `V2` | `V1`  | `V1`         | `V1` |
+| `C2`           | `V2` | `V2`  | `V1`         | `V1` |
+| `C3`           | `V2` | `V1`  | `V2`         | `V1` |
+| `C4`           | `V2` | `V1`  | `V2`         | `V2` |
+| `C5`           | `V2` | `V2`  | `V2`         | `V2` |
 
 
 Rather than attempting these operations against a deployment in flight during a monolithic upgrade of the Diego deployment, we can progress through these combinations intentionally and deterministically by arranging the Diego deployment as four separate, coordinated deployments:
@@ -44,8 +45,9 @@ The CF deployment will be separate, as it is today. The configurations above can
 
 - `C1`: Deploy `V2` to `D1`
 - `C2`: Deploy `V2` to `D3`, stop `D4`
-- `C3`: Deploy `V2` to `D2` and CF, start `D4`, stop `D3`
-- `C4`: Deploy `V2` to `D4`, start `D3`
+- `C3`: Deploy `V2` to `D2`, start `D4`, stop `D3`
+- `C4`: Deploy `V2` to CF
+- `C5`: Start `D3`, deploy `V2` to `D4`
 
 Assuming that BOSH stopping a VM triggers draining, so that the Diego cells evacuate correctly, these operations should allow existing app instances to be routable continually.
 
@@ -66,7 +68,7 @@ After upgrading the BBS to `V2`, we verify that the system functions correctly:
 - Stage and run a new instance of Dora, verify that it is routable, scale it up and down, then delete it.
 
 
-### `C2`: BBS and Cells at `V2`, Brain/Bridge at `V1`
+### `C2`: BBS and Cells at `V2`, Brain/Bridge/CF at `V1`
 
 During the upgrade of the `D3` cells to `V2` and the shutdown of the `D4` cells, we verify that the Dora instance is always routable.
 
@@ -76,15 +78,13 @@ With all the active Cells at `V2`, we verify that the system functions correctly
 - Stage and run a new instance of Dora, verify that it is routable, scale it up and down, then delete it.
 
 
-### `C3`: BBS and Brain/Bridge/CF at `V2`, Cells at `V1`
+### `C3`: BBS and Brain/Bridge at `V2`, CF and Cells at `V1`
 
 During the upgrade of the Brain and CC-Bridge to `V2`, we verify that the Dora instance is always routable.
 
-During the upgrade of the CF deployment to `V2`, the gorouter and HAproxy will likely be offline for some amount of time, so the Dora instance is not expected to be routable externally then.
-
 During the re-start of the `D4` cells and the stop of the `D3` cells, the Dora instance should be routable, as it will evacuate from the `D3` cells to the `D4` cells.
 
-With all the active Cells at `V1` and the rest of the system at `V2`, we verify that the system functions correctly:
+With CF and all the active Cells at `V1` and the rest of the system at `V2`, we verify that the system functions correctly:
 
 - The existing Dora scales up to 2 instances that are all routable, then back down to 1.
 - Stage and run a new instance of Dora, verify that it is routable, scale it up and down, then delete it.
@@ -92,7 +92,17 @@ With all the active Cells at `V1` and the rest of the system at `V2`, we verify 
 > If we introduce changes in the RunInfo that cannot be represented appropriately in the `V1` BBS API, do we expect that `V1` cells will be able to run that work? If not, is there any way we can ensure that older, incompatible cells won't be assigned work they can't do?
 
 
-### `C4`: BBS, Cells, and Brain/Bridge/CF all at `V2`
+### `C4`: BBS and Brain/Bridge/CF at `V2`, Cells at `V1`
+
+During the upgrade of the CF deployment to `V2`, the gorouter and HAproxy will likely be offline for some amount of time, so the Dora instance is not expected to be routable externally then.
+
+With all the active Cells at `V1` and the rest of the system at `V2`, we verify that the system functions correctly:
+
+- The existing Dora scales up to 2 instances that are all routable, then back down to 1.
+- Stage and run a new instance of Dora, verify that it is routable, scale it up and down, then delete it.
+
+
+### `C5`: BBS, Cells, and Brain/Bridge/CF all at `V2`
 
 With the entire system at `V2`, we verify that the system functions correctly:
 
