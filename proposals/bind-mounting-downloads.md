@@ -81,8 +81,8 @@ The logic for managing the downloads and the bindmounts can likely be contained 
 - The cacheddownloader will have to manage both its current downloaded tarballs and the bind-mountable directories containing the untarred payloads.
 - We still intend the cacheddownloader to remove the least frequently used items from its download cache, and including the bind-mounted directories. The cacheddownloader must therefore know which directories are still in use by containers, so it can avoid removing them during its cache cleanup. Some of this locking around downloaded files already exists for the tarballs, but is limited in scope to downloading and streaming in.
 - The executor will have to process the container actions before creating the container to add the bind-mount directories to the container spec it sends to Garden. It will also have to retain and release the bind-mounted directories so the cacheddownloader know which ones containers are still using.
-- We'll have to decide when the executor or cacheddownloader actually downloads assets that are not in the cache: this could happen at the time of the folder creation (possibly simplifying the locking around access to that folder), or just in time to satisfy the DownloadAction contract that the downloaded files are present once the action completes successfully (possibly preventing us from downloading assets too early).
-- Any interactions with the filesystem will have to work on Linux and on Windows (and on OS X, at least for running unit tests locally).
+- We'll have to decide when the executor or cacheddownloader actually downloads assets that are not in the cache: this could happen at the time of the folder creation (possibly simplifying the locking around access to that folder), or just in time to satisfy the `DownloadAction` contract that the downloaded files are present once the action completes successfully (possibly preventing us from downloading assets too early).
+- Any interactions with the filesystem will have to work on Linux, on Windows, and on OS X.
 
 
 ## Open Questions and Areas for Further Investigation
