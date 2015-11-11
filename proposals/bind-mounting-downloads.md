@@ -22,7 +22,7 @@ Opting into bind-mounting for a cached download will not prevent another `Downlo
 
 The presence of this new `DownloadAction` variant also has global ramifications for the actions on a container. If a directory is specified in the `To` field of a `readonly`-style bind-mounting `DownloadAction`, it should not be used elsewhere:
 
-- If multiple bind-mounting `DownloadAction`s specify the same `To` directory, only one of them will actually bind-mount its directory there. This directory is deliberately not defined
+- If multiple bind-mounting `DownloadAction`s specify the same `To` directory, only one of them will actually bind-mount its directory there. The directory selected is deliberately left undefined.
 - If an ordinary `DownloadAction` also specifies that directory as its `To` directory, it will fail, as the `readonly` nature of the bind-mount will prevent it from writing files there.
 - If a file already exists at the specified bind-mount location, garden-linux will fail to create the container.
 
