@@ -85,6 +85,30 @@ The logic for managing the downloads and the bindmounts can likely be contained 
 - Any interactions with the filesystem will have to work on Linux, on Windows, and on OS X.
 
 
+### Current Behavior of the Cacheddownloader
+
+The cacheddownloader currently caches an asset if it meets the following criteria:
+
+- the client provides a cache-key for the asset,
+- the download response has either an 'ETag' or a 'Last-Modified' header,
+- if the ETag header is present, and the header content can interpreted as an MD5 checksum, the MD5 checksum of the downloaded asset must match that ETag content,
+- room can be made for the *transformed* asset in the cache.
+
+The actual entry in the cache is the downloaded asset, transformed into an uncompressed tar archive.
+
+On subsequent requests to fetch an asset with a cache-key,
+
+- if the cacheddownloader has an ETag in its cache info, it sends it in an If-None-Match header,
+- if the cacheddownloader has a Last-Modified timestamp in its cache info, it sends it in an If-Modified-Since header.
+
+It then reuses the asset if the response has a 304 Not Modified status code. If not, it has invalidates the entry in the cache:
+
+- if the new request is not cacheable as described above, the key is removed from the cache.
+- if the new request is cacheable, it and its caching info replace the current cache entry for that key.
+
+Files are removed from the system only when they are removed from the in-memory cache and when all the readers for their tar-streams that have been issued have been closed.
+
+
 ## Open Questions and Areas for Further Investigation
 
 - How will garden-windows handle the `BindMounts` in the `ContainerSpec`?
