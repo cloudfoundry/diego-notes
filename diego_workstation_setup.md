@@ -142,4 +142,6 @@ echo '# arrow up
 ```
 
 ## Create a docker-machine
+```
 docker-machine create default # --engine-insecure-registry=(($diego-docker-cache-ip))
+```
