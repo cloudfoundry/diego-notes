@@ -12,6 +12,7 @@ Install the following:
 - Wraparound http://www.macupdate.com/app/mac/19599/wraparound
 - CF cli https://github.com/cloudfoundry/cli/releases
 - Flycut - Flycut https://github.com/TermiT/Flycut
+- Docker Toolbox https://www.docker.com/docker-toolbox
 
 ## Bash-It
 Install Bash-It with plugins and other garbage disabled.
@@ -139,3 +140,6 @@ echo '# arrow up
 ## arrow down
 "\e[B":history-search-forward' > ~/.inputrc
 ```
+
+## Create a docker-machine
+docker-machine create default # --engine-insecure-registry=(($diego-docker-cache-ip))
