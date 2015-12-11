@@ -29,6 +29,45 @@ The presence of this new `DownloadAction` variant also has global ramifications 
 We do not intend to validate that these issues do not arise when a Task or DesiredLRP is submitted to the BBS. Instead, it is the responsibility of the client to understand the structure of the root filesystem and how the desired `DownloadAction`s may interact with it and with each other.
 
 
+## Alternate Approach: Adding `CachedDownloads`
+
+Rather than a simple extension of the existing DownloadAction to include bind-mounting info, we explore an alternate approach in which we specify cached download archives to be provided via bind-mounted, readonly directories up front. The addition of this field to the TaskDefinition and DesiredLRPRunInfo models makes the BBS API more complicated, but the executor code and the conceptual understanding of the processing are simpler and more explicit.
+
+
+### BBS model changes
+
+We will add a `CachedDownload` model with the following fields and validations:
+
+- `CacheKey`: string, required
+- `From`: string-formatted URL, required
+- `To`: string-formatted absolute path in container, required
+- `User`: string, required (necessary for API backwards compatibility)
+- `Artifact`: string, optional
+- `LogSource`: string, optional
+
+We will then add an optional `CachedDownloads` field to the `TaskDefinition`, `DesiredLRP`, and `DesiredLRPRunInfo` models. This field is a slice of `CachedDownload` items.
+
+
+### BBS endpoints
+
+For each endpoint on the BBS that currently returns a Task or DesiredLRP response, we will add an new analogous endpoint that can return that response with a populated `CachedDownloads` list.
+
+Existing BBS endpoints that provide Task or DesiredLRP responses must convert the `CachedDownloads` list into an appropriate sequence of `DownloadAction`s to perform at the start of execution. Each `CachedDownload` model can be directly converted into a valid `DownloadAction`.
+
+- For a Task with original action `A` and `CachedDownloads` list `L`, provide `Serial(Parallel(L), A)` as the new Task action.
+- For a DesiredLRP with setup action `S` and `CachedDownloads` list `L`, provide `Serial(Parallel(L), S)` as the new setup action, omitting `S` if it is null.
+
+With the introduction of new endpoints that can provide a non-null `CachedDownloads` value, these existing endpoints will be deprecated, and removed in Diego 2.0.
+
+Existing endpoints that accept Task or DesiredLRP definitions in their request bodies can be modified in place, as the `CachedDownloads` list is an optional addition to the input payload.
+
+
+### Usage by BBS clients
+
+Existing BBS clients, such as Diego's stager and nsync components, can continue to submit Tasks and DesiredLRPs to the updated BBS API without changes. When they are ready to adopt the new data types, they can opt into them by moving any cached downloads they desire for read-only bind-mounting out of the Action trees and into the CachedDownloads list, observing any behavioral caveats discussed above.
+
+Once the rep updates its BBS client to use the new endpoints, and therefore to receive populated `CachedDownloads` lists, it will pass this cached download information on to the executor, which will use it with the cacheddownloader to fetch the archives into the cache as directories and add them to the container spec as read-only bind-mounts. 
+
 
 ## Changes to CF workloads
 
