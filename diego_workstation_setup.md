@@ -1,27 +1,14 @@
 # Diego Workstation Setup
 
+# Required Dependencies
+
 ## Mac Apps
-Install the following:
-- iTerm2 https://www.iterm2.com/nightly/latest
-- ShiftIt https://raw.github.com/onsi/ShiftIt/master/ShiftIt.zip
-- Sublime Text 3 http://www.sublimetext.com/3
 - Vagrant https://www.vagrantup.com/downloads.html
 - VirtualBox https://www.virtualbox.org/wiki/Downloads
-- Slack https://itunes.apple.com/app/slack/id803453959?ls=1&mt=12
-- Spiff (install binary at `/usr/local/bin/spiff`) https://github.com/cloudfoundry-incubator/spiff/releases
-- Wraparound http://www.macupdate.com/app/mac/19599/wraparound
 - CF cli https://github.com/cloudfoundry/cli/releases
-- Flycut - Flycut https://github.com/TermiT/Flycut
-- Docker Toolbox https://www.docker.com/docker-toolbox
-
-## Bash-It
-Install Bash-It with plugins and other garbage disabled.
-```bash
-git clone --depth=1 https://github.com/Bash-it/bash-it.git ~/.bash_it
-~/.bash_it/install.sh --none
-```
 
 ## Homebrew
+
 Install Howebrew:
 ```bash
 ruby -e "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install)"
@@ -30,30 +17,12 @@ ruby -e "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/
 Install the following packages.  Don't forget to look for instructions to complete manual steps as part of each install (like adding the sql db's to launchctl):
 ```bash
 brew install git
-brew install git-duet
-brew install ruby-install
-brew install chruby
 brew install go --with-cc-common
+brew install direnv
 brew install mysql
 brew install postgres
-brew install direnv
-brew install ack
-brew install ag
-brew install bash-completion
-brew install python
-brew install tmux
-brew tap nviennot/tmate
-brew install tmate
-brew install jq
-brew tap git-duet/tap && brew install git-duet
-brew install fasd
-brew install aria2
-```
-
-### Brew Cask
-```bash
-brew install caskroom/cask/brew-cask
-brew cask install flycut
+brew install ruby-install
+brew install chruby
 ```
 
 ## Ruby Packages
@@ -77,9 +46,67 @@ export GOPATH=$HOME/go
 
 ```bash
 go get golang.org/x/tools/cmd/goimports
-go get github.com/vito/boosh
 go get github.com/vito/spiff
 go get github.com/tools/godep
+```
+
+# Diego Team Preferences
+
+## Mac Apps
+Install the following:
+- iTerm2 https://www.iterm2.com/nightly/latest
+- ShiftIt https://raw.github.com/onsi/ShiftIt/master/ShiftIt.zip
+- Sublime Text 3 http://www.sublimetext.com/3
+- Slack https://itunes.apple.com/app/slack/id803453959?ls=1&mt=12
+- Wraparound http://www.macupdate.com/app/mac/19599/wraparound
+- Flycut - Flycut https://github.com/TermiT/Flycut
+- Docker Toolbox https://www.docker.com/docker-toolbox
+
+## Bash-It
+Install Bash-It with plugins and other garbage disabled.
+```bash
+git clone --depth=1 https://github.com/Bash-it/bash-it.git ~/.bash_it
+~/.bash_it/install.sh --none
+```
+
+## Homebrew
+Install Howebrew:
+```bash
+ruby -e "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install)"
+```
+
+Install the following packages.  Don't forget to look for instructions to complete manual steps as part of each install (like adding the sql db's to launchctl):
+```bash
+brew install ack
+brew tap git-duet/tap && brew install git-duet
+brew install ag
+brew install bash-completion
+brew install python
+brew install tmux
+brew tap nviennot/tmate
+brew install tmate
+brew install jq
+brew install fasd
+brew install aria2
+```
+
+### Brew Cask
+```bash
+brew install caskroom/cask/brew-cask
+brew cask install flycut
+```
+
+## Go Packages
+
+`mkdir $HOME/go` add the following the following to .bash_profile:
+
+```bash
+export PATH=$PATH:$HOME/go/bin
+export GOPATH=$HOME/go
+```
+
+```bash
+go get github.com/vito/boosh
 ```
 
 ## Python Packages
