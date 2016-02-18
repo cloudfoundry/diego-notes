@@ -1,0 +1,59 @@
+Id,Title,Labels,Iteration,Iteration Start,Iteration End,Type,Estimate,Current State,Created at,Accepted at,Deadline,Requested By,Description,URL,Owned By,Owned By,Owned By
+106626406,⬇ Crash Restart Policy ⬇,"",,,,release,,unscheduled,"Oct 26, 2015",,,Eric Malm,,https://www.pivotaltracker.com/story/show/106626406,,,
+87479698,When creating a DesiredLRP I can specify a Crash Restart Policy,crash-restart-policy,,,,feature,,unscheduled,"Feb 2, 2015",,,Onsi Fakhouri,"This story is purely about the Receptor API - nothing is actually going to use these values yet...
+
+```
+DesiredLRP.CrashRestartPolicy = {
+    NumberOfImmediateRestarts: 3,
+    MaxSecondsBetweenRestarts: 960,
+    MaxRestartAttempts: 200   
+}
+```
+
+The Receptor applies the following validations:
+
+- `NumberOfImmediateRestarts`:
+    + Allowed to be `0` (means ""never restart immediately"")
+    + Must be less than `MaxRestartAttempts`
+    + Must be less than `10`
+- `MaxSecondsBetweenRestarts`:
+    + Must be greater than `30` seconds
+- `MaxRestartAttempts`
+    + Allowed to be 0 (means ""never stop restarting"")
+
+`CrashRestartPolicy` is optional.",https://www.pivotaltracker.com/story/show/87479698,,,
+87479700,Diego honors the `CrashRestartPolicy` on a DesiredLRP when determining whether or not to restart an `ActualLRP`,crash-restart-policy,,,,feature,,unscheduled,"Feb 2, 2015",,,Onsi Fakhouri,"Currently, Diego relies on the hard-coded default `CrashRestartPolicy` in runtime-schema.  Instead, if the DesiredLRP has a `CrashRestartPolicy` Diego should use that policy.
+
+If the DesiredLRP has no `CrashRestartPolicy`, Diego should use the hard-coded default.
+
+> This affects both the Rep and the Converger but if we've done our homework, the change should be purely in Runtime-Schema.",https://www.pivotaltracker.com/story/show/87479700,,,
+87479702,I can update a DesiredLRP's crash policy,crash-restart-policy,,,,feature,,unscheduled,"Feb 2, 2015",,,Onsi Fakhouri,The `DesiredLRPUpdateRequest` should support modifying the `CrashRestartPolicy`.  Note that no further action needs to be taken.  Runtime-Schema always looks up the `CrashRestartPolicy` on the Desired LRP when taking actions.,https://www.pivotaltracker.com/story/show/87479702,,,
+87479704,The `DefaultCrashRestartPolicy` is stored in the BBS and can be modified via the Receptor API on a per-domain basis.,crash-restart-policy,,,,feature,,unscheduled,"Feb 2, 2015",,,Onsi Fakhouri,"When upserting a Domain, I should be able to specify an optional `DefaultCrashRestartPolicy` on the Domain.
+
+When determining whether or not to restart the application Diego should do the following:
+
+- Use the `CrashRestartPolicy` on the `DesiredLRP`
+- If there is none, use the `DefaultCrashRestartPolicy` associated with the LRP's `domain`
+- If there is none, fallback on using the hard-coded `CrashRestartPolicy` in runtime-schema",https://www.pivotaltracker.com/story/show/87479704,,,
+87479706,As a CF Admin I can CRUD the `DefaultCrashRestartPolicy` using the CC API,crash-restart-policy,,,,feature,,unscheduled,"Feb 2, 2015",,,Onsi Fakhouri,"This should end up in the CCDB.
+
+To flow this into Diego and keep Diego in sync with CF, NSYNC's bulker should fetch the `DefaultCrashRestartPolicy` and update it when it upserts the domain.",https://www.pivotaltracker.com/story/show/87479706,,,
+87479708,"As a CF Admin, I can CRUD `CrashRestartPolicy`",crash-restart-policy,,,,feature,,unscheduled,"Feb 2, 2015",,,Onsi Fakhouri,A la ApplicationSecurityGroups,https://www.pivotaltracker.com/story/show/87479708,,,
+87479710,"As a CF Admin, I can associate a `CrashRestartPolicy` with a space and the see the new `CrashRestartPolicy` take effect",crash-restart-policy,,,,feature,,unscheduled,"Feb 2, 2015",,,Onsi Fakhouri,"This has the effect of updating all applications in said space with the `CrashRestartPolicy`.  This should emit a desire message to NSYNC's listener, which should update the `CrashRestartPolicy` associated with the `DesiredLRP`.
+
+In addition, NSYNC's bukler should eventually sync changes associated with `CrashRestartPolicy` (i.e. this should modify the etag associated with the applications in the space).",https://www.pivotaltracker.com/story/show/87479710,,,
+87479712,The CF cli should support specifying the `DefaultCrashRestartPolicy`,"cli, crash-restart-policy",,,,feature,,unscheduled,"Feb 2, 2015",,,Onsi Fakhouri,"```
+cf default-crash-restart-policy      --> gets the default crash restart policy
+cf set-default-crash-restart-policy  --> sets the default crash restart policy
+```",https://www.pivotaltracker.com/story/show/87479712,,,
+87479714,The CF cli should support creating `CrashRestartPolicies` and associating them with spaces,"cli, crash-restart-policy",,,,feature,,unscheduled,"Feb 2, 2015",,,Onsi Fakhouri,"A la Application Security Groups
+```
+cf crash-restart-policy                --> get a particular crash restart policy
+cf crash-restart-policies              --> get all crash restart policies
+cf create-crash-restart-policy         --> creates a crash restart policy
+cf update-crash-restart-policy         --> updates an existing crash restart policy
+cf delete-crash-restart-policy         --> removes an existing crash restart policy
+cf bind-crash-restart-policy           --> associates a crash restart policy with a space
+cf unbind-crash-restart-policy         --> removes a crash restart policy from a space
+```",https://www.pivotaltracker.com/story/show/87479714,,,
+106626404,⬆︎ Crash Restart Policy ⬆︎,"",,,,release,,unscheduled,"Oct 26, 2015",,,Eric Malm,,https://www.pivotaltracker.com/story/show/106626404,,,

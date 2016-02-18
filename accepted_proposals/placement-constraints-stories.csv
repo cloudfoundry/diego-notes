@@ -1,0 +1,68 @@
+Id,Title,Labels,Iteration,Iteration Start,Iteration End,Type,Estimate,Current State,Created at,Accepted at,Deadline,Requested By,Description,URL,Owned By,Owned By,Owned By,Comment,Comment
+106613240,⬇ Placement Constraints ⬇,"",,,,release,,unscheduled,"Oct 25, 2015",,,Eric Malm,,https://www.pivotaltracker.com/story/show/106613240,,,
+90748240,"As a consumer of the Receptor API, I should be able to specify a Constraint when requesting a Task or DesiredLRP",placement-constraints,,,,feature,,unscheduled,"Mar 19, 2015",,,Onsi Fakhouri,"1. A constraint looks like:
+
+```
+type Constraint struct{
+    Require []string,
+}
+```
+
+2. Cells (in particular, the Rep) should be BOSH configurable with a list of `Tags`.
+
+3. When scheduling the DesiredLRP/Task the auction should only allocate the application on Cells that satisfy the constraint.  If there are no Cells that satisfy the Constraint, the Auctioneer should attach a `diego_errors.CELL_MISMATCH_MESSAGE` placement error.
+
+To satisfy the constraint a Cell **MUST** have any tags in the `Require` list
+
+4. Empty Constraints are allowed.
+
+5. The Constraint cannot be modified on a `DesiredLRP`
+
+Here's the [accompanying Diego-Dev-Notes proposal](https://github.com/pivotal-cf-experimental/diego-dev-notes/blob/master/accepted_proposals/placement_pools.md).",https://www.pivotaltracker.com/story/show/90748240,,,
+90748242,"As a consumer of the Receptor API, I should see that tags associated with the Cells I get from the `/v1/cells` endpoint",placement-constraints,,,,feature,,unscheduled,"Mar 19, 2015",,,Onsi Fakhouri,Here's the [accompanying Diego-Dev-Notes proposal](https://github.com/pivotal-cf-experimental/diego-dev-notes/blob/master/accepted_proposals/placement_pools.md).,https://www.pivotaltracker.com/story/show/90748242,,,
+90748244,"As a consumer of the CC API, I can CRUD PlacementConstraint rules",placement-constraints,,,,feature,,unscheduled,"Mar 19, 2015",,,Onsi Fakhouri,"This should mirror the organizational structure of [Application Security Groups](http://apidocs.cloudfoundry.org/203/).
+
+After this story I can:
+
+- Create a PlacementConstraint
+- Delete a PlacementConstraint
+- List all PlacementConstraints
+- Retrieve a Particular PlacementConstraint
+- Update a PlacementConstraint
+
+Add this point these are just objects in CCDB.  No behavior changes (other than the presence of this new API).
+
+**PlacementConstraints should be under the `/v3` API**",https://www.pivotaltracker.com/story/show/90748244,,,
+90748246,"As a consumer of the CC API, I can associate a PlacementConstraint with a Space (Staging)",placement-constraints,,,,feature,,unscheduled,"Mar 19, 2015",,,Onsi Fakhouri,"A space can have one Staging PlacementConstraint.  The staging tasks for applications in this space should be run on Cells that satisfy this constraint.
+
+After this story I can (If this is not what CC's DSL naturally gives us by default let me know):
+
+- Retrieve the Staging PlacementConstraint for a Space
+- Associate a PlacementConstraint as the Staging PlacementConstraint for a Space
+- Disassociate a PlacementConstraint as the Staging PlacementConstraint for a Space
+- Given a PlacementConstraint, list all Spaces that have it as a Staging PlacementConstraint 
+
+Behaviorally:
+
+- If a Space has an associated PlacementConstraint then Diego should be informed of the PlacementConstraint when the staging task is created.
+- If a Space has no associated PlacementConstraint there should be no PlacementConstraint sent to Diego.",https://www.pivotaltracker.com/story/show/90748246,,,
+90748666,"As a consumer of the CC API, I can associate a PlacementConstraint with a Space (Running)
+",placement-constraints,,,,feature,,unscheduled,"Mar 19, 2015",,,Onsi Fakhouri,"A space can have one Running PlacementConstraint.  The staging tasks for applications in this space should be run on Cells that satisfy this constraint.
+
+After this story I can (If this is not what CC's DSL naturally gives us by default let me know):
+
+- Retrieve the Running PlacementConstraint for a Space
+- Associate a PlacementConstraint as the Running PlacementConstraint for a Space
+- Disassociate a PlacementConstraint as the Running PlacementConstraint for a Space
+- Given a PlacementConstraint, list all Spaces that have it as a Running PlacementConstraint 
+
+Behaviorally:
+
+- If a Space has an associated PlacementConstraint then Diego should be informed of the PlacementConstraint when the DesiredLRP is created.
+- If a Space has no associated PlacementConstraint there should be no PlacementConstraint sent to Diego.
+
+Changing the PlacementConstraint associated with a space is allowed.  At this point the applications in the space need to be restarted but CC has no way to orchestrate this.  The same issue exists with the Application Security Groups.",https://www.pivotaltracker.com/story/show/90748666,,,
+90748248,As a consumer of the CC API I can specify a default Staging PlacementConstraint,placement-constraints,,,,feature,,unscheduled,"Mar 19, 2015",,,Onsi Fakhouri,This should be unspecified out of the box.  Once specified it applies to any spaces that have no Staging PlacementConstraint.,https://www.pivotaltracker.com/story/show/90748248,,,
+90748250,As a consumer of the CC API I can specify a default Running PlacementConstraint,placement-constraints,,,,feature,,unscheduled,"Mar 19, 2015",,,Onsi Fakhouri,This should be unspecified out of the box.  Once specified it applies to any spaces that have no Running PlacementConstraint.,https://www.pivotaltracker.com/story/show/90748250,,,
+94711650,It should be possible to have different sets of routers service different pools of placement constraints,"placeholder, placement-constraints",,,,feature,,unscheduled,"May 15, 2015",,,Onsi Fakhouri,This is a placeholder that Onsi is injecting in that needs definition.,https://www.pivotaltracker.com/story/show/94711650,,,,"/cc @emalm -- this came up today and it's something that just needs to be on the roadmap so I've added this placeholder and injected it into the rough priority order.  Happy to chat about it. (Onsi Fakhouri - May 15, 2015)","(also feel free to slap me on the wrist - am just trying to get it off of my plate and into tracker somewhere) (Onsi Fakhouri - May 15, 2015)"
+106613356,⬆︎ Placement Constraints ⬆︎,"",,,,release,,unscheduled,"Oct 25, 2015",,,Eric Malm,,https://www.pivotaltracker.com/story/show/106613356,,,
