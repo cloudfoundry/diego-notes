@@ -3,6 +3,19 @@ is the fact that spinning up all the reps (1,000) on the same errand VM causes
 them to try to `Start` all (200,000) LRP instances at the same time. That makes
 the VM "run out" of ports, because of all the concurrent HTTP requests.
 
+## Experiment #4 (focused on rep-bulk cycles)
+
+### Config:
+
+- CF-MySQL 3 nodes talking to one node directly
+- `num_populate_workers`: `500`
+- `num_reps`: `1000`
+- `desired_lrps`: `200000`
+- Semaphore around all HTTP calls on the BBS client (25,000 resources)
+- `MaxIdleConnsPerHost` set to 25,000 as well on the BBS client
+
+### Results:
+
 ## Experiment #3 (focused on rep-bulk cycles)
 
 ### Config:
@@ -15,6 +28,45 @@ the VM "run out" of ports, because of all the concurrent HTTP requests.
 - `MaxIdleConnsPerHost` set to 25,000 as well on the BBS client
 
 ### Results:
+
+```
+------------------------------
+• [MEASUREMENT]
+Fetching for rep bulk loop
+/var/vcap/packages/benchmark-bbs/src/github.com/cloudfoundry-incubator/benchmark-bbs/rep_bulk_fetch_test.go:114
+  data for rep bulk
+  /var/vcap/packages/benchmark-bbs/src/github.com/cloudfoundry-incubator/benchmark-bbs/rep_bulk_fetch_test.go:113
+
+  Ran 1 samples:
+  {RepBulkFetching}
+  rep bulk fetch:
+    Fastest Time: 0.005s
+    Slowest Time: 1.093s
+    Average Time: 0.011s ± 0.048s
+  {RepBulkLoop}
+  rep bulk loop:
+    Fastest Time: 0.007s
+    Slowest Time: 1.096s
+    Average Time: 0.014s ± 0.049s
+  {RepStartActualLRP}
+  start actual LRP:
+    Fastest Time: 0.002s
+    Slowest Time: 120.516s
+    Average Time: 0.157s ± 0.609s
+  {RepClaimActualLRP}
+  claim actual LRP:
+    Fastest Time: 0.007s
+    Slowest Time: 3.162s
+    Average Time: 0.028s ± 0.087s
+------------------------------
+S
+Ran 1 of 4 Specs in 661.736 seconds
+SUCCESS! -- 1 Passed | 0 Failed | 0 Pending | 3 Skipped PASS | FOCUSED
+```
+
+Conclusions:
+
+Semaphores work, let's move on to 200,000 again.
 
 ## Experiment #2 (focused on rep-bulk cycles)
 
