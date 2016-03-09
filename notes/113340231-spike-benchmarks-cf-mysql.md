@@ -14,7 +14,7 @@ the VM "run out" of ports, because of all the concurrent HTTP requests.
 - Semaphore around all HTTP calls on the BBS client (25,000 resources)
 - `MaxIdleConnsPerHost` set to 25,000 as well on the BBS client
 
-### Results
+### Results:
 
 ## Experiment #2 (focused on rep-bulk cycles)
 
@@ -27,7 +27,11 @@ the VM "run out" of ports, because of all the concurrent HTTP requests.
 - Workpool of size 25,000 only around BBS client calls
 - `MaxIdleConnsPerHost` set to 25,000 as well on the BBS client
 
-### Results
+### Results:
+
+**None**
+
+### Conclusions:
 
 We cancelled this experiment because our workpool implementation seems to have
 issues with large pool sizes. The tests were taking way too long to finish and
