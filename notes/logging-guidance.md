@@ -35,9 +35,36 @@ Log a message at the error level to indicate something important failed.
 
 ### Info
 
-Log a message at the info level to indicate some normal but significant event, such as beginning or ending an important section of logic. Info logs are also usually appropriate to trace the boundaries of various APIs. 
+Log a message at the info level to indicate some normal but significant event, such as beginning or ending an important section of logic. Info logs are also usually appropriate to mark the boundaries of various internal and external APIs.
+
+If we're calling a function in our own code base, we should be wary of wrapping functions that log in additional logging. For example, if we have a synchronous function that logs using the preferred started/finished pattern:
+```go
+func foo(logger lager.Logger) error {
+  logger := logger.Session("foo")
+  logger.Info("started")
+  defer logger.Info("finished")
+  return nil
+}
+```
+We should be careful not to log around its success when we call out to it:
+```go
+logger.Info("calling-foo") // this line is excessive logging
+err := foo(logger)
+if err != nil {
+  logger.Error("failed-fooing", err) // this line is great!
+}
+logger.Info("finished-fooing") // this line is excessive logging
+```
+Instead, this should be:
+```go
+err := foo(logger)
+if err != nil {
+  logger.Error("failed-fooing", err) // this line is great!
+}
+```
+
 
 
 ### Debug
 
-Log a message at the debug level to trace ordinary or frequent events, such as pings, metrics, heartbeats, subscriptions, polling, and notifications. If it happens on a timer in a component that is usually driven by a client, internal or otherwise, it should probably log at the Debug level. 
+Log a message at the Debug level to trace ordinary or frequent events, such as pings, metrics, heartbeats, subscriptions, polling, and notifications. If it happens on a timer in a component that is usually driven by a client, internal or otherwise, it should probably log at the Debug level. If you can't imagine caring, but some other developer did in the past, you might want to log at Debug level. 
