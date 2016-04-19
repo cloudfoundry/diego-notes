@@ -99,6 +99,7 @@ Placeholder: remaining relational-BBS topics (pipeline work, scale validation, v
 - Validate Diego system correctness in face of MySQL deployment failures
 - warp-drive, etcd-to-MySQL DUST failures block delivery
 - basic end-to-end perf validation?
+- make sure BBS can run SQL migrations (need migration to drive this for sure, could use the timeout-units one)
 - [RELEASE] Diego with relational BBS fully supported
 - Diego CI runs a DUSTs suite with only MySQL
 - ketchup migrates to relational BBS store, catsup obsolete
