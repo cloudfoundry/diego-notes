@@ -1,67 +1,164 @@
-# Set up the environment
+# Performance Experimentation Plans On Diego [PEPOD]
 
-We'll run experiments against Diego-1.
-- We'll want to aggregate logs with papertrail
-- We'll want to have a Datadog dashboard for Diego-1 to give us access to all our metrics.
+**Table of Contents**
 
-# Experiments
+- [Events](#events)
+  - [Tasks](#tasks)
+  - [LRPs](#lrps)
+- [Metrics](#metrics)
+- [Experiments](#experiments)
+- [Experiment 1: Fezzik](#experiment-1-fezzik)
+- [Experiment 2: Launching and running many CF applications](#experiment-2-launching-and-running-many-cf-applications)
+- [Experiment 3: Fault-recovery](#experiment-3-fault-recovery)
+- [Experiment 4: Tolerating catastrophic cell and etcd failure](#experiment-4-tolerating-catastrophic-cell-and-etcd-failure)
 
-For the following scales:
-- 10 32-Gig Cells, 2 CCs, 2 dopplers
-- 20 32-Gig Cells, 4 CCs, 4 dopplers
-- 50 32-Gig Cells, 10 CCs, 10 dopplers
-- 100 32-Gig Cells, 20 CCs, 20 dopplers
 
-1. Deploy a Diego+CF environment to diego-1 (make sure we deploy an etcd cluster -- etcd is much faster when not running in clustered mode)
+## Events
+
+Given the centralization of the logic on Diego, we've decided to focus our
+efforts in analyzing logs straight from the BBS. Since every state transition
+operation goes through it, we should have easy access to logging those and then
+later processing those logs effectively. These should be accessible through the
+BBS logs.
+
+### Tasks
+
+Running:
+- Requested
+- Started
+- Completed
+
+### LRPs
+
+Running:
+- Desired
+- Claimed
+- Running
+
+Stopping:
+- Stopping
+- Stopped
+
+On stable system, if no catastrophes happen, no events should be triggered.
+
+These can be used to analyze both cold start smoke tests and full scale stress
+tests.
+
+## Metrics
+
+We want to observe the running system using the following metrics. It is also
+interesting to observe how they change as we're filling up the deployment.
+
+- Desired LRPs
+- Running LRPs
+- Missing LRPs
+- Request Latency
+- Auction Time (\*)
+- Bulk loop durations
+  - converger
+  - route-emitter
+  - nsync
+  - rep
+- Cell State
+- Route count
+- BBS Master Elections (consul?)
+- Container Creation
+
+Success:
+
+- Diego can run 250,000 LRPs in 1000 cells.
+  - There is little or no degradation when pushing an app on an empty env as a full env.
+  - The bulk loops perform within their loop interval at scale.
+  - Cells can be upgrades when the system is at load with no loss of running applications.
+    - Cell evacuation time on systems with X% full.
+  - Diego recovers from data loss in a "reasonable" amount of time and currently running apps remain running.
+
+Monitoring Points:
+
+- bbs
+- cells
+- auctioneer
+- route-emitter
+- cc-bridge
+
+## Experiments
+
+We're assuming `cell`s are equivalent to an AWS `r3.xlarge`:
+* 4 CPUs
+* 30 GB RAM
+* "Moderate" performance network
+Plus:
+* 1000 IOPS `io1` SSD for the ephemeral drive `/var/vcap/data`
+
+We're then using a `c4.4xlarge` equivalent for the `database`:
+* 16 CPUs
+* 30 GB RAM
+* "High" performance network
+
+1. Deploy a Diego + CF environment
 2. Run the experiments 1 and 2
 3. Let the cluster sit for a day
 4. Run experiment 3
 
 ## Experiment 1: Fezzik
 
-Fezzik excercises the Receptor API and launches very many Tasks and LRPs in tandem.  These Tasks and LRPs are very lightweight so Fezzik is isolated to benchmarking scheduling Tasks/LRPs and spinning up/tearing down containers.  Fezzik runs off of just one machine -- this can be an artificial bottleneck.  Fezzik continuously appends to a reports.json file - I'm building some tooling to plot/analyze the contents of this file.
+Fezzik exercises the BBS API and launches very many Tasks and LRPs in tandem.
+These Tasks and LRPs are very lightweight so Fezzik is isolated to benchmarking
+scheduling Tasks/LRPs and spinning up/tearing down containers.
 
-1. Spin up an AWS instance (e.g. add a new instance of something to BOSH)
-2. Get on that instance and run Fezzik a few times.
-3. Save off the reports.json file in between runs and share it with everyone.
+This is supposed to be a simple "start as many instances as fast as possible"
+kind of test.  These instances should consist of very minimal workloads.
+The workload in question should have little to no ongoing activity and should
+be started up all at the same time to measure scheduling performance and find
+general bottlenecks with basic functionality of the system.
+
+For this experiment we plan to start (for `N` = number of cells in the deployment).
+
+- `N * 10` Tasks
+- `N * 10` LRPs
+- `N * 50` Tasks
+- `N * 50` LRPs
+- `N * 100` Tasks
+- `N * 100` LRPs
+- `N * 200` Tasks
+- `N * 200` LRPs
+
 
 ## Experiment 2: Launching and running many CF applications
 
-CF Push the following distribution of applications:
+Apps are defined as different modes of [this app](https://github.com/cloudfoundry-incubator/diego-stress-tests/tree/master/assets/apps/jim).
 
-App Name | No. Applications | No. Instances/App | Memory | App-Bits Size | Details*
----------|------------------|-------------------|--------|---------------|-------
-Westley | N*54 | 1 | 128 | ~1M | A simple Hello World application: not chatty (one log-line/second)
-Max | N*12 | 2 | 512 | ~10M | An HA low-load microservice: moderately chatty logs (10 log-lines/second)
-Buttercup | N*2  | 4 | 1024 | ~200M | Web application: very chatty (20 log-lines/second)
-Humperdink | N*10 | 1 | 128 | ~1M | A perpetually crashing application (no logs).  This app should start, wait for 30 seconds, then crash.
+Initial mix of apps:
 
-(* After running this experiment at the 10-Cell scale, we found log chattiness put a lot of pressure on the Cells and slowed down many things, especially Garden Info calls.  In subsequent runs of this experiment, we removed the logging behaviour from all the apps.)
+ | Name     | Logs/s   | Req/s   | Crash?   | Instances/LRP   |
+ | ------   | -------- | ------- | -------- | --------------- |
+ | light    | 1        | 1       | no       | 13              |
+ | medium   | 5        | 2       | no       | 7               |
+ | heavy    | 7        | 3       | no       | 3               |
+ | crashing | 0        | 0       | yes      | 2               |
 
-Where N is the number of cells (so for the 10-Cell case we'd push 540 simple hello world apps).  All these applications should have the same disk limit (something low like 1 GB should be good enough).
+Fill 1,000 Cell with 250,000 LRPs/tasks (10,000 pushes of the above mix).
 
-This gives us 96 instances/Cell and uses 28GB of memory per Cell with ~10% of instances crashing.  These numbers are more agressive than the current prod workload by a factor of 2 (prod shows ~50 instances/cell and 5% of instances crashing).
+Once the system is up we would then want to simulate some regular load which
+would push, stop, start, and crash apps.
 
-We'll want to run several `cf push`es in parallel.  I propose the following:
+Steady State mix of apps:
 
-1. Spin up N/10 AWS instances.  Let's call these *pusher* instances.
-2. On each *pusher* instance perform 40 rounds of parallel pushes:
-  - Perform the following 10 times:
-      - Round A: In parallel, push 13 Westley, 3 Max, 1 Buttercup, 3 Humperdink
-      - Round B: In parallel, push 13 Westley, 3 Max, 0 Buttercup, 3 Humperdink
-      - Round C: In parallel, push 14 Westley, 3 Max, 1 Buttercup, 2 Humperdink
-      - Round D: In parallel, push 14 Westley, 3 Max, 0 Buttercup, 2 Humperdink
-3. Each push should verify that we can route to the pushed applications.
-4. We'll want to record the following timings and info:
-   - how long each application took to push.
-   - how long it takes to successfully curl each application.
-   - CF_TRACE logs for all the pushes
-   - applications logs during the push and curl of each application
-   we'll want to aggregate these from all pushers.
+ | Name     | Logs/s   | Req/s   | Crash?   | Instances/LRP   |
+ | ------   | -------- | ------- | -------- | --------------- |
+ | light    | 1        | 1       | no       | 13              |
+ | medium   | 5        | 2       | no       | 7               |
+ | heavy    | 7        | 3       | no       | 3               |
+ | crashing | 0        | 0       | yes      | 2               |
 
-Westley, Max, Buttercup, and Humperdink should all be Go applications and we should specify the Go buildpack to avoid the overhead of copying all the buildpacks in.
+Process of steady state:
 
-Once the applications are up we'll want to collect a day's worth of datadog metrics and use them as a basis to figure out what we should investigate (either via papertrail logs or some other sort of deep dive).
+Push new apps (1,000 pushes of the above mix, total of 25,000 extra instances)
+
+Continually:
+- Delete app
+- Push app
+- Stop app
 
 ## Experiment 3: Fault-recovery
 
