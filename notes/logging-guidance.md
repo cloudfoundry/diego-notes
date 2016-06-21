@@ -4,7 +4,7 @@
 
 Logger session names and messages should be hyphenated. Keys in a message data payload should use snake-case (`key_name`) instead of hyphens (`key-name`) or camel-case (`keyName`).
 
-```
+```go
 logger = outer_logger.Session("handling-request")
 logger.Info("message-to-show", lager.Data{"key_to_show": data})
 ```
