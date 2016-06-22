@@ -130,12 +130,12 @@ Apps are defined as different modes of [this app](https://github.com/cloudfoundr
 
 Initial mix of apps:
 
- | Name     | Logs/s   | Req/s   | Crash?   | Instances/LRP   |
- | ------   | -------- | ------- | -------- | --------------- |
- | light    | 1        | 1       | no       | 13              |
- | medium   | 5        | 2       | no       | 7               |
- | heavy    | 7        | 3       | no       | 3               |
- | crashing | 0        | 0       | yes      | 2               |
+| Name     | Logs/s   | Req/s   | Crash?   | Instances/LRP   |
+|----------|----------|---------|----------|-----------------|
+| light    | 1        | 1       | no       | 13              |
+| medium   | 5        | 2       | no       | 7               |
+| heavy    | 7        | 3       | no       | 3               |
+| crashing | 0        | 0       | yes      | 2               |
 
 Fill 1,000 Cell with 250,000 LRPs/tasks (10,000 pushes of the above mix).
 
@@ -144,12 +144,12 @@ would push, stop, start, and crash apps.
 
 Steady State mix of apps:
 
- | Name     | Logs/s   | Req/s   | Crash?   | Instances/LRP   |
- | ------   | -------- | ------- | -------- | --------------- |
- | light    | 1        | 1       | no       | 13              |
- | medium   | 5        | 2       | no       | 7               |
- | heavy    | 7        | 3       | no       | 3               |
- | crashing | 0        | 0       | yes      | 2               |
+| Name     | Logs/s   | Req/s   | Crash?   | Instances/LRP   |
+|----------|----------|---------|----------|-----------------|
+| light    | 1        | 1       | no       | 13              |
+| medium   | 5        | 2       | no       | 7               |
+| heavy    | 7        | 3       | no       | 3               |
+| crashing | 0        | 0       | yes      | 2               |
 
 Process of steady state:
 
