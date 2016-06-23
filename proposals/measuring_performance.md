@@ -99,6 +99,7 @@ We're then using a `c4.4xlarge` equivalent for the `database`:
 2. Run the experiments 1 and 2
 3. Let the cluster sit for a day
 4. Run experiment 3
+5. Run experiment 4
 
 ## Experiment 1: Fezzik
 
@@ -126,32 +127,29 @@ For this experiment we plan to start (for `N` = number of cells in the deploymen
 
 ## Experiment 2: Launching and running many CF applications
 
-Apps are defined as different modes of [this app](https://github.com/cloudfoundry-incubator/diego-stress-tests/tree/master/assets/apps/jim).
+Apps are defined as different modes of [this app](https://github.com/cloudfoundry-incubator/diego-performance-app/tree/master/stress-test/stress-app).
+
+The mix of apps can be found in the [manifest
+template](https://github.com/cloudfoundry-incubator/diego-performance-app/blob/master/stress-test/stress-app/manifest.yml.template)
+in the app's repository.
 
 Initial mix of apps:
 
-| Name     | Logs/s   | Req/s   | Crash?   | Instances/LRP   |
-|----------|----------|---------|----------|-----------------|
-| light    | 1        | 1       | no       | 13              |
-| medium   | 5        | 2       | no       | 7               |
-| heavy    | 7        | 3       | no       | 3               |
-| crashing | 0        | 0       | yes      | 2               |
+| Name     | Logs/s   | Req/s   | Crash?   | Instances/LRP   | Memory/Instance |
+|----------|----------|---------|----------|-----------------|---------------- |
+| light    | 1        | 1       | no       | 13              | 100M            |
+| medium   | 5        | 2       | no       | 7               | 100M            |
+| heavy    | 7        | 3       | no       | 3               | 100M            |
+| crashing | 0        | 0       | 30s-360s | 2               | 100M            |
 
 Fill 1,000 Cell with 250,000 LRPs/tasks (10,000 pushes of the above mix).
 
+Crashing apps will crash at a random period from 30s to 6 minutes to make their
+crash count reset once in a while, so that we can have crashing apps even after
+they would've been given up on.
+
 Once the system is up we would then want to simulate some regular load which
 would push, stop, start, and crash apps.
-
-Steady State mix of apps:
-
-| Name     | Logs/s   | Req/s   | Crash?   | Instances/LRP   |
-|----------|----------|---------|----------|-----------------|
-| light    | 1        | 1       | no       | 13              |
-| medium   | 5        | 2       | no       | 7               |
-| heavy    | 7        | 3       | no       | 3               |
-| crashing | 0        | 0       | yes      | 2               |
-
-Process of steady state:
 
 Push new apps (1,000 pushes of the above mix, total of 25,000 extra instances)
 
@@ -165,15 +163,21 @@ Continually:
 After a day, kill N/10 cells (in various zones) and see how long it takes to recover the missing applications.
 
 We'll want:
-- Datadog plots to see how long recovery takes
+- Plots to see how long recovery takes
 - Converger logs to analyze how long the converger takes to handle this scenario.
 
 Leave those cells dead for the next experiment.
 
-## Experiment 4: Tolerating catastrophic cell and etcd failure
+## Experiment 4: Tolerating catastrophic cell and database failure
 
-Kill another N/10 cells (in various zone).  At this point, the workload will exceed capacity.  Anything running (except Humperdinks) should continue to run, and anything not running should continue to fail to be scheduled (unless it sneaks in after a Humperdink crashes).  See that this is the case.
+Kill another N/10 cells (in various zone).  At this point, the workload will
+exceed capacity.  Anything running (maybe except the crashing app) should
+continue to run, and anything not running should continue to fail to be
+scheduled (unless it sneaks in after a Humperdink crashes).  See that this is
+the case.
 
-Kill all the etcd nodes.  Make sure they (and the N/5 dead cells) are down for a while, long enough for several convergence ticks.
+Kill all the database nodes.  Make sure they (and the N/5 dead cells) are down
+for a while, long enough for several convergence ticks.
 
-`bosh cck` to recover the missing Cells and etcd cluster.  How long does it take for us to recover?  How does the routing table handle this?
+`bosh cck` to recover the missing Cells and Database VMs.  How long does it
+take for us to recover?  How does the routing table handle this?
