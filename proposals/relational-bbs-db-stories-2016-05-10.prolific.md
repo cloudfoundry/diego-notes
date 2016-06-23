@@ -29,7 +29,7 @@ L: bbs:relational
 
 Update performance-testing protocol for 250K-instance, 1000+-cell end-to-end performance test
 
-Update the [performance-testing protocol in the diego-dev-notes](https://github.com/cloudfoundry-incubator/diego-dev-notes/blob/master/proposals/measuring_performance.md) for the 250K-instance experiment we intend to run. Address the following points:
+Update the [performance-testing protocol in the diego-dev-notes](https://github.com/cloudfoundry/diego-dev-notes/blob/master/proposals/measuring_performance.md) for the 250K-instance experiment we intend to run. Address the following points:
 
 - Distribution of and resource limits for app instances: at only 1000 cells, container density will be 250 per cell, which is right at the default limit for garden-linux (and garden-runc?)
 - Prescribed IOPS configuration for cell disk at that scale

@@ -2,7 +2,7 @@ As a Diego operator, I expect the BBS to migrate existing data from etcd to the 
 
 If the BBS is configured with connection information and credentials for both etcd and a relational store, it will migrate existing data in etcd to the relational store and then serve data only from the relational store. The migration mechanism should also ensure that if a BBS server becomes master that understands only how to serve data from etcd, it should realize that it is not current and relinquish the BBS lock. It should also ensure that this migration happens exactly once, so that subsequent BBS servers that start with the dual 
 
-This likely needs to be done using the versioning system already implemented in the etcd store, so that BBSes all the way back to 0.1434.0 will function correctly. Consider the `CurrentVersion`/`TargetVersion` rules implemented in [the existing BBS migration mechanism](https://github.com/cloudfoundry-incubator/diego-dev-notes/blob/master/accepted_proposals/bbs-migrations.md#the-bbs-migration-mechanism).
+This likely needs to be done using the versioning system already implemented in the etcd store, so that BBSes all the way back to 0.1434.0 will function correctly. Consider the `CurrentVersion`/`TargetVersion` rules implemented in [the existing BBS migration mechanism](https://github.com/cloudfoundry/diego-dev-notes/blob/master/accepted_proposals/bbs-migrations.md#the-bbs-migration-mechanism).
 
 Acceptance:
 - I can configure a multi-instance BBS Diego first to populate etcd with data, then redeploy it with a relational configuration and observe that data is migrated from etcd to the relational store correctly (preserved, migration happens only once). 
