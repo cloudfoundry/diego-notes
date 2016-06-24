@@ -81,6 +81,38 @@ Monitoring Points:
 - route-emitter
 - cc-bridge
 
+### Extracting Metrics
+
+We have previously used Loggregator to send metrics to Datadog via the
+datadog-firehose-nozzle. We experienced frustration trying to generate custom
+graphs that are more presentable and easier to understand outside of observing
+a live deployment. For those reasons we want to have access to raw metrics
+somehow as part of running the experiments described in this document.
+
+We have a few options:
+
+- Create a "JSON" firehose nozzzle that dumps all the metrics on disk on a JSON
+  format. That can be later processed locally to draw graphs using a tool like
+  [Grafana](http://grafana.org) to graph things after the fact while also
+  sending metrics to Datadog so that we can observe the live system.
+- Use the [graphite-firehose-nozzle](https://github.com/pivotal-cf/graphite-nozzle)
+  to send metrics directly to the graphite time series data store and configure
+  a Grafana instance to use that source to plot graphs live. Graphite should
+  also allow us to query the data after the fact if we want.
+
+Building a JSON firehose nozzle shouldn't be too difficult and it seems
+valuable in general, than converting that data in a format that Grafana
+understands also seems like a easily solvable problem.
+
+Using the already existing graphite tools could save us some time in
+development, but also seems like something not a lot of people use at this
+time.
+
+We can probably build the JSON nozzle separately and explore how that would
+work before we make a decision. We also discussed having a "tee"-nozzle so that
+we can minimize the amount of metrics traffic to nozzles if we want to have
+both Datadog and JSON emission happening at the same time.
+
 ## Experiments
 
 We're assuming `cell`s are equivalent to an AWS `r3.xlarge`:
