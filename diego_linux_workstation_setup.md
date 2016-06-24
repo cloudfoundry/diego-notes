@@ -123,6 +123,10 @@ Download from [releases page](https://github.com/git-duet/git-duet/releases).
 sudo tar -C /usr/local/bin -xzf linux_amd64.tar.gz
 ```
 
+1. *Pivotal Workstations* Install git-secrets
+
+Follow the instructions [here](https://github.com/pivotal-cf/sec-issues/blob/master/git-secrets.md).
+
 1. Install Steam
 
 ```
