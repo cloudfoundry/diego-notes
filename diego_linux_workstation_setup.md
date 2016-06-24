@@ -2,12 +2,12 @@
 
 ## Required Dependencies
 
-1. Install common dependencies.
+- Install common dependencies.
 ```
 sudo apt-get install direnv git vagrant virtualbox
 ```
 
-2. Install golang.
+- Install golang.
 
 ```
 wget https://storage.googleapis.com/golang/go1.6.2.linux-amd64.tar.gz
@@ -22,7 +22,7 @@ export GOPATH=$HOME/go
 export PATH=$PATH:$HOME/go/bin
 ```
 
-3. Install golang packages.
+- Install golang packages.
 
 ```bash
 go get golang.org/x/tools/cmd/goimports
@@ -30,7 +30,7 @@ go get github.com/vito/spiff
 go get github.com/tools/godep
 ```
 
-4. Install Ruby and Chruby.
+- Install Ruby and Chruby.
 
 ```
 wget -O ruby-install-0.6.0.tar.gz https://github.com/postmodern/ruby-install/archive/v0.6.0.tar.gz
@@ -53,7 +53,7 @@ source /usr/local/share/chruby/chruby.sh
 chruby LATEST_RUBY_VERSION
 ```
 
-5. Install ruby gems.
+- Install ruby gems.
 
 ```bash
 gem install bosh_cli
@@ -63,25 +63,25 @@ gem install bundler
 
 ## Diego Team Preferences
 
-1. Install Nvidia Graphics Drivers (optional)
+- Install Nvidia Graphics Drivers (optional)
 ```
 sudo add-apt-repository ppa:graphics-drivers/ppa
 sudo apt-get update
 sudo apt-get install nvidida-364
 ```
 
-2. Install common dependencies.
+- Install common dependencies.
 ```
 sudo apt-get install vim-nox tmux
 ```
 
-3. Install vim config
+- Install vim config
 
 ```
 git clone https://github.com/luan/vimfiles ~/.vim && ~/.vim/install
 ```
 
-4. Install tmux config
+- Install tmux config
 
 ```
 curl -o ~/.tmux.conf https://raw.githubusercontent.com/luan/dotfiles/master/tmux.conf
@@ -99,14 +99,14 @@ export SSH_AUTH_SOCK=~/.ssh/ssh_auth_sock
 
 When launching tmux, you should use `tmux -2` as it will respect the terminal configuration.
 
-5. Install terminator
+- Install terminator
 
 Terminator is a terminal emulator that is more similar to iTerm2 than the gnome terminal.
 
 ```
 sudo apt-get install terminator
 ```
-6. Install Chrome and Chrome Remote Desktop
+- Install Chrome and Chrome Remote Desktop
 
 ```
 wget https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb
@@ -116,18 +116,18 @@ wget https://dl.google.com/linux/direct/chrome-remote-desktop_current_amd64.deb
 sudo dpkg -i chrome-remote-desktop_current_amd64.deb
 ```
 
-7. Install git-duet
+- Install git-duet
 Download from [releases page](https://github.com/git-duet/git-duet/releases).
 
 ```
 sudo tar -C /usr/local/bin -xzf linux_amd64.tar.gz
 ```
 
-8. **Pivotal Workstations** Install git-secrets
+- **Pivotal Workstations** Install git-secrets
 
 Follow the instructions [here](https://github.com/pivotal-cf/sec-issues/blob/master/git-secrets.md).
 
-9. Install Steam
+- Install Steam
 
 ```
 wget https://steamcdn-a.akamaihd.net/client/installer/steam.deb
