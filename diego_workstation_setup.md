@@ -50,6 +50,10 @@ go get github.com/vito/spiff
 go get github.com/tools/godep
 ```
 
+## (Pivotal Workstations) Install git-secrets
+
+Follow the instructions [here](https://github.com/pivotal-cf/sec-issues/blob/master/git-secrets.md).
+
 # Diego Team Preferences
 
 ## Mac Apps
