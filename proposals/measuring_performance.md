@@ -205,7 +205,7 @@ Leave those cells dead for the next experiment.
 Kill another N/10 cells (in various zone).  At this point, the workload will
 exceed capacity.  Anything running (maybe except the crashing app) should
 continue to run, and anything not running should continue to fail to be
-scheduled (unless it sneaks in after a Humperdink crashes).  See that this is
+scheduled (unless it sneaks in after a crashing app crashes).  See that this is
 the case.
 
 Kill all the database nodes.  Make sure they (and the N/5 dead cells) are down
