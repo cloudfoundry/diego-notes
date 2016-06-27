@@ -167,12 +167,16 @@ in the app's repository.
 
 Initial mix of apps:
 
-| Name     | Logs/s   | Req/s   | Crash?   | Instances/LRP   | Memory/Instance |
-|----------|----------|---------|----------|-----------------|---------------- |
-| light    | 1        | 1       | no       | 13              | 100M            |
-| medium   | 5        | 2       | no       | 7               | 100M            |
-| heavy    | 7        | 3       | no       | 3               | 100M            |
-| crashing | 0        | 0       | 30s-360s | 2               | 100M            |
+| Name          | Logs/s       | Req/s       | Crash?       | # of Apps           | Instances/LRP       | Memory/Instance    |
+| -----------   | ----------   | ---------   | ----------   | -----------------   | -----------------   | ----------------   |
+| light-group   | 1            | 1           | no           | 1                   | 4                   | 32M                |
+| light         | 1            | 1           | no           | 9                   | 1                   | 32M                |
+| medium-group  | 5            | 2           | no           | 1                   | 2                   | 128M               |
+| medium        | 5            | 2           | no           | 7                   | 1                   | 128M               |
+| heavy         | 7            | 3           | no           | 1                   | 1                   | 1024M              |
+| crashing      | 0            | 0           | 30s-360s     | 2                   | 1                   | 128M               |
+| ------------- | ------------ | ----------- | ------------ | ------------------- | ------------------- | ------------------ |
+| total         | N/A          | N/A         | N/A          | 21                  | N/A                 | 2848M              |
 
 Fill 1,000 Cell with 250,000 LRPs/tasks (10,000 pushes of the above mix).
 
