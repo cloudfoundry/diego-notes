@@ -167,18 +167,20 @@ in the app's repository.
 
 Initial mix of apps:
 
-| Name          | Logs/s       | Req/s       | Crash?       | # of Apps           | Instances/LRP       | Memory/Instance    |
-| -----------   | ----------   | ---------   | ----------   | -----------------   | -----------------   | ----------------   |
-| light-group   | 1            | 1           | no           | 1                   | 4                   | 32M                |
-| light         | 1            | 1           | no           | 9                   | 1                   | 32M                |
-| medium-group  | 5            | 2           | no           | 1                   | 2                   | 128M               |
-| medium        | 5            | 2           | no           | 7                   | 1                   | 128M               |
-| heavy         | 7            | 3           | no           | 1                   | 1                   | 1024M              |
-| crashing      | 0            | 0           | 30s-360s     | 2                   | 1                   | 128M               |
-| ------------- | ------------ | ----------- | ------------ | ------------------- | ------------------- | ------------------ |
-| total         | N/A          | N/A         | N/A          | 21                  | N/A                 | 2848M              |
+| Name          | Logs/s  | Req/s  | Crash?   | # of Apps  | Instances/App  | # of Instances  | Memory/Instance (MB) | Total Memory (MB) |
+| -----------   | ------- | ------ | -------- | ---------- | -------------- | ----------------| -------------------- | ----------------- |
+| light-group   | 1       | 1      | no       | 1          | 4              | 4               | 32                   | 128               |
+| light         | 1       | 1      | no       | 9          | 1              | 9               | 32                   | 288               |
+| medium-group  | 5       | 2      | no       | 1          | 2              | 2               | 128                  | 256               |
+| medium        | 5       | 2      | no       | 7          | 1              | 7               | 128                  | 896               |
+| heavy         | 7       | 3      | no       | 1          | 1              | 1               | 1024                 | 1024              |
+| crashing      | 0       | 0      | 30s-360s | 2          | 1              | 2               | 128                  | 256               |
+| ------------- | ------- | ------ | -------- | ---------- | -------------- | --------------- | -------------------- | ----------------- |
+| total         |         |        |          | 21         |                | 25              |                      | 2848M             |
 
-Fill 1,000 Cell with 250,000 LRPs/tasks (10,000 pushes of the above mix).
+Fill 1000 Cells with 250,000 LRP instances from 210,000 LRPs (10,000 pushes of the above mix).
+These instances will allocate a total of 28,480 GB of memory.
+Non-crashing app instances account for 25,920 GB of this allocation.
 
 Crashing apps will crash at a random period from 30s to 6 minutes to make their
 crash count reset once in a while, so that we can have crashing apps even after
@@ -187,30 +189,33 @@ they would've been given up on.
 Once the system is up we would then want to simulate some regular load which
 would push, stop, start, and crash apps.
 
-Push new apps (1,000 pushes of the above mix, total of 25,000 extra instances)
+Push new apps (1000 pushes of the above mix, for a total of 25,000 extra instances).
 
 Continually:
 - Delete app
 - Push app
 - Stop app
 
+
 ## Experiment 3: Fault-recovery
 
-After a day, kill N/10 cells (in various zones) and see how long it takes to recover the missing applications.
+After a day, kill N/10 cells across the AZs and see how long it takes to recover the missing applications.
 
 We'll want:
 - Plots to see how long recovery takes
-- Converger logs to analyze how long the converger takes to handle this scenario.
+- Convergence logs to analyze how long convergence takes to handle this scenario.
 
 Leave those cells dead for the next experiment.
 
 ## Experiment 4: Tolerating catastrophic cell and database failure
 
-Kill another N/10 cells (in various zone).  At this point, the workload will
-exceed capacity.  Anything running (maybe except the crashing app) should
-continue to run, and anything not running should continue to fail to be
-scheduled (unless it sneaks in after a crashing app crashes).  See that this is
-the case.
+Kill another N/10 cells, again roughly balanced across AZs.
+At this point, the workload will exceed capacity.
+Instances that are running should continue to run, except for
+instances of crashing apps that have not yet crashed when these cells are killed.
+Instances that are not running should not be re-placed,
+except as some capacity opens up from instances that crash as configured.
+Verify that we observe this behavior.
 
 Kill all the database nodes.  Make sure they (and the N/5 dead cells) are down
 for a while, long enough for several convergence ticks.
