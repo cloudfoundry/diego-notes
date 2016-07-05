@@ -27,9 +27,15 @@ brew install chruby
 
 ## Ruby Packages
 ```bash
-ruby-install ruby 2.1.6
-chruby ruby-2.1.6
+ruby-install ruby 2.3.1
+chruby ruby-2.3.1
 ```
+Add the following to .bashrc:
+```bash
+source /usr/local/opt/chruby/share/chruby/chruby.sh
+chruby ruby-2.3.1
+```
+Install the bosh cli and bundler:
 ```bash
 gem install bosh_cli
 gem install bundler
@@ -37,18 +43,20 @@ gem install bundler
 
 ## Go Packages
 
-`mkdir $HOME/go` add the following the following to .bash_profile:
+`mkdir $HOME/go` add the following to .bash_profile:
 
 ```bash
 export PATH=$PATH:$HOME/go/bin
 export GOPATH=$HOME/go
 ```
-
+Go get the following packages:
 ```bash
 go get golang.org/x/tools/cmd/goimports
-go get github.com/vito/spiff
 go get github.com/tools/godep
+go get github.com/onsi/ginkgo/ginkgo
 ```
+
+Install spiff from an official binary release found [here](https://github.com/cloudfoundry-incubator/spiff/releases)
 
 ## (Pivotal Workstations) Install git-secrets
 
@@ -82,27 +90,20 @@ ruby -e "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/
 Install the following packages.  Don't forget to look for instructions to complete manual steps as part of each install (like adding the sql db's to launchctl):
 ```bash
 brew install ack
-brew tap git-duet/tap && brew install git-duet
+brew install git-duet
 brew install ag
 brew install bash-completion
 brew install python
 brew install tmux
-brew tap nviennot/tmate
 brew install tmate
 brew install jq
 brew install fasd
 brew install aria2
 ```
 
-### Brew Cask
-```bash
-brew install caskroom/cask/brew-cask
-brew cask install flycut
-```
-
 ## Go Packages
 
-`mkdir $HOME/go` add the following the following to .bash_profile:
+`mkdir $HOME/go` add the following to .bash_profile:
 
 ```bash
 export PATH=$PATH:$HOME/go/bin
@@ -119,11 +120,7 @@ go get github.com/vito/boosh
 
 ## Sublime Packages
 
-Install the package manager through the Sublime Text console. The console is accessed via the ``ctrl+` `` shortcut or the `View > Show Console` menu. Once open, paste the following Python code into the console.
-
-```
-import urllib.request,os,hashlib; h = 'eb2297e1a458f27d836c04bb0cbaf282' + 'd0e7a3098092775ccb37ca9d6b2e4b7d'; pf = 'Package Control.sublime-package'; ipp = sublime.installed_packages_path(); urllib.request.install_opener( urllib.request.build_opener( urllib.request.ProxyHandler()) ); by = urllib.request.urlopen( 'http://packagecontrol.io/' + pf.replace(' ', '%20')).read(); dh = hashlib.sha256(by).hexdigest(); print('Error validating download (got %s instead of %s), please try manual install' % (dh, h)) if dh != h else open(os.path.join( ipp, pf), 'wb' ).write(by)
-```
+Install the package manager through the Sublime Text console. The console is accessed via the ``ctrl+` `` shortcut or the `View > Show Console` menu. Once open, paste the Python code found [here](https://packagecontrol.io/installation) into the console.
 
 - Package Install: gosublime
 - Package Install: spacegray
@@ -157,12 +154,28 @@ Add the following line to ~/.bash_profile:
 eval "$(fasd --init auto)"
 ```
 
+## Set up direnv hook
+Add the following line to the end of ~/.bashrc:
+```bash
+eval "$(direnv hook bash)"
+```
+
 ## Set up git
 copy workstation ~/.gitconfig and ~/.git-authors and add the following to ~/.bash_profile:
 ```bash
 export GIT_DUET_GLOBAL=true
 export GIT_DUET_ROTATE_AUTHOR=true
 ```
+
+## Copy system aliases
+Add the following to ~/.bash_profile:
+```bash
+if [ -f ~/.bash_aliases ]; then
+    . ~/.bash_aliases
+fi
+```
+
+Copy workstation aliases from `~/emacs-config/cookbooks/development/files/default/alias.sh` to ~/.bash_aliases and define additional aliases in ~/.bash_aliases
 
 ## Set up arrow-up partial bash completion
 ```bash
