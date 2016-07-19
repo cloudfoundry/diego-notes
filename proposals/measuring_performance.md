@@ -7,10 +7,11 @@
   - [LRPs](#lrps)
 - [Metrics](#metrics)
 - [Experiments](#experiments)
-- [Experiment 1: Fezzik](#experiment-1-fezzik)
-- [Experiment 2: Launching and running many CF applications](#experiment-2-launching-and-running-many-cf-applications)
-- [Experiment 3: Fault-recovery](#experiment-3-fault-recovery)
-- [Experiment 4: Tolerating catastrophic cell and etcd failure](#experiment-4-tolerating-catastrophic-cell-and-etcd-failure)
+  - [Scaling the Deployment](#scaling-the-deployment)
+  - [Experiment 1: Fezzik](#experiment-1-fezzik)
+  - [Experiment 2: Launching and running many CF applications](#experiment-2-launching-and-running-many-cf-applications)
+  - [Experiment 3: Fault-recovery](#experiment-3-fault-recovery)
+  - [Experiment 4: Tolerating catastrophic cell and etcd failure](#experiment-4-tolerating-catastrophic-cell-and-etcd-failure)
 
 
 ## Events
@@ -89,51 +90,84 @@ graphs that are more presentable and easier to understand outside of observing
 a live deployment. For those reasons we want to have access to raw metrics
 somehow as part of running the experiments described in this document.
 
-We have a few options:
+We decided to go with InfluxDB and Grafana to solve those issues:
 
-- Create a "JSON" firehose nozzzle that dumps all the metrics on disk on a JSON
-  format. That can be later processed locally to draw graphs using a tool like
-  [Grafana](http://grafana.org) to graph things after the fact while also
-  sending metrics to Datadog so that we can observe the live system.
-- Use the [graphite-firehose-nozzle](https://github.com/pivotal-cf/graphite-nozzle)
-  to send metrics directly to the graphite time series data store and configure
-  a Grafana instance to use that source to plot graphs live. Graphite should
-  also allow us to query the data after the fact if we want.
-
-Building a JSON firehose nozzle shouldn't be too difficult and it seems
-valuable in general, than converting that data in a format that Grafana
-understands also seems like a easily solvable problem.
-
-Using the already existing graphite tools could save us some time in
-development, but also seems like something not a lot of people use at this
-time.
-
-We can probably build the JSON nozzle separately and explore how that would
-work before we make a decision. We also discussed having a "tee"-nozzle so that
-we can minimize the amount of metrics traffic to nozzles if we want to have
-both Datadog and JSON emission happening at the same time.
+- A version of the influxdb-firehose-nozzle that works with current loggregator
+  can be found at: https://github.com/luan/influxdb-firehose-nozzle. That fork
+  updates loggregator libraries and code with most recent
+  datadog-firehose-nozzle
+- Grafana (http://grafana.org) can be either deployed with bosh
+  (https://github.com/vito/grafana-boshrelease) or ran locally and pointed to a
+  remote InfluxDB.
+- InfluxDB can be deployed via bosh
+  (https://github.com/vito/influxdb-boshrelease) its configuration is really
+  minimal and should straightforward.
 
 ## Experiments
 
-We're assuming `cell`s are equivalent to an AWS `r3.xlarge`:
-* 4 CPUs
-* 30 GB RAM
-* "Moderate" performance network
-Plus:
-* 1000 IOPS `io1` SSD for the ephemeral drive `/var/vcap/data`
+### Scaling the Deployment
 
-We're then using a `c4.4xlarge` equivalent for the `database`:
-* 16 CPUs
-* 30 GB RAM
-* "High" performance network
+`N` = Number of Cells
 
-1. Deploy a Diego + CF environment
-2. Run the experiments 1 and 2
-3. Let the cluster sit for a day
-4. Run experiment 3
-5. Run experiment 4
+It's assumed that number of instances on the deployment is `N * 250`. The mix
+is defined on the [next section](#experiment-2-apps-matrix) of this document.
 
-## Experiment 1: Fezzik
+The following numbers come from an estimate of total requests/s and logs/s on
+the system (where logs = log and metric messages going through the loggregator
+system).
+
+#### CF Components Scaling
+
+- Cloud Controller API:
+  - Instances: `N / 5`
+  - Size: `m3.large` - 7.5 GBs | 2 CPUs
+- Cloud Controller Workers:
+  - Instances: `N / 10`
+  - Size: `c3.large` - 3.75 GBs | 2 CPUs
+- Doppler:
+  - Instances: `N / 10`
+  - Size: `c3.large` - 3.75 GBs | 2 CPUs
+- Traffic Controller:
+  - Instances: `N / 40`
+  - Size: `c3.large` - 3.75 GBs | 2 CPUs
+- Router:
+  - Instances: `N / 10`
+  - Size: `c3.xlarge` - 7.5 GBs | 4 CPUs
+- ETCD:
+  - Instances: `3` (raft size)
+  - Size: `c3.large` - 3.75 GBs | 2 CPUs
+- Consul:
+  - Instances: `3` (raft size)
+  - Size: `c3.large` - 3.75 GBs | 2 CPUs
+- NATS:
+  - Instances: `2` (don't really need to scale this as it will actually make performance worse)
+  - Size: `c3.large` - 3.75 GBs | 2 CPUs
+- UAA:
+  - Instances: `2` (don't think we need to scale this as it doesn't do that much work on our performance experiment)
+  - Size: `m3.large` - 7.5 GBs | 2 CPUs
+
+#### Diego Scaling
+
+All Diego components besides the cell are singletons, that is, they are leader
+elected and only have one active process at any given time. For that reason, it
+doesn't make sense to have more than one per availability zone, since that will
+not help with scaling at all. So it's assumed that we are running one of each
+of the Diego VMs per AZ.
+
+- Cell:
+  - `r3.xlarge` equivalent
+  - 4 CPUs
+  - 30 GB RAM
+  - "Moderate" performance network
+  - 1,000 IOPS `io1` SSD for the ephemeral drive `/var/vcap/data`
+
+- Database VM (BBS):
+  - `c4.4xlarge` equivalent
+  - 16 CPUs
+  - 30 GB RAM
+  - "High" performance network
+
+### Experiment 1: Fezzik
 
 Fezzik exercises the BBS API and launches very many Tasks and LRPs in tandem.
 These Tasks and LRPs are very lightweight so Fezzik is isolated to benchmarking
@@ -157,26 +191,25 @@ For this experiment we plan to start (for `N` = number of cells in the deploymen
 - `N * 200` LRPs
 
 
-## Experiment 2: Launching and running many CF applications
+### Experiment 2: Launching and running many CF applications
 
-Apps are defined as different modes of [this app](https://github.com/cloudfoundry-incubator/diego-performance-app/tree/master/stress-test/stress-app).
+Apps are defined as different modes of [this app](https://github.com/cloudfoundry/diego-stress-tests/tree/master/assets/stress-app).
 
 The mix of apps can be found in the [manifest
-template](https://github.com/cloudfoundry-incubator/diego-performance-app/blob/master/stress-test/stress-app/manifest.yml.template)
+template](https://github.com/cloudfoundry/diego-stress-tests/tree/master/assets/stress-app/manifest.yml.template)
 in the app's repository.
 
-Initial mix of apps:
+<span id="experiment-2-apps-matrix"></span>Initial mix of apps:
 
-| Name          | Logs/s  | Req/s  | Crash?   | # of Apps  | Instances/App  | # of Instances  | Memory/Instance (MB) | Total Memory (MB) |
-| -----------   | ------- | ------ | -------- | ---------- | -------------- | ----------------| -------------------- | ----------------- |
-| light-group   | 1       | 1      | no       | 1          | 4              | 4               | 32                   | 128               |
-| light         | 1       | 1      | no       | 9          | 1              | 9               | 32                   | 288               |
-| medium-group  | 5       | 2      | no       | 1          | 2              | 2               | 128                  | 256               |
-| medium        | 5       | 2      | no       | 7          | 1              | 7               | 128                  | 896               |
-| heavy         | 7       | 3      | no       | 1          | 1              | 1               | 1024                 | 1024              |
-| crashing      | 0       | 0      | 30s-360s | 2          | 1              | 2               | 128                  | 256               |
-| ------------- | ------- | ------ | -------- | ---------- | -------------- | --------------- | -------------------- | ----------------- |
-| total         |         |        |          | 21         |                | 25              |                      | 2848M             |
+| Name           | Req/s  | Crash?   | # of Apps  | Instances/App  | # of Instances   | Memory/Instance (MB) | Total Memory (MB) |
+| -----------    | ------ | -------- | ---------- | -------------- | ---------------- | -------------------- | ----------------- |
+| *light-group*  | 0.5    | no       | 1          | 4              | 4                | 32                   | 128               |
+| *light*        | 0.5    | no       | 9          | 1              | 9                | 32                   | 288               |
+| *medium-group* | 1      | no       | 1          | 2              | 2                | 128                  | 256               |
+| *medium*       | 1      | no       | 7          | 1              | 7                | 128                  | 896               |
+| *heavy*        | 1.5    | no       | 1          | 1              | 1                | 1024                 | 1024              |
+| *crashing*     | 0      | 30s-360s | 2          | 1              | 2                | 128                  | 256               |
+| **Total**      | **17** |          | **21**     |                | **25**           |                      | **2848M**         |
 
 Fill 1000 Cells with 250,000 LRP instances from 210,000 LRPs (10,000 pushes of the above mix).
 These instances will allocate a total of 28,480 GB of memory.
@@ -197,7 +230,7 @@ Continually:
 - Stop app
 
 
-## Experiment 3: Fault-recovery
+### Experiment 3: Fault-recovery
 
 After a day, kill N/10 cells across the AZs and see how long it takes to recover the missing applications.
 
@@ -207,7 +240,7 @@ We'll want:
 
 Leave those cells dead for the next experiment.
 
-## Experiment 4: Tolerating catastrophic cell and database failure
+### Experiment 4: Tolerating catastrophic cell and database failure
 
 Kill another N/10 cells, again roughly balanced across AZs.
 At this point, the workload will exceed capacity.
