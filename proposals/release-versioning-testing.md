@@ -25,7 +25,7 @@ For a given upgradable version pair `(V1, V2)`, we intend to conduct a battery o
 
 
 | Configuration  | BBS  | Cells | Brain/Bridge | CF   |
-|----------------|------|-------|---------------------|
+|----------------|------|-------|--------------|------|
 | `C0` (Initial) | `V1` | `V1`  | `V1`         | `V1` |
 | `C1`           | `V2` | `V1`  | `V1`         | `V1` |
 | `C2`           | `V2` | `V2`  | `V1`         | `V1` |
