@@ -252,3 +252,23 @@ after restarting `grace` would result in some instances of `grace2` to not start
 1. This is essentially problematic in that if we choose to make the termination timeout user-configurable, any malicious user can
 cause significant system malfunction by simply setting the termination timeout to something really high and then consistenly
 restarting an app. This behavior can cause issues even with only one instance of an app, so setting app instance limits would not help.
+
+
+### Experiment 9
+
+#### Design
+
+1. Have a cf + diego deployment with a `cell_z1/0` vm deployed
+1. Create an organization `o` and a space `s`
+1. Target `s` and push `grace`, scale `grace` to 30 instances.
+1. Wait for all `grace` app instances to be in the running state.
+1. Modify the bosh deployment so that it removes `cell_z1/0` and adds `cell_z2/0` to cause an evacuation behavior in diego
+
+#### Observations
+
+1. rep did the evacuation properly and all the 30 instances got moved from `cell_z1/0` to `cell_z2/0` almost immediately
+1. bosh continued to tear down the `cell_z1/0` vm
+1. bosh failed when destroying the `cell_z1/0` vm due to reaching the one minute timeout which is in turn caused by the termination timeout being greater than the bosh timeout.
+1. the bosh agent then becomes unresponsive on that vm and bosh fails to delete the vm
+1. the bosh agent the recovers from the unresponsive state, which in turn results in having an extra cell be in the running state.
+1. this supposedly deleted vm then becomes available as yet another cell in diego, and diego deploys app instances to it, if requests come in.
