@@ -272,3 +272,23 @@ restarting an app. This behavior can cause issues even with only one instance of
 1. the bosh agent then becomes unresponsive on that vm and bosh fails to delete the vm
 1. the bosh agent the recovers from the unresponsive state, which in turn results in having an extra cell be in the running state.
 1. this supposedly deleted vm then becomes available as yet another cell in diego, and diego deploys app instances to it, if requests come in.
+
+
+### Experiment 10
+
+#### Design
+
+1. Change the "rep.evacuation_timeout_in_seconds" property in the manifest to be 60, so the this experiment runs faster.
+1. Have a cf + diego deployment with a `cell_z1/0` vm deployed
+1. Create an organization `o` and a space `s`
+1. Target `s` and push `grace`, scale `grace` to 5 instances.
+1. Wait for all `grace` app instances to be in the running state.
+1. Modify the bosh deployment to add a second instance to `cell_z1`, so now there is a `cell_z1/0` and a `cell_z1/1`.
+1. Add a blank line to the rep template file, to cause the rep to evacuate and restart on the next bosh deploy.
+1. Create, upload, and deploy the new diego release.
+
+#### Observations
+
+1. Evacuation went smoothly and the evacuating cell took 1 minute to drain (i.e., the evac timeout).
+1. The containers on the evacuating instance get deleted when the rep is restarted (stale containers are reaped on rep start).
+1. This means the instances only got 1 minute to clean up after a term (because 1 minute was our modified evacuation timeout), not the full 20 minutes they expected to have. This might be worth thinking about more, but at first glance this doesn't seem unreasonable, provided there is a high enough evacuation timeout in general. We don't want to hold up deployments for an indefinite amount of time because someone chose an extremely large value for the term->kill timeout.
