@@ -79,3 +79,147 @@ Looks like RunInfo does not directly get passed to route emitter or nsync. Inste
 New convergence could cleanup unused runInfos.  Any RunInfo not the "active" RunInfo for a DesiredLRP and not referenced by a running ActualLRP can be removed.
 
 What happens if cleanup occurs before a new version launches any ActualLRPs? If we don't have any kind of ordered versioning, then maybe we should spare `UNCLAIMED` and `CLAIMED` ActualLRPs as well.
+
+
+## Proposed API in bbs
+
+UpdateDesiredLRP(logger lager.Logger, processGuid string, update *models.DesiredLRPUpdate) error.
+
+models.DesiredLRPUpdate would now have the following information:
+
+```go
+type DesiredLRPUpdate string {
+    Instances * int32
+    Routes *Routes
+    Annotation *string
+    DesiredLRP *DesiredLRP
+    UpdateIdentifier *string
+}
+```
+
+To maintain backwards compatibility we will leave the Instances, Routes, and Annottaion fields as top level entries in the DesiredLRPUpdate.  The DesiredLRP field will be a fill DesiredLRP containing all the other information to be updated.
+The UpdateIdentifier will be the named version of this DesiredLRP allowing for mapping of an actual LRP to a specific DesiredLRP version.   On create of a DesiredLRP we can create a tag for the initial version.
+
+Nysnc will be able to create this easily as they aleady build up the new DesiredLRP structure using the receipe builder.  They will simply use the full desiredLRP to send to the endpoint.
+
+We could also think of creating a NEW endpoint that just takes the full new DesiredLRP.
+
+UpdateDesiredLRP(logger lager.Logger, processGuid string, update *models.DesiredLRP) error
+
+This would be a NEW endpoint and make backwards compatibility easier.
+
+## Proposed New model for DesiredLRP and ActualLRP
+
+### DesiredLRP
+
+Current:
+
+```go
+type DesiredLRP struct {
+    ProcessGuid                   string
+    Domain                        string
+    RootFs                        string
+    Instances                     int32
+    EnvironmentVariables          []*EnvironmentVariable
+    Setup                         *Action
+    Action                        *Action
+    StartTimeoutMs                int64
+    DeprecatedStartTimeoutS       uint32
+    Monitor                       *Action
+    DiskMb                        int32
+    MemoryMb                      int32
+    CpuWeight                     uint32
+    Privileged                    bool
+    Ports                         []uint32
+    Routes                        *Routes
+    LogSource                     string
+    LogGuid                       string
+    MetricsGuid                   string
+    Annotation                    string
+    EgressRules                   []*SecurityGroupRule
+    ModificationTag               *ModificationTag
+    CachedDependencies            []*CachedDependency
+    LegacyDownloadUser            string
+    TrustedSystemCertificatesPath string
+    VolumeMounts                  []*VolumeMount
+    Network                       *Network
+}
+```
+
+New:
+
+```go
+type LRPDefinition struct {
+    DefinitionIdentifier          string
+    RootFs                        string
+    Instances                     int32
+    EnvironmentVariables          []*EnvironmentVariable
+    Setup                         *Action
+    Action                        *Action
+    StartTimeoutMs                int64
+    DeprecatedStartTimeoutS       uint32
+    Monitor                       *Action
+    DiskMb                        int32
+    MemoryMb                      int32
+    CpuWeight                     uint32
+    Privileged                    bool
+    Ports                         []uint32
+    Routes                        *Routes
+    LogSource                     string
+    LogGuid                       string
+    MetricsGuid                   string
+    EgressRules                   []*SecurityGroupRule
+    CachedDependencies            []*CachedDependency
+    LegacyDownloadUser            string
+    TrustedSystemCertificatesPath string
+    VolumeMounts                  []*VolumeMount
+    Network                       *Network
+}
+
+type DesiredLRP struct {
+    ProcessGuid                   string
+    Domain                        string
+    models.LRPDefinition
+    Annotation                    string
+    LRPDefinition2         *models.LRPDefinition
+    LRPDefinition3         *models.LRPDefinition
+}
+```
+
+
+### ActualLRP
+
+Current:
+
+```go
+type ActualLRP struct {
+    ActualLRPKey
+    ActualLRPInstanceKey
+    ActualLRPNetInfo
+    CrashCount           int32
+    CrashReason          string
+    State                string
+    PlacementError       string
+    Since                int64
+    ModificationTag      ModificationTag
+}
+```
+
+New:
+
+```go
+type ActualLRP struct {
+    ActualLRPKey
+    ActualLRPInstanceKey
+    ActualLRPNetInfo
+    DesiredLRPDefinitionIdentifier string
+    CrashCount           int32
+    CrashReason          string
+    State                string
+    PlacementError       string
+    Since                int64
+    ModificationTag      ModificationTag
+}
+```
+
+The main change here is to have a DefinitionIdentifier to link the ActualLRP to the definition for that DLRP
