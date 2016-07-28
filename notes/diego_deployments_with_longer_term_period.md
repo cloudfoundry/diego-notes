@@ -2,6 +2,8 @@
 
 ## Summary
 
+Associated tracker story: [#126246403](https://www.pivotaltracker.com/story/show/126246403)
+
 In order to gauge the impact on the system of longer grace times for shutting down containers, we conducted the following experiments. We experimented with increasing the timeout between when the executor sends the TERM signal and the KILL signal, to analyze the impacts on the overall behavior of diego. Descriptions of the individual experiments follow, but the main take-away is that it would give an app developer way too much control if we let them specify the timeout. With the current way diego is written, a malicious user could exhaust resources on a cell and cause apps in other orgs to not be able to start for an arbitrary amount of time.
 
 We didn't run all of these experiments with a variety of termination timeouts because the conclusion seemed to be the same, just exacerbated by how big the timeout is.
