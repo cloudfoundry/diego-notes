@@ -294,3 +294,47 @@ restarting an app. This behavior can cause issues even with only one instance of
 1. Evacuation went smoothly and the evacuating cell took 1 minute to drain (i.e., the evac timeout).
 1. The containers on the evacuating instance get deleted when the rep is restarted (stale containers are reaped on rep start).
 1. This means the instances only got 1 minute to clean up after a term (because 1 minute was our modified evacuation timeout), not the full 20 minutes they expected to have. This might be worth thinking about more, but at first glance this doesn't seem unreasonable, provided there is a high enough evacuation timeout in general. We don't want to hold up deployments for an indefinite amount of time because someone chose an extremely large value for the term->kill timeout.
+
+### Experiment 11
+
+#### Design
+1. Push `grace` with `catchTerminate` set to `true`.
+1. Up the `TerminationTimeout` to 30 seconds.
+1. Repeatedly scale `grace` to different number of instances between 1-4. i.e. 
+```
+cf scale -i 1 grace
+cf scale -i 3 grace
+cf scale -i 1 grace
+cf scale -i 3 grace
+```
+1. Observe output with
+```
+while true; do date +%s; curl -s 10.244.16.10:1800/state | jq '{cc:.AvailableResources.Containers, l:[.LRPs[] | {i:.index, p:.process_guid}]}'; sleep 1; echo; done
+```
+
+#### Observations
+1. We observed that the command printed out multiple instances with the same `process_guid` like so:
+```
+1470687120
+{
+  "cc": 246,
+  "l": [
+    {
+      "i": 0,
+      "p": "1b1d5cc8-11e3-406e-ab46-f92d6e33c1ca-7bf03e4e-0c6b-4cd7-932e-37a9828f18f7"
+    },
+    {
+      "i": 1,
+      "p": "1b1d5cc8-11e3-406e-ab46-f92d6e33c1ca-7bf03e4e-0c6b-4cd7-932e-37a9828f18f7"
+    },
+    {
+      "i": 1,
+      "p": "1b1d5cc8-11e3-406e-ab46-f92d6e33c1ca-7bf03e4e-0c6b-4cd7-932e-37a9828f18f7"
+    },
+    {
+      "i": 2,
+      "p": "1b1d5cc8-11e3-406e-ab46-f92d6e33c1ca-7bf03e4e-0c6b-4cd7-932e-37a9828f18f7"
+    }
+  ]
+```
+1. After further investigation into the logs, we saw that one of the containers with the app was in the `running` state while the other was in the `completed` state. The container in the `completed` state was already in the process of being `Destroy`ed. We don't think this is an error or bug, as the `rep` should communicate to the auctioneer that a container exists, until that container is fully destroyed. At no time were there duplicate instances in the `running` state.
