@@ -211,6 +211,9 @@ in the app's repository.
 | *crashing*     | 0      | 30s-360s | 2          | 1              | 2                | 128                  | 256               |
 | **Total**      | **17** |          | **21**     |                | **25**           |                      | **2848M**         |
 
+For an N-cell deployment, push 10 * N batches of the above mix, for a total of 210 * N LRPs with a total of 250 * N instances.
+These instances will allocate a total of 28.48 * N GB of memory, with non-crashing app instances accounting for 25.92 * N GB of this allocation.
+
 Fill 1000 Cells with 250,000 LRP instances from 210,000 LRPs (10,000 pushes of the above mix).
 These instances will allocate a total of 28,480 GB of memory.
 Non-crashing app instances account for 25,920 GB of this allocation.
@@ -219,15 +222,10 @@ Crashing apps will crash at a random period from 30s to 6 minutes to make their
 crash count reset once in a while, so that we can have crashing apps even after
 they would've been given up on.
 
-Once the system is up we would then want to simulate some regular load which
-would push, stop, start, and crash apps.
-
-Push new apps (1000 pushes of the above mix, for a total of 25,000 extra instances).
-
-Continually:
-- Delete app
-- Push app
-- Stop app
+Once the system is filled to this initial baseline, we will then generate some
+continual realistic load of pushing, starting, crashing, and deleting additional apps.
+For N batches of the seeding mix of apps, continually push the apps in the batches,
+wait for them to run or to crash, then delete them.
 
 
 ### Experiment 3: Fault-recovery
