@@ -154,6 +154,9 @@ doesn't make sense to have more than one per availability zone, since that will
 not help with scaling at all. So it's assumed that we are running one of each
 of the Diego VMs per AZ.
 
+**Note**: The singleton VMs will scale vertically, so choosing instance sizes
+will be dependent on the number of cells deployed.
+
 - Cell:
   - `r3.xlarge` equivalent
   - 4 CPUs
@@ -166,6 +169,30 @@ of the Diego VMs per AZ.
   - 16 CPUs
   - 30 GB RAM
   - "High" performance network
+
+- Brain VM:
+  - `m3.medium` equivalent
+  - 1 CPU
+  - 4 GB RAM
+  - "Moderate" performance network
+
+- CC Bridge VM:
+  - `m3.medium` equivalent
+  - 1 CPU
+  - 4 GB RAM
+  - "Moderate" performance network
+
+- Access VM:
+  - `m3.medium` equivalent
+  - 1 CPU
+  - 4 GB RAM
+  - "Moderate" performance network
+
+- Route Emitter VM:
+  - `m3.medium` equivalent
+  - 1 CPU
+  - 4 GB RAM
+  - "Moderate" performance network
 
 ### Experiment 1: Fezzik
 
