@@ -338,3 +338,49 @@ while true; do date +%s; curl -s 10.244.16.10:1800/state | jq '{cc:.AvailableRes
   ]
 ```
 1. After further investigation into the logs, we saw that one of the containers with the app was in the `running` state while the other was in the `completed` state. The container in the `completed` state was already in the process of being `Destroy`ed. We don't think this is an error or bug, as the `rep` should communicate to the auctioneer that a container exists, until that container is fully destroyed. At no time were there duplicate instances in the `running` state.
+
+### Experiment 12
+
+#### Design
+1. Add Vizzini test to Desire Tasks that execute `grace` with -catchTerminate
+1. Up the `TerminationTimeout` to 30 seconds.
+1. Vizzini test will call `bbsClient.CancelTask` 
+
+1. Observe output with
+```
+while true; do date; curl -s 10.244.16.10:1800/state | jq '{cc:.AvailableResources.Containers, t:[.Tasks[] | {g:.TaskGuid}]}'; sleep 1; echo; done | tee /tmp/output.txt
+```
+
+#### Observations
+1. We observed that the tasks now took 40 seconds to Cancel
+
+### Experiment 13
+
+#### Design
+1. Add Vizzini test to Desire Tasks that execute `grace` with -catchTerminate
+1. Up the `TerminationTimeout` to 30 seconds.
+1. Vizzini was altered to not remove Tasks on exit so they remain running
+1. use bosh stop cell_z1 to trigger evacuation
+
+1. Observe output with
+```
+while true; do date; curl -s 10.244.16.10:1800/state | jq '{cc:.AvailableResources.Containers, t:[.Tasks[] | {g:.TaskGuid}]}'; sleep 1; echo; done | tee /tmp/output.txt
+```
+
+#### Observations
+1. We observed that the tasks now took 40 seconds to be deleted and it would delay the time it took to stop the cell and complete evacuation
+
+### Experiment 14
+
+#### Design
+1. Add Vizzini test to Desire Tasks to fill a cell that execute `grace` with -catchTerminate
+1. Up the `TerminationTimeout` to 30 seconds.
+1. The test will then cancel all the tasks and immediately Desire a new task.  We expect the new task should not run due to insufficient resources until some of the cancel tasks' containers are removed.
+
+1. Observe output with
+```
+while true; do date; curl -s 10.244.16.10:1800/state | jq '{cc:.AvailableResources.Containers, t:[.Tasks[] | {g:.TaskGuid}]}'; sleep 1; echo; done | tee /tmp/output.txt
+```
+
+#### Observations
+1. We observed that the additional desire task did indeed fail with insufficient resources as the other tasks' containers do not get deleted on the cell until 40 seconds later.
