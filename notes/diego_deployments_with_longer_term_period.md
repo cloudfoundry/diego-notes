@@ -374,6 +374,8 @@ while true; do date; curl -s 10.244.16.10:1800/state | jq '{cc:.AvailableResourc
 
 #### Design
 1. Add Vizzini test to Desire Tasks to fill a cell that execute `grace` with -catchTerminate
+
+   NOTE: We set `diego.executor.memory_capacity_mb` in the manifest to `1000`. Hence, in our tests on the `wip-term-to-kill-tasks` branch on [vizzini](https://github.com/cloudfoundry/vizzini), we push 7 instances of the `128` Mb grace app to fill up the `1000` Mb.
 1. Up the `TerminationTimeout` to 30 seconds.
 1. The test will then cancel all the tasks and immediately Desire a new task.  We expect the new task should not run due to insufficient resources until some of the cancel tasks' containers are removed.
 
