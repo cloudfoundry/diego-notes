@@ -26,7 +26,7 @@ UpdateDesiredLRP(logger lager.Logger, processGuid string, update
 
 ```go
 type DesiredLRPUpdate struct {
-    Instances * int32
+    Instances *int32
     Routes *Routes
     Annotation *string
     DesiredLRP *DesiredLRP
@@ -173,7 +173,7 @@ type ActualLRP struct {
 }
 ```
 
-The main change here is to have a `DefinitionIdentifier` to link the
+The only change here is to have a `DefinitionIdentifier` to link the
 `ActualLRP` to the definition for that `DesiredLRP`
 
 ## Client Interaction
@@ -188,13 +188,13 @@ The main change here is to have a `DefinitionIdentifier` to link the
     `NSync` creates the application using `bbsClient.DesireLRP`
 1. **Query a `DesiredLRP`**
 
-    `NSync` queries using `bbsClient.DesireLRPByProcessGuid`
-    New information here could be the `DefinitionIdentifier` and
-    `PreviousDefinitionIdentifier` to specify the "ID" of the current
-    `DesiredLRPDefinitions`.  We do not need to return the OLD definition
-    information just the identifier.   We can add additional APIs to get old
+    `NSync` queries the BBS using `bbsClient.DesireLRPByProcessGuid`.
+    We could supply the `DefinitionIdentifier` and
+    `PreviousDefinitionIdentifier` fields to specify the "ID" of the current
+    `DesiredLRPDefinitions`.  We do not need to return the old definition
+    information, just the identifier. We can add additional APIs to get old
     definition information if required.
-    Old clients will not receive these 3 new fields but only receive the
+    Old clients will not receive these three new fields, just the
     current Definition information.
 1. **Stage an Update to a `DesiredLRP`**
 
