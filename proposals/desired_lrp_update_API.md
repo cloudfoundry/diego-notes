@@ -165,11 +165,14 @@ The main change here is to have a `DefinitionIdentifier` to link the
 
 ### CloudController
 
-1. Stage a NEW application
+1. **Stage a NEW application**
+
     Stager creates the Staging Task to stage the application
-1. Create a NEW `DesiredLRP`
+1. **Create a NEW `DesiredLRP`**
+
     `NSync` creates the application using `bbsClient.DesireLRP`
-1. Query a `DesiredLRP`
+1. **Query a `DesiredLRP`**
+
     `NSync` queries using `bbsClient.DesireLRPByProcessGuid`
     New information here could be the `DefinitionIdentifier` and
     `PreviousDefinitionIdentifier` to specify the "ID" of the current
@@ -178,11 +181,14 @@ The main change here is to have a `DefinitionIdentifier` to link the
     definition information if required.
     Old clients will not receive these 3 new fields but only receive the
     current Definition information.
-1. Stage an Update to a `DesiredLRP`
+1. **Stage an Update to a `DesiredLRP`**
+
     Stager creates the Staging Task to stage the application.
-1. Update the `DesiredLRP`
+1. **Update the `DesiredLRP`**
+
     `NSync` calls `bbsCLient.UpdateDesiredLRP` with the new `DesiredLRP`
-1. Query a `DesiredLRP`
+1. **Query a `DesiredLRP`**
+
     If a `DesiredLRP` is currently in the process of a Blue/Green deploy
     (completing an Update).  Then the BBS will return a `DefinitionIdentifier`
     and `PreviousDefinitionIdentifier`.  The `PreviousDefinitionIdentifier` is used
