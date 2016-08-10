@@ -201,14 +201,14 @@ The only change here is to have a `DefinitionIdentifier` to link the
     Stager creates the Staging Task to stage the application.
 1. **Update the `DesiredLRP`**
 
-    `NSync` calls `bbsCLient.UpdateDesiredLRP` with the new `DesiredLRP`
+    `NSync` calls `bbsCLient.UpdateDesiredLRP` with the new `DesiredLRP`.
 1. **Query a `DesiredLRP`**
 
-    If a `DesiredLRP` is currently in the process of a Blue/Green deploy
-    (completing an Update).  Then the BBS will return a `DefinitionIdentifier`
-    and `PreviousDefinitionIdentifier`.  The `PreviousDefinitionIdentifier` is used
-    to indicate there are existing updates to the `DesiredLRP` in flight.   If
-    there are no Upgrades in flight then the `PreviousDefinitionIdentifier` will
+    If a `DesiredLRP` is currently in the process of a blue/green deploy
+    (completing an update), then the BBS will return a `DefinitionIdentifier`
+    and `PreviousDefinitionIdentifier`. The `PreviousDefinitionIdentifier` is used
+    to indicate there are `DesiredLRP` updates already in flight. If
+    there are no updates in flight then the `PreviousDefinitionIdentifier` will
     be nil or not returned.
 
 ### TPS
