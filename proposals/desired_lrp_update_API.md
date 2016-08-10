@@ -1,18 +1,13 @@
 # Proposal for zero-downtime updates of DesiredLRPs
 
 ## Introduction
+This document serves a proposal to broaden the scope of what is supported in Long Running Process (LRP) updates in Diego.
 
-Cloud Controller would like the Diego backend to perform best-effort zero-downtime deploys in certain cases that affect the container runtime environment:
+There is an existing Diego (i.e., BBS) endpoint called UpdateDesiredLRP, which allows Diego clients to change the number of instances, the routes, and the annotations associated with an LRP. This proposal expands that API call so that any aspect of an LRP may be modified.
 
-- explicit app updates: droplet, env vars, memory quota, disk quota
-- transitioning all app containers to run as unprivileged
-- updating exposed port list
-- updating asset URLs in LRP definitions
-- updating actions with new definitions (start command, health check, SSH; action structure)
-- updating application security group rules after new bindings applied to system or space
-- updating anything else that may affect the environment or specification of the individual LRP instances
+In this proposal, we suggest that each iteration or version of an LRP has a label associated with it. This is referred to below as the `DefinitionID`. This allows a Diego client to roll an LRP back to a previous definition if desired. We expect that Diego will periodically clear out this archive of old LRP definitions, however, so a rollback may not succeed if it definition hasn't been actively used in a while.
 
-Ideally, we wouldn't create a brand new DesiredLRP in these circumstances, since we're changing the environment rather than the app itself. To this end, the Diego BBS API should support updating a DesiredLRP with a new definition. This would allow the Diego scheduler to preserve the identity of the LRP while transitioning the deployed app to the new definition.
+The process of restarting all running instances of the LRP with the new definition will take some time, so we are also proposing a cancellation endpoint to halt and revert an update that is currently in progress. 
 
 ## Example Usage
 
@@ -24,6 +19,7 @@ update := &DesiredLRPUpdate{
 	}
 }
 
+// Note: error handling is left out of the example for brevity.
 bbsClient.UpdateDesiredLRP(logger, processGuid, update)
 
 // While the update is in progress, CancelUpdateLRP may be called to cancel to current update and
@@ -45,7 +41,7 @@ bbsClient.UpdateDesiredLRP(logger, processGuid, update2)
 bbsClient.RollbackDesiredLRP(logger, processGuid, "version-2")
 ```
 
-Details about these API calls can be found in the sections below.
+Details about these API calls can be found in the section below.
 
 ## Proposed API in BBS
 
@@ -78,7 +74,7 @@ POST a UpdateDesiredLRPRequest
 to `/v1/desired_lrp/update`
 and receive a DesiredLRPLifecycleResponse
 
-In this proposal, the `UpdateDesiredLRPRequest` will be updated to match the model defined above. Otherwise, this call does not change. Since the new fields in this Update are additive the endpoint will not have to change as older clients will simply not provide the new fields.
+In this proposal, the `UpdateDesiredLRPRequest` will be updated to match the `DesiredLRPUpdate` model defined above. Other than that, this call looks the same as it currently does. Since the new fields in this Update are additive the endpoint will not have to change as older clients will simply not provide the new fields.
 
 #### Golang Client API
 
@@ -99,9 +95,7 @@ UpdateDesiredLRP(logger lager.Logger, processGuid string, update *models.Desired
 
 ##### Output
 
-* `error`:  Non-nil if an error occurred.
-
-`ErrUpdateInProgress` is returned if an existing update is in progress.
+* `error`:  Non-nil if an error occurred. `ErrUpdateInProgress` is returned if an existing update is in progress.
 
 ##### Example
 
