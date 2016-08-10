@@ -47,11 +47,14 @@ bbsClient.RollbackDesiredLRP(logger, processGuid, "version-2")
 
 Details about these API calls can be found in the sections below.
 
-## Proposed API in bbs
+## Proposed API in BBS
 
+### Summary
 ```go
 UpdateDesiredLRP(logger lager.Logger, processGuid string, update
-*models.DesiredLRPUpdate) error.
+*models.DesiredLRPUpdate) error
+CancelUpdateDesiredLRP(logger lager.Logger, processGuid string) error
+RollbackDesiredLRP(logger lager.Logger, processGuid, definitionID string) error
 ```
 
 `models.DesiredLRPUpdate` would now have the following information:
@@ -61,15 +64,149 @@ type DesiredLRPUpdate struct {
     Instances *int32
     Routes *Routes
     Annotation *string
-    DesiredLRP *DesiredLRP
-    UpdateIdentifier *string
+    LRPDefinition *LRPDefinition
 }
 ```
 
-The `UpdateDesiredLRP `endpoint will be the same as previously defined.  The
-change is in the `DesiredLRPUpdate` model to specify the new update.  Since the
-new fields in this Update are additive the endpoint will not have to change as
-older clients will simply not provide the new fields.
+### `UpdateDesiredLRP`
+
+Updates the [DesiredLRP](https://godoc.org/code.cloudfoundry.org/bbs/models#DesiredLRP) with the given process GUID.
+
+#### BBS API Endpoint
+
+POST a UpdateDesiredLRPRequest
+to `/v1/desired_lrp/update`
+and receive a DesiredLRPLifecycleResponse
+
+In this proposal, the `UpdateDesiredLRPRequest` will be updated to match the model defined above. Otherwise, this call does not change. Since the new fields in this Update are additive the endpoint will not have to change as older clients will simply not provide the new fields.
+
+#### Golang Client API
+
+```go
+UpdateDesiredLRP(logger lager.Logger, processGuid string, update *models.DesiredLRPUpdate) error
+```
+
+(Unchanged in this proposal)
+
+##### Inputs
+
+* `processGuid string`: The GUID for the DesiredLRP to update.
+* `update *models.DesiredLRPUpdate`: DesiredLRPUpdate struct containing fields to update, if any.
+  * `Instances *int32`: Optional. The number of instances.
+  * `Routes *Routes`: Optional. Map of routing information.
+  * `Annotation *string`: Optional. The annotation string on the DesiredLRP.
+  * **[NEW]** `LRPDefinition *LRPDefinition`: Optional. If non-nil, everything in existing LRPDefinition will be completed replaced by this new LRPDefinition. If anything on the LRPDefinition is left undefined (i.e., nil), those values will be deleted.
+
+##### Output
+
+* `error`:  Non-nil if an error occurred.
+
+
+##### Example
+
+```go
+client := bbs.NewClient(url)
+instances := 4
+annotation := "My annotation"
+definition := models.LRPDefinition{
+	DefinitionID: "version-42",
+	[...] // All other values must be specified
+}
+err := client.UpdateDesiredLRP(logger, "some-process-guid", &models.DesiredLRPUpdate{
+    Instances: &instances,
+    Routes: &models.Routes{},
+    Annotation: &annotation,
+    LRPDefinition: &definition,
+})
+if err != nil {
+    log.Printf("failed to update desired lrp: " + err.Error())
+}
+```
+
+### **[NEW]** `CancelUpdateDesiredLRP`
+
+Cancels an in-flight desired LRP update.  All instances that have already been updated will be reverted to the previous LRP definition.  If no update is in flight, this call will do nothing and return an error.
+
+#### BBS API Endpoint
+
+POST a CancelUpdateDesiredLRPRequest
+to `/v1/desired_lrp/cancel_update`
+and receive a [DesiredLRPLifecycleResponse](https://godoc.org/code.cloudfoundry.org/bbs/models#DesiredLRPLifecycleResponse).
+
+A `CancelUpdateDesiredLRPRequest` looks like:
+```go
+type CancelUpdateDesiredLRPRequest struct {
+    ProcessGuid string
+}
+```
+
+#### Golang Client API
+
+```go
+CancelUpdateDesiredLRP(logger lager.Logger, processGuid string) error
+```
+
+##### Inputs
+
+* `processGuid string`: The GUID for the [DesiredLRP](https://godoc.org/code.cloudfoundry.org/bbs/models#DesiredLRP) whose update to cancel.
+
+##### Output
+
+* `error`:  Non-nil if an error occurred.
+
+##### Example
+
+```go
+client := bbs.NewClient(url)
+err := client.CancelUpdateDesiredLRP(logger, "some-process-guid")
+if err != nil {
+    log.Printf("failed to cancel desired lrp update: " + err.Error())
+}
+```
+
+### **[NEW]** `RollbackDesiredLRP`
+
+Rolls back an LRP to a previous LRP definition, provided the definition still exists. Stale LRP definitions will be periodically pruned from the database.
+
+#### BBS API Endpoint
+
+POST a RollbackDesiredLRPRequest
+to `/v1/desired_lrp/rollback`
+and receive a [DesiredLRPLifecycleResponse](https://godoc.org/code.cloudfoundry.org/bbs/models#DesiredLRPLifecycleResponse).
+
+A `RollbackDesiredLRPRequest` looks like:
+```go
+type RollbackDesiredLRPRequest struct {
+    ProcessGuid string
+    DefinitionID string
+}
+```
+
+#### Golang Client API
+
+```go
+RollbackDesiredLRP(logger lager.Logger, processGuid, definitionID string) error
+```
+
+##### Inputs
+
+* `processGuid string`: The GUID for the [DesiredLRP](https://godoc.org/code.cloudfoundry.org/bbs/models#DesiredLRP) to roll back.
+* `definitionID string`: The definition ID to roll back to. This ID was created by the user when `UpdateDesiredLRP` was called.
+
+##### Output
+
+* `error`:  Non-nil if an error occurred. This may error if the definition is no longer stored.
+
+##### Example
+
+```go
+client := bbs.NewClient(url)
+err := client.RollbackDesiredLRP(logger, "some-process-guid", "some-version")
+if err != nil {
+    log.Printf("failed to rollback desired lrp: " + err.Error())
+}
+```
+
 
 When a new `DesiredLRP` is provided the `UpdateIdentifier` is required to indicate
 the new definition identifier.
