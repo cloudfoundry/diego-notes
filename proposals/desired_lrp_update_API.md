@@ -1,4 +1,19 @@
-# Proposal for zero downtime updates of DesiredLRPs
+# Proposal for zero-downtime updates of DesiredLRPs
+
+## Introduction
+
+Cloud Controller would like the Diego backend to perform best-effort zero-downtime deploys in certain cases that affect the container runtime environment:
+
+- explicit app updates: droplet, env vars, memory quota, disk quota
+- transitioning all app containers to run as unprivileged
+- updating exposed port list
+- updating asset URLs in LRP definitions
+- updating actions with new definitions (start command, health check, SSH; action structure)
+- updating application security group rules after new bindings applied to system or space
+- updating anything else that may affect the environment or specification of the individual LRP instances
+
+Ideally, we wouldn't create a brand new DesiredLRP in these circumstances, since we're changing the environment rather than the app itself. To this end, the Diego BBS API should support updating a DesiredLRP with a new definition. This would allow the Diego scheduler to preserve the identity of the LRP while transitioning the deployed app to the new definition.
+
 
 ## Proposed API in bbs
 
