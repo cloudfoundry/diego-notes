@@ -14,6 +14,38 @@ Cloud Controller would like the Diego backend to perform best-effort zero-downti
 
 Ideally, we wouldn't create a brand new DesiredLRP in these circumstances, since we're changing the environment rather than the app itself. To this end, the Diego BBS API should support updating a DesiredLRP with a new definition. This would allow the Diego scheduler to preserve the identity of the LRP while transitioning the deployed app to the new definition.
 
+## Example Usage
+
+```go
+update := &DesiredLRPUpdate{
+	LRPDefinition: &LRPDefinition{
+		DefinitionID: "version-2"
+	    // Complete definition of the LRP
+	}
+}
+
+bbsClient.UpdateDesiredLRP(logger, processGuid, update)
+
+// While the update is in progress, CancelUpdateLRP may be called to cancel to current update and
+// roll all instances back to the previous state. If no update is in progress, this call will return 
+// an error and do nothing.
+bbsClient.CancelUpdateLRP(logger, processGuid)
+
+// We found our mistake with the original update and we prepare 'version-3' of the LRP.
+update2 := &DesiredLRPUpdate{
+	LRPDefinition: &LRPDefinition{
+		DefinitionID: "version-3"
+	 	// Complete definition of the LRP
+	}
+}
+
+bbsClient.UpdateDesiredLRP(logger, processGuid, update2)
+
+// Later on, after the update to version-3 has completed, we realize we actually wanted "version-2" after all.
+bbsClient.RollbackDesiredLRP(logger, processGuid, "version-2")
+```
+
+Details about these API calls can be found in the sections below.
 
 ## Proposed API in bbs
 
