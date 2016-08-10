@@ -101,6 +101,7 @@ UpdateDesiredLRP(logger lager.Logger, processGuid string, update *models.Desired
 
 * `error`:  Non-nil if an error occurred.
 
+`ErrUpdateInProgress` is returned if an existing update is in progress.
 
 ##### Example
 
@@ -207,21 +208,7 @@ if err != nil {
 }
 ```
 
-
-When a new `DesiredLRP` is provided the `UpdateIdentifier` is required to indicate
-the new definition identifier.
-
-The API can return an error (`ErrUpdateInProgress`) if there are existing
-`ActualLRP`s with different identifiers for the same `DesiredLRP`.  This will
-eliminate the issue of rapidly updating of `DesiredLRP`s as there can only be a
-single update in flight at one time.
-
-There could be issues with the in flight update process if the new definition
-is not good.  For instance, does the new definition cause the application to
-crash.  When does the system complete the update to allow the user to update
-again?  Will it be possible to rollback an update?
-
-## Proposed New model for DesiredLRP and ActualLRP
+## Proposed new model for DesiredLRP and ActualLRP
 
 ### DesiredLRP
 
@@ -263,7 +250,7 @@ New:
 
 ```go
 type LRPDefinition struct {
-    DefinitionIdentifier          string
+    DefinitionID                  string
     RootFs                        string
     EnvironmentVariables          []*EnvironmentVariable
     Setup                         *Action
@@ -294,17 +281,11 @@ type DesiredLRP struct {
     Instances                     int32
     Routes                        *Routes
     Annotation                    string
-    PreviousDefinitionIdentifier  string
+    PreviousDefinitionID          string
 }
 ```
 
-The new model is identical to the old model with the additional fields of
-`DefinitionIdentifier` and `PreviousDefinitionIdentifier`. They will only both
-be returned if there is an update in progress.  The original requirements
-discussed having more than 2 definitions.  The choice was made to only support
-current and previous versions of the definitions for simplicity.  We should
-only ever have `ActualLRP`s with either the current definition or the previous
-definition as we limit an in-flight updates to 1.
+The new model is identical to the old model with the additional fields of `DefinitionID` and `PreviousDefinitionID`. They will only both be set if there is an update in progress.  The original requirements discussed having more than two definitions, but for simplicity we modified this so that there is only a reference to a current and a previous definition. Other, older definitions may still exist in a separate database, but the DesiredLRP itself will not have a reference to them.
 
 
 ### ActualLRP
@@ -332,94 +313,63 @@ type ActualLRP struct {
     ActualLRPKey
     ActualLRPInstanceKey
     ActualLRPNetInfo
-    DesiredLRPDefinitionIdentifier string
-    CrashCount           int32
-    CrashReason          string
-    State                string
-    PlacementError       string
-    Since                int64
-    ModificationTag      ModificationTag
+    CrashCount             int32
+    CrashReason            string
+    State                  string
+    PlacementError         string
+    Since                  int64
+    ModificationTag        ModificationTag
+    DesiredLRPDefinitionID string
 }
 ```
 
-The only change here is to have a `DefinitionIdentifier` to link the
-`ActualLRP` to the definition for that `DesiredLRP`
+The only change here is to have a `DesiredLRPDefinitionID` to link the `ActualLRP` to the `LRPDefinition` for which it was created. This ID should always match either the `DefinitionID` or `PreviousDefinitionID` in the corresponding `DesiredLRP`.
 
 ## Client Interaction
 
+This section describes how the various BBS clients would interact with this new feature.
+
 ### CloudController
+NSync will need to be modified to use the new `DesiredLRPUpdate` model and fill in the details of the LRP that should be updated. There also could be new interactions to support canceling a current LRP update or rolling back to a previous LRP version.
 
-1. **Stage a NEW application**
+1. **Stage a new application**
 
-    Stager creates the Staging Task to stage the application
-1. **Create a NEW `DesiredLRP`**
+    Stager creates the staging task to stage the application
+1. **Create a new `DesiredLRP`**
 
     `NSync` creates the application using `bbsClient.DesireLRP`
 1. **Query a `DesiredLRP`**
 
     `NSync` queries the BBS using `bbsClient.DesireLRPByProcessGuid`.
-    We could supply the `DefinitionIdentifier` and
-    `PreviousDefinitionIdentifier` fields to specify the "ID" of the current
-    `DesiredLRPDefinitions`.  We do not need to return the old definition
-    information, just the identifier. We can add additional APIs to get old
-    definition information if required.
-    Old clients will not receive these three new fields, just the
-    current Definition information.
-1. **Stage an Update to a `DesiredLRP`**
+    The BBS returns the `DefinitionID` field to specify which DesiredLRPDefinition is active, and if the `PreviousDefinitionID` field is also set, it means that an update is currently in progress.
+    Old clients will not receive these three new fields, just the current Definition information.
+1. **Stage an update to a `DesiredLRP`**
 
-    Stager creates the Staging Task to stage the application.
+    Stager creates the staging task to stage the application.
 1. **Update the `DesiredLRP`**
 
-    `NSync` calls `bbsCLient.UpdateDesiredLRP` with the new `DesiredLRP`.
-1. **Query a `DesiredLRP`**
-
-    If a `DesiredLRP` is currently in the process of a blue/green deploy
-    (completing an update), then the BBS will return a `DefinitionIdentifier`
-    and `PreviousDefinitionIdentifier`. The `PreviousDefinitionIdentifier` is used
-    to indicate there are `DesiredLRP` updates already in flight. If
-    there are no updates in flight then the `PreviousDefinitionIdentifier` will
-    be nil or not returned.
+    `NSync` calls `bbsCLient.UpdateDesiredLRP` with the new `LRPDefinition`, including a `DefinitionID` provided by `NSync`.
 
 ### TPS
+`TPS` is used to get status information from Diego as well as reporting crashed `LRP`s
 
-`TPS` is used to get status information from Diego as well as reporting crashed
-`LRP`s
+The crashing `LRP` reporting will not be effected as it just returns information on which `LRP`s crash and the reason.
 
-The crashing `LRP` reporting will not be effected as it just returns
-information on which `LRP`s crash and the reason.
+The status and state endpoints in `TPS` would change slightly in that they can now report which definition (current / previous) the `ActualLRP` is linked to. This can also assist `CloudController` or the user to view how the progress of the blue/green deploy is going.
 
-The status and state endpoints in `TPS` would change slightly in that they can
-now report which definition (current / previous) the `ActualLRP` is linked to.
-This can also assist `CloudController` or the user to view how the progress of
-the blue/green deploy is going.
-
-Note: Old clients will simply not get the `DesiredLRPDefinitionIdentifier` and
-so it will appear as if there is only a single definition.
+Note: Old clients will simply not see the `DesiredLRPDefinitionID` on the `ActualLRP`, so it will appear as if there is only a single definition.
 
 
 ### Route Emitter
+As routes are emitted based on running `ActualLRP`s and their current configuration, our code will need to be updated to map the `ActualLRP` that is running with the correct `DesiredLRPDefinition` (the scheduling info part of networking).
 
-As routes are emitted based on running `ActualLRP`s and their current
-configuration, our code will need to be updated to map the `ActualLRP` that is
-running with the correct `DesiredLRPDefinition` (the scheduling info part of
-networking).
-
-The route emitter communicating with the updated client will get a
-`DefinitionIdentifier` to assist with this mapping.   Older clients will not
-have this but will assume the single current Definition.  This may cause some
-problems with emitting incorrect ports during the blue/green deploy.  If this
-is an issue the route emitter must be upgraded prior to the BBS.
+The route emitter communicating with the updated client will get a `DefinitionID` to assist with this mapping.   Older clients will not have this but will assume the single current Definition.  This may cause some problems with emitting incorrect ports during the blue/green deploy.  Because of this, the route-emitter must be updated before the BBS introduces this change.
 
 
 ### SSH Proxy
+As above with the route emitter.  The SSH-Proxy does do correlation between `ActualLRP`s and `DesiredLRP` Scheduling information.   The code will need to be updated to take into account the possibility that `ActualLRP`s can have different definitions for the same `ProcessGuid`.
 
-As above with the route emitter.  The SSH-Proxy does do correlation between
-`ActualLRP`s and `DesiredLRP` Scheduling information.   The code will need to
-be updated to take into account the possibility that `ActualLRP`s can have
-different definitions for the same `ProcessGuid`.
-
-The same caveat as for Route Emitter will be relevant with regard to possible
-upgrade order.
+The same caveat as for Route Emitter will be relevant with regard to possible upgrade order.
 
 
 
