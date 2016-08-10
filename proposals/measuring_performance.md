@@ -254,11 +254,6 @@ continual realistic load of pushing, starting, crashing, and deleting additional
 For N batches of the seeding mix of apps, continually push the apps in the batches,
 wait for them to run or to crash, then delete them.
 
-The pushing will be done by creation of a batch of master applications and
-using the `cf copy-bits` to copy the compiled application bits to a set of
-`dummy` deployed non-started applications.   Once the bits are copied a `cf
-start` will be called on those cloned applications.
-
 ### Experiment 3: Fault-recovery
 
 After a day, kill N/10 cells across the AZs and see how long it takes to recover the missing applications.
