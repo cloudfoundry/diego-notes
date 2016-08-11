@@ -26,7 +26,7 @@ Otherwise, we can just import from here `golang.org/x/net/context` pre-1.7.
 
 ## Benefits of Context in Diego Release
 
-### 1. Metadata / Cross Cutting Concerns
+### 1. Cross Cutting Concerns
 Context is useful when we want to pass aspects that are not defining the behavior of the code. This includes cross-cutting
 concerns such as logging and security checks. Also meta-data related to the behavior of the an object can be passed in
 through context. The benefit is that, metadata is not directly affecting the behavior of the system and over time may grow
@@ -232,7 +232,7 @@ func (step *timeoutStep) Cancel() {
 }
 ```
 
-The above is only one possibility for how `context` can be used in `diego release`. There are going to be other possibilities for it as well if we choose to dig deeper.
+The above is only one possibility for how `context` can be used in `diego release`. Our investigation only looked at a few places including the `StepRunner` and `CachedDownloader`. In case we decide that `context` is useful, we can dig deeper and look into other places where `context` can be helpful.
 
 ## Conclusion
 
