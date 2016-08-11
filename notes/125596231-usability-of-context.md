@@ -1,7 +1,8 @@
 ## Story
 See [story](https://www.pivotaltracker.com/story/show/125596231)
 
-## Advantage of `context.Context`
+## Background
+#### Advantage of `context.Context`
 
 1. It is an accepted, standard way of doing things.
 1. We force the user to provide a loggregator, when they may not want anything
@@ -9,10 +10,10 @@ logged. With context, the user doesn't have to pass loggregator and can just not
 specify a value on the `context.Context` object.
 1. Concurrency issues can be handled using `context.Context`. Currently, we use `ifrit` to handle concurrency. `context.Context` can be used instead.
 
-## Disadvantage of `context.Context`
+#### Disadvantage of `context.Context`
 
 1. Implicit arguments. We can place request-scoped variables in the `context.Context` object and retrieve them with `ctx.Value("key")`. It might seem odd to have something passed implicitly
-instead of just saying that this function uses this argument. 
+instead of just saying that this function uses this argument.
 However, according to [this guy]
 (https://medium.com/@cep21/how-to-correctly-use-context-context-in-go-1-7-8f2c0fafdf39#.9o93w6x2m),
 using `context.Context` for logging is an acceptable paradigm, as the presence/lack
@@ -23,32 +24,86 @@ of a logger should not affect our program flow. The obvious candidates for placi
 1. Need to update to Go 1.7 if we want to use `Context` from the standard library.
 Otherwise, we can just import from here `golang.org/x/net/context` pre-1.7.
 
-## What needs to be changed
+## Benefits of Context in Diego Release
 
-### Logging
-To get Context to work with our middleware stuff in bbs, you need to:
+### 1. Metadata / Cross Cutting Concerns
+Context is useful when we want to pass aspects that are not defining the behavior of the code. This includes cross-cutting
+concerns such as logging and security checks. Also meta-data related to the behavior of the an object can be passed in
+through context. The benefit is that, metadata is not directly affecting the behavior of the system and over time may grow
+or shrink. Passing metadata through context allows the code signature to stay the same and potentially for the complexity of the code to be reduced.
 
-1. add an explicit `Context` parameter to each function in bbs (which seems to
-    be more popular option), as a parameter (seems to be more standard way) or as
-an optional config on a request structure.  For the BBS and auctioneer
-handlers, it seems simple enough to replace the loggregator parameter with
-`Context`.
+#### Logging
+One of the immediate advantages of using context, is to allow for passing the `logger` object through to the handlers, without having the object be a parameter for every endpoint.
 
-OR
+There are two options for consideration:
 
-1. use a package to map http.Requests to `Contexts`
-1. I'm not sure of this second option as we'd have to store them all
-somewhere to make sure we don't by accident leave `Contexts` in
-the map that we don't need. It seems the first option is more popular. There
-are packages that do this for you, such as
-[gorilla](https://github.com/gorilla/context)
+*Option 1:*
 
-## Will require a minor refactoring of a lot of things
+This can be easily achieved by modifying the `middleware` in `bbs` where the following change is possible:
 
-### Loggregator/metadata
+```go
+func LogWrap(logger lager.Logger, loggableHandlerFunc LoggableHandlerFunc) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		requestLog := logger.Session("request", lager.Data{
+			"method":  r.Method,
+			"request": r.URL.String(),
+		})
 
-Instead of passing around a loggregator in the handler functions, we'd need to pass around a Context.
-These repos are affected:
+		// two new lines below
+		ctx := context.WithValue(req.Context(), "logger", &requestLog)
+		r = r.WithContext(ctx)
+
+		requestLog.Debug("serving")
+		loggableHandlerFunc(requestLog, w, r)
+		requestLog.Debug("done")
+	}
+}
+```
+
+And then in the handler, the logger can be used like the following:
+
+```go
+// the logger is removed from the function signature below
+func (h *PingHandler) Ping(w http.ResponseWriter, req *http.Request) {
+  // the logger is read from the context of the Request
+  // passing it with pointer, allows for the session information to persist
+    logger := req.Context().Value("logger").(*lager.Logger)
+	response := &models.PingResponse{}
+	response.Available = true
+	writeResponse(w, response)
+}
+```
+
+Similar change can be done to `auctioneer`'s `handlers.go` as well. Alternatively the logger can be taken out of `LogWrap` and context to be passed in.
+
+*Option 2:*
+
+We can modify each handler to have a `context` object passed to it as a first argument. This will be in line with the pattern Google follows as [discussed here](https://news.ycombinator.com/item?id=8103128)
+
+Overall, the code change involves passing a Context object instead of a
+`loggregator` object around, and it doesn't seem like a difficult change, just a
+tedious one.
+
+In case of the above handler the change would be as follows:
+```go
+// the logger is removed from the function signature below
+func (h *PingHandler) Ping(ctx context.Context, w http.ResponseWriter, req *http.Request) {
+  // the logger is read from the context of the Request
+  // passing it with pointer, allows for the session information to persist
+    logger := ctx.Value("logger").(*lager.Logger)
+	response := &models.PingResponse{}
+	response.Available = true
+	writeResponse(w, response)
+}
+```
+
+*Option 3:*
+
+Rather than including the `logger` object into the `context`, we can alternatively pass the session information and create a new logger object in each handler. On the negative side, this would result in having multiple `logger` objects created in different functions throughout the flow of code execution, which may not necessarily be desirable. On the positive side, passing session names around results in having immutable objects stored in the `context` which is potentially a better practice.
+
+**Suggestion**: We advocate for the second option, because it prevents unnecessary objects getting created, and also offers a cleaner implementation. Reconstructing the logging object seems to be unnecessary and of little value.
+
+This is however a fairly big change the signature of functions in `bbs` and `auctioneer`. The following repos will be affected"
 
 1. `bbs` (all the handlers need to be changed to have `Context` and not loggregator
     and related test code. Our main function will create a `context.Background` and
@@ -66,11 +121,11 @@ These repos are affected:
   1. `rep`
   1. `vizzini`
 
-  We can also place use `context.Context` object to place any metadata that do not affect program flow. [This](https://medium.com/@cep21/how-to-correctly-use-context-context-in-go-1-7-8f2c0fafdf39#.reply9bvv) has examples of other metadata objects that can be placed in the `context.Context` object.
+### 2. Concurrency
 
-### Concurrency
+Functionality offered by `Context` can also be used to simplify some of the logic when dealing with concurrency. We explored a few areas in the code where `Context` can be helpful with simplifying the code.
 
-We can use `context.Context` objects for concurrency.
+_For an example, consider the scenario below:_
 
 In the `executor`, the `StepRunner` and all the associated steps from the
 `Step` interface can be simplified by having the `Perform` function
@@ -141,7 +196,7 @@ to the simplified version below:
 func (step *timeoutStep) Perform(ctxt context.Context) error {
 	resultChan := make(chan error, 1)
 
-	ctxt, cancel := context.WithTimeout(ctxt, step.timeout)
+	ctxt, _ := context.WithTimeout(ctxt, step.timeout)
 
 	go func() {
 		resultChan <- step.substep.Perform(ctxt)
@@ -152,8 +207,7 @@ func (step *timeoutStep) Perform(ctxt context.Context) error {
 		case err := <-resultChan:
 			return err
 
-		case <-ctxt.Done():
-			cancel()
+		case <-ctxt.Done():		
 			err := <-resultChan
 			return NewEmittableError(err, emittableMessage(step.timeout, err))
 		}
@@ -162,15 +216,15 @@ func (step *timeoutStep) Perform(ctxt context.Context) error {
 
 ```
 
-We no longer have a logger in the struct as that is retrieved by the
+We no longer have a logger in the struct as it is retrieved by the
 `context`, nor a `cancelChan` since a context provides us with a mechanism
-for cancelling with `context.WithCancel`.
-Instead, we would pass a context object to the `Perform` function of
-`timeoutStep`. We also don't have to create timers either, since `context`
-already supports `Timeout`.
- 
-Furthermore, `context` gets passed to the substep, so since these `context`s
-are shared, we no longer have code like
+for canceling by using `context.WithCancel`. Instead, we would pass a context object to the `Perform` function of
+`timeoutStep`. We also don't have to create timers, since `context`
+has support for `Timeout`.
+
+More interestingly, `context` gets passed to the substeps, so since these `context`
+is shared, canceling the parent `context` will propagate through and to the children,
+which exempts us from having to write code below and make sure we call it on the child steps.
 
 ```go
 func (step *timeoutStep) Cancel() {
@@ -178,14 +232,8 @@ func (step *timeoutStep) Cancel() {
 }
 ```
 
+The above is only one possibility for how `context` can be used in `diego release`. There are going to be other possibilities for it as well if we choose to dig deeper.
 
-## Other
-Found this [discussion](https://news.ycombinator.com/item?id=8103128)
-interesting
+## Conclusion
 
-Overall, the code change involves passing a Context object instead of a
-loggregator object around, and it doesn't seem like a difficult change, just a
-tedious one.
-
-For `Step` in `executor`, we would follow the simplifications above for all
-implementations of interface `Step`.
+There are clear benefits in using `context` and achieving simplicity in the code. However the cost of refactoring could be rather expensive. For example, adding `logger` to the code is a fairly trivial change that can be easily achieved. On the other hand, using `context` to achieve concurrency allows for better code but at the cost of more significant change to the code base.
