@@ -276,6 +276,7 @@ type DesiredLRP struct {
     Routes                        *Routes
     Annotation                    string
     PreviousDefinitionID          string
+    ModificationTag               *ModificationTag
 }
 ```
 
