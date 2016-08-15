@@ -329,10 +329,10 @@ NSync will need to be modified to use the new `DesiredLRPUpdate` model and fill 
 
 1. **Stage a new application**
 
-    Stager creates the staging task to stage the application
+    Stager creates the staging task to stage the application.
 1. **Create a new `DesiredLRP`**
 
-    `NSync` creates the application using `bbsClient.DesireLRP`
+    `NSync` creates the application using `bbsClient.DesireLRP`.
 1. **Query a `DesiredLRP`**
 
     `NSync` queries the BBS using `bbsClient.DesireLRPByProcessGuid`.
@@ -343,12 +343,12 @@ NSync will need to be modified to use the new `DesiredLRPUpdate` model and fill 
     Stager creates the staging task to stage the application.
 1. **Update the `DesiredLRP`**
 
-    `NSync` calls `bbsCLient.UpdateDesiredLRP` with the new `LRPDefinition`, including a `DefinitionID` provided by `NSync`.
+    `NSync` calls `bbsClient.UpdateDesiredLRP` with the new `LRPDefinition`, including a `DefinitionID` provided by `NSync`.
 
 ### TPS
-`TPS` is used to get status information from Diego as well as reporting crashed `LRP`s
+`TPS` is used to get status information from Diego as well as reporting crashed `LRP`s.
 
-The crashing `LRP` reporting will not be effected as it just returns information on which `LRP`s crash and the reason.
+The crashing `LRP` reporting will not be affected as it just returns information on which `LRP`s crash and the reason.
 
 The status and state endpoints in `TPS` would change slightly in that they can now report which definition (current / previous) the `ActualLRP` is linked to. This can also assist `CloudController` or the user to view how the progress of the blue/green deploy is going.
 
@@ -358,7 +358,7 @@ Note: Old clients will simply not see the `DesiredLRPDefinitionID` on the `Actua
 ### Route Emitter
 As routes are emitted based on running `ActualLRP`s and their current configuration, our code will need to be updated to map the `ActualLRP` that is running with the correct `DesiredLRPDefinition` (the scheduling info part of networking).
 
-The route emitter communicating with the updated client will get a `DefinitionID` to assist with this mapping.   Older clients will not have this but will assume the single current Definition.  This may cause some problems with emitting incorrect ports during the blue/green deploy.  Because of this, the route-emitter must be updated before the BBS introduces this change.
+The route emitter communicating with the updated client will get a `DefinitionID` to assist with this mapping. Older clients will not have this but will assume the single current Definition.  This may cause some problems with emitting incorrect ports during the blue/green deploy.  Because of this, the route-emitter must be updated before the BBS introduces this change.
 
 
 ### SSH Proxy
