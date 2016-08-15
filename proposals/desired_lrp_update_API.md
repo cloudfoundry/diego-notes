@@ -202,6 +202,51 @@ if err != nil {
 }
 ```
 
+### **[Updated]** `DesiredLRPSchedulingInfos`
+
+Retrieves all the `DesiredLRPSchedulingInfo` that match the given DesiredLRPFilter.  The update is there could be two `DesiredLRPSchedulingInfo` for a single `DesiredLRP`.  The old clients will use the deprecated endpoint and thus will only get a single `DesiredLRPSchedulingInfo` per `DesiredLRP`.
+
+### BBS API Endpoint
+
+POST a [DesiredLRPsRequest](https://godoc.org/code.cloudfoundry.org/bbs/models#DesiredLRPsRequest)
+to `/v1/desired_lrp_scheduling_infos/list.r1`
+and receive a [DesiredLRPSchedulingInfosResponse](https://godoc.org/code.cloudfoundry.org/bbs/models#DesiredLRPSchedulingInfosResponse).
+
+### Deprecated Endpoints
+
+POST a [DesiredLRPsRequest](https://godoc.org/code.cloudfoundry.org/bbs/models#DesiredLRPsRequest)
+to `/v1/desired_lrp_scheduling_infos/list`
+and receive a [DesiredLRPSchedulingInfosResponse](https://godoc.org/code.cloudfoundry.org/bbs/models#DesiredLRPSchedulingInfosResponse).
+
+### Golang Client API
+
+```go
+DesiredLRPSchedulingInfos(logger lager.Logger, filter models.DesiredLRPFilter) ([]*models.DesiredLRPSchedulingInfo, error)
+```
+
+#### Inputs
+
+* `filter models.DesiredLRPFilter`: [DesiredLRPFilter](https://godoc.org/code.cloudfoundry.org/bbs/models#DesiredLRPFilter) to restrict the DesiredLRPs returned.
+  * `Domain string`: If non-empty, filter to only DesiredLRPs in this domain.
+
+#### Output
+
+* `[]*models.DesiredLRPSchedulingInfo`: List of [DesiredLRPSchedulingInfo](https://godoc.org/code.cloudfoundry.org/bbs/models#DesiredLRPSchedulingInfo) records.
+* `error`:  Non-nil if an error occurred.
+
+
+#### Example
+
+```go
+client := bbs.NewClient(url)
+info, err := client.DesiredLRPSchedulingInfos(logger, &models.DesiredLRPFilter{
+    Domain: "cf-apps",
+})
+if err != nil {
+    log.Printf("failed to retrieve desired lrp scheduling info: " + err.Error())
+}
+```
+
 ## Proposed new model for DesiredLRP and ActualLRP
 
 ### DesiredLRP
@@ -238,13 +283,46 @@ type DesiredLRP struct {
     VolumeMounts                  []*VolumeMount
     Network                       *Network
 }
+
+type DesiredLRPSchedulingInfo struct {
+	DesiredLRPKey
+	Annotation         string
+	Instances          int32
+	DesiredLRPResource 
+	Routes             Routes
+	ModificationTag    
+	VolumePlacement    *VolumePlacement
+}
+
+type DesiredLRPRunInfo struct {
+	DesiredLRPKey
+	EnvironmentVariables          []EnvironmentVariable
+	Setup                         *Action
+	Action                        *Action
+	Monitor                       *Action
+	DeprecatedStartTimeoutS       uint32
+	Privileged                    bool
+	CpuWeight                     uint32
+	Ports                         []uint32
+	EgressRules                   []SecurityGroupRule
+	LogSource                     string
+	MetricsGuid                   string
+	CreatedAt                     int64
+	CachedDependencies            []*CachedDependency
+	LegacyDownloadUser            string
+	TrustedSystemCertificatesPath string
+	VolumeMounts                  []*VolumeMount
+	Network                       *Network
+	StartTimeoutMs                int64
+}
+
+
 ```
 
 New:
 
 ```go
 type LRPDefinition struct {
-    ProcessGUID                   string
     DefinitionID                  string
     RootFs                        string
     EnvironmentVariables          []*EnvironmentVariable
@@ -279,11 +357,57 @@ type DesiredLRP struct {
     PreviousDefinitionID          string
     ModificationTag               *ModificationTag
 }
+
+
+type DesiredLRPSchedulingInfo struct {
+	DesiredLRPKey
+	Annotation         string
+	Instances          int32
+	DesiredLRPResource 
+	Routes             Routes
+	ModificationTag    
+	VolumePlacement    *VolumePlacement
+	DefinitionID       string
+}
+
+type DesiredLRPRunInfo struct {
+	DesiredLRPKey
+	EnvironmentVariables          []EnvironmentVariable
+	Setup                         *Action
+	Action                        *Action
+	Monitor                       *Action
+	DeprecatedStartTimeoutS       uint32
+	Privileged                    bool
+	CpuWeight                     uint32
+	Ports                         []uint32
+	EgressRules                   []SecurityGroupRule
+	LogSource                     string
+	MetricsGuid                   string
+	CreatedAt                     int64
+	CachedDependencies            []*CachedDependency
+	LegacyDownloadUser            string
+	TrustedSystemCertificatesPath string
+	VolumeMounts                  []*VolumeMount
+	Network                       *Network
+	StartTimeoutMs                int64
+	DefinitionID                  string
+}
+
 ```
 
 The new model is identical to the old model with the additional fields of `DefinitionID` and `PreviousDefinitionID`. They will only both be set if there is an update in progress.  The original requirements discussed having more than two definitions, but for simplicity we modified this so that there is only a reference to a current and a previous definition. Other, older definitions may still exist in a separate database, but the DesiredLRP itself will not have a reference to them.
 
 Each LRP definition is specific to a particular DesiredLRP, and as such is uniquely identified by `{ProcessGuid, DefinitionID}`. This allows users to name LRP definitions according to a particular ordering scheme without worrying about colliding with another DesiredLRP's naming convention.
+
+`DesiredLRPSchedulingInfo` and `DesiredLRPRunInfo` will have the additional field DefinitionID to differentiate them from the current and previous definitions.
+
+#### Additional Methods
+
+Two additional methods are required to return the Previous SchedulingInfo and RunInfo from an existing DesiredLRP
+```go
+func (d *DesiredLRP) PreviousDesiredLRPSchedulingInfo() DesiredLRPSchedulingInfo
+func (d *DesiredLRP) PreviousDesiredLRPRunInfo(createdAt time.Time) DesiredLRPRunInfo
+```
 
 
 ### ActualLRP
@@ -323,16 +447,23 @@ type ActualLRP struct {
 
 The only change here is to have a `DesiredLRPDefinitionID` to link the `ActualLRP` to the `LRPDefinition` for which it was created. This ID should always match either the `DefinitionID` or `PreviousDefinitionID` in the corresponding `DesiredLRP`.
 
+#### Events
+
+Events will not change other than additional fields returned in the underlying `DesiredLRP` or `ActualLRP` structs in the event payload.   Those who are processing events will have to handle the new fields and the updates to the ScheduleInfo and/or RunInfo retrieved from them.
 
 #### Legacy Records
 
 As part of the migration to this new API, LRP definitions for old DesiredLRP and ActualLRP records would have to be backfilled.
 
 1. `DesiredLRP.PreviousDefinitionID` would be set to nil.
-2. `DesiredLRP.DefinitionID` would be set to `{ProcessGUID}-legacy-0`.
-3. `ActualLRP.DefinitionID` would be set to `{ProcessGUID}-legacy-0`.
+2. `DesiredLRP.DefinitionID` would be set to `{GeneratedGUID}`.
+3. `ActualLRP.DefinitionID` would be set to `{GeneratedGUID}`.
 
-This database migration should be applied before any new endpoints are exposed.
+This database migration should be applied before any new endpoints are exposed.  `{GeneratedGUID}` must be the same on the `DesiredLRP.DefinitionID` and the associated `ActualLRP`s for the `DesiredLRP`
+
+#### Legacy Clients
+
+When a legacy client Desires an LRP it will not provide the DefinitionID.  If a `DefinitionID` is not provided the BBS will generate a unique ID for that LRPDefinition similar to how this is done in the Legacy Records migration described above.
 
 
 ## Client Interaction
