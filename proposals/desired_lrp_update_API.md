@@ -244,6 +244,7 @@ New:
 
 ```go
 type LRPDefinition struct {
+    ProcessGUID                   string
     DefinitionID                  string
     RootFs                        string
     EnvironmentVariables          []*EnvironmentVariable
@@ -282,6 +283,8 @@ type DesiredLRP struct {
 
 The new model is identical to the old model with the additional fields of `DefinitionID` and `PreviousDefinitionID`. They will only both be set if there is an update in progress.  The original requirements discussed having more than two definitions, but for simplicity we modified this so that there is only a reference to a current and a previous definition. Other, older definitions may still exist in a separate database, but the DesiredLRP itself will not have a reference to them.
 
+Each LRP definition is specific to a particular DesiredLRP, and as such is uniquely identified by `{ProcessGuid, DefinitionID}`. This allows users to name LRP definitions according to a particular ordering scheme without worrying about colliding with another DesiredLRP's naming convention.
+
 
 ### ActualLRP
 
@@ -319,6 +322,18 @@ type ActualLRP struct {
 ```
 
 The only change here is to have a `DesiredLRPDefinitionID` to link the `ActualLRP` to the `LRPDefinition` for which it was created. This ID should always match either the `DefinitionID` or `PreviousDefinitionID` in the corresponding `DesiredLRP`.
+
+
+#### Legacy Records
+
+As part of the migration to this new API, LRP definitions for old DesiredLRP and ActualLRP records would have to be backfilled.
+
+1. `DesiredLRP.PreviousDefinitionID` would be set to nil.
+2. `DesiredLRP.DefinitionID` would be set to `{ProcessGUID}-legacy-0`.
+3. `ActualLRP.DefinitionID` would be set to `{ProcessGUID}-legacy-0`.
+
+This database migration should be applied before any new endpoints are exposed.
+
 
 ## Client Interaction
 
