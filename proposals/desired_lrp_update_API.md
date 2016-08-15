@@ -403,7 +403,7 @@ Each LRP definition is specific to a particular DesiredLRP, and as such is uniqu
 
 #### Additional Methods
 
-Two additional methods are required to return the Previous SchedulingInfo and RunInfo from an existing DesiredLRP
+Two additional methods are required to return the Previous SchedulingInfo and RunInfo from an existing DesiredLRP.
 ```go
 func (d *DesiredLRP) PreviousDesiredLRPSchedulingInfo() DesiredLRPSchedulingInfo
 func (d *DesiredLRP) PreviousDesiredLRPRunInfo(createdAt time.Time) DesiredLRPRunInfo
