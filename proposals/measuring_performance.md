@@ -1,4 +1,4 @@
-# Performance Experimentation Plans On Diego [PEPOD]
+# Performance Experimentation Plans On Diego
 
 **Table of Contents**
 
@@ -9,7 +9,7 @@
 - [Experiments](#experiments)
   - [Scaling the Deployment](#scaling-the-deployment)
   - [Experiment 1: Fezzik](#experiment-1-fezzik)
-  - [Experiment 2: Launching and running many CF applications](#experiment-2-launching-and-running-many-cf-applications)
+  - [Experiment 2: Launching and running many CF applications](#cf-app-expt)
   - [Experiment 3: Fault-recovery](#experiment-3-fault-recovery)
   - [Experiment 4: Tolerating catastrophic cell and etcd failure](#experiment-4-tolerating-catastrophic-cell-and-etcd-failure)
 
@@ -96,103 +96,69 @@ We decided to go with InfluxDB and Grafana to solve those issues:
   can be found at: https://github.com/luan/influxdb-firehose-nozzle. That fork
   updates loggregator libraries and code with most recent
   datadog-firehose-nozzle
-- Grafana (http://grafana.org) can be either deployed with bosh
-  (https://github.com/vito/grafana-boshrelease) or ran locally and pointed to a
+- Grafana (http://grafana.org) can be either deployed with BOSH
+  (https://github.com/vito/grafana-boshrelease) or run locally and pointed to a
   remote InfluxDB.
-- InfluxDB can be deployed via bosh
+- InfluxDB can be deployed via BOSH
   (https://github.com/vito/influxdb-boshrelease) its configuration is really
   minimal and should straightforward.
+
 
 ## Experiments
 
 ### Scaling the Deployment
 
-`N` = Number of Cells
+Let `N` denote the number of cells in the deployment.
 
-It's assumed that number of instances on the deployment is `N * 250`. The mix
-is defined on the [next section](#experiment-2-apps-matrix) of this document.
+We intend to run a total of `250 * N` app instances in the deployment. The mix of apps
+is defined in the [next section](#experiment-2-apps-matrix) of this document.
 
-The following numbers come from an estimate of total requests/s and logs/s on
-the system (where logs = log and metric messages going through the loggregator
+
+The following estimates  come from an estimate of total requests per second and logs per second in the system (where logs = log and metric messages going through the Loggregator
 system).
 
-#### CF Components Scaling
+We initially estimate the following VM types and resources for the CF, Diego, and database VMs in the deployment.
+Some VMs are horizontally scalable, and so will scale in proportion to the `N` cell VMs:
 
-- Cloud Controller API:
-  - Instances: `N / 5`
-  - Size: `m3.large` - 7.5 GBs | 2 CPUs
-- Cloud Controller Workers:
-  - Instances: `N / 10`
-  - Size: `c3.large` - 3.75 GBs | 2 CPUs
-- Doppler:
-  - Instances: `N / 10`
-  - Size: `c3.large` - 3.75 GBs | 2 CPUs
-- Traffic Controller:
-  - Instances: `N / 40`
-  - Size: `c3.large` - 3.75 GBs | 2 CPUs
-- Router:
-  - Instances: `N / 10`
-  - Size: `c3.xlarge` - 7.5 GBs | 4 CPUs
-- ETCD:
-  - Instances: `3` (raft size)
-  - Size: `c3.large` - 3.75 GBs | 2 CPUs
-- Consul:
-  - Instances: `3` (raft size)
-  - Size: `c3.large` - 3.75 GBs | 2 CPUs
-- NATS:
-  - Instances: `2` (don't really need to scale this as it will actually make performance worse)
-  - Size: `c3.large` - 3.75 GBs | 2 CPUs
-- UAA:
-  - Instances: `2` (don't think we need to scale this as it doesn't do that much work on our performance experiment)
-  - Size: `m3.large` - 7.5 GBs | 2 CPUs
+| Name | Quantity | VM type (AWS) |
+|------|----------|-----|
+| CC API | N / 10 | m3.large: 7.5 GB, 2 CPU |
+| CC Worker | N / 20 | c3.large: 3.75 GB, 2 CPU |
+| Doppler | N / 10 | c3.large: 3.75 GB, 2 CPU |
+| Traffic Controller | N / 40 | c3.large: 3.75 GB, 2 CPU |
+| Router | N / 10 | c3.xlarge: 7.5 GB, 4 CPU |
+| UAA | N / 250 | m3.large: 7.5 GB, 2 CPU |
+| Diego Cell | N | r3.xlarge: 30 GB, 4 CPU + 100GB gp2 ephemeral disk |
+| CC Bridge | N / 100 | c3.large: 3.75 GB, 2 CPU |
+| Access VM | N / 250 | m3.medium: 3.75 GB, 1 CPU |
 
-#### Diego Scaling
+Some VMs host services that are scaled out only for redundancy across availability zones, but may require vertical scaling as `N` increases.
+We estimate the following capacities for these types of VMs at the `250 * N` app-instance scale:
 
-All Diego components besides the cell are singletons, that is, they are leader
-elected and only have one active process at any given time. For that reason, it
-doesn't make sense to have more than one per availability zone, since that will
-not help with scaling at all. So it's assumed that we are running one of each
-of the Diego VMs per AZ.
+| Name | Quantity | VM type (AWS) |
+|------|----------|-----|
+| etcd | 3 | c3.large: 3.75 GB, 2 CPU |
+| consul | 3 | c3.large: 3.75 GB, 2 CPU |
+| NATS | 2 | c3.large: 3.75 GB, 2 CPU |
+| Postgres | 1 | c3.large: 3.75 GB, 2 CPU |
+| Diego Brain | 2 | c3.xlarge: 7.5 GB, 4 CPU |
+| Diego Database | 2 | c4.4xlarge: 30 GB, 4 CPU |
+| Route-Emitter | 2 | c3.large: 3.75 GB, 2 CPU |
 
-**Note**: The singleton VMs will scale vertically, so choosing instance sizes
-will be dependent on the number of cells deployed.
+When using an HA CF-MySQL deployment as the Diego datastore, we expect to require the following sizes at the `250 * N` app-instance scale:
 
-- Cell:
-  - `r3.xlarge` equivalent
-  - 4 CPUs
-  - 30 GB RAM
-  - "Moderate" performance network
-  - 1,000 IOPS `io1` SSD for the ephemeral drive `/var/vcap/data`
+| Name | Quantity | VM type (AWS) |
+|------|----------|-----|
+| MySQL Node | 2 | c3.2xlarge: 15 GB, 8 CPU |
+| MySQL Aribtrator | 1 | m3.medium: 3.75 GB, 1 CPU |
+| MySQL Proxy | 2 | c3.xlarge: 7.5 GB, 4 CPU |
 
-- Database VM (BBS):
-  - `c4.4xlarge` equivalent
-  - 16 CPUs
-  - 30 GB RAM
-  - "High" performance network
+When using a single Postgres deployment as the Diego datastore, we expect to require the following sizes at the `250 * N` app-instance scale:
 
-- Brain VM:
-  - `m3.medium` equivalent
-  - 1 CPU
-  - 4 GB RAM
-  - "Moderate" performance network
+| Name | Quantity | VM type (AWS) |
+|------|----------|-----|
+| Postgres (Diego) | 1 | c3.2xlarge: 15 GB, 8 CPU |
 
-- CC Bridge VM:
-  - `m3.medium` equivalent
-  - 1 CPU
-  - 4 GB RAM
-  - "Moderate" performance network
-
-- Access VM:
-  - `m3.medium` equivalent
-  - 1 CPU
-  - 4 GB RAM
-  - "Moderate" performance network
-
-- Route Emitter VM:
-  - `m3.medium` equivalent
-  - 1 CPU
-  - 4 GB RAM
-  - "Moderate" performance network
 
 ### Experiment 1: Fezzik
 
@@ -218,7 +184,7 @@ For this experiment we plan to start (for `N` = number of cells in the deploymen
 - `N * 200` LRPs
 
 
-### Experiment 2: Launching and running many CF applications
+### <a href="#cf-app-expt"></a>Experiment 2: Launching and running many CF applications
 
 Apps are defined as different modes of [this app](https://github.com/cloudfoundry/diego-stress-tests/tree/master/assets/stress-app).
 
@@ -241,18 +207,17 @@ in the app's repository.
 For an N-cell deployment, push 10 * N batches of the above mix, for a total of 210 * N LRPs with a total of 250 * N instances.
 These instances will allocate a total of 28.48 * N GB of memory, with non-crashing app instances accounting for 25.92 * N GB of this allocation.
 
-Fill 1000 Cells with 250,000 LRP instances from 210,000 LRPs (10,000 pushes of the above mix).
+For a 1000-cell deployment, this results in 250,000 LRP instances from 210,000 LRPs (10,000 pushes of the above mix).
 These instances will allocate a total of 28,480 GB of memory.
 Non-crashing app instances account for 25,920 GB of this allocation.
 
 Crashing apps will crash at a random period from 30s to 6 minutes to make their
-crash count reset once in a while, so that we can have crashing apps even after
-they would've been given up on.
+crash-count reset once in a while, so that the deployment contains app instances that continue to crash indefinitely.
 
-Once the system is filled to this initial baseline, we will then generate some
-continual realistic load of pushing, starting, crashing, and deleting additional apps.
-For N batches of the seeding mix of apps, continually push the apps in the batches,
-wait for them to run or to crash, then delete them.
+We will push the apps N batches at a time, to make it easier to collect environmental data at each 10% increase in baseline load, and to fail faster if the environment is overloaded.
+
+Once the system is filled to this initial baseline, we will push an additional N / 25 batches of apps in parallel, measuring the time it takes these apps to stage and then start running. We will then monitor these apps and make sure that they continue to run as expected and to remain routable.
+
 
 ### Experiment 3: Fault-recovery
 
