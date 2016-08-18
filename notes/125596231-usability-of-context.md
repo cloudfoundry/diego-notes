@@ -18,8 +18,8 @@ However, according to [this guy]
 (https://medium.com/@cep21/how-to-correctly-use-context-context-in-go-1-7-8f2c0fafdf39#.9o93w6x2m),
 using `context.Context` for logging is an acceptable paradigm, as the presence/lack
 of a logger should not affect our program flow. The obvious candidates for placing in `context.Context` objects are:
-* logger
-* metadata objects that are not necessary for program flow, such as the `checksum` variable on the `cacheddownloader`
+  * logger
+  * metadata objects that are not necessary for program flow, such as the `checksum` variable on the `cacheddownloader`
 1. Type-safety is a possible concern for passing varibles in `context.Context` object.
 1. Need to update to Go 1.7 if we want to use `Context` from the standard library.
 Otherwise, we can just import from here `golang.org/x/net/context` pre-1.7.
