@@ -206,16 +206,16 @@ in the app's repository.
 | -----------    | ------ | -------- | ---------- | -------------- | ---------------- | -------------------- | ----------------- |
 | *light-group*  | 0.5    | no       | 1          | 4              | 4                | 32                   | 128               |
 | *light*        | 0.5    | no       | 9          | 1              | 9                | 32                   | 288               |
-| *medium-group* | 1      | no       | 1          | 2              | 2                | 128                  | 256               |
-| *medium*       | 1      | no       | 7          | 1              | 7                | 128                  | 896               |
+| *medium-group* | 1      | no       | 1          | 3              | 3                | 128                  | 384               |
+| *medium*       | 1      | no       | 6          | 1              | 6                | 128                  | 756               |
 | *heavy*        | 1.5    | no       | 1          | 1              | 1                | 1024                 | 1024              |
 | *crashing*     | 0      | 30s-360s | 2          | 1              | 2                | 128                  | 256               |
-| **Total**      | **17** |          | **21**     |                | **25**           |                      | **2848M**         |
+| **Total**      | **17** |          | **20**     |                | **25**           |                      | **2848M**         |
 
-For an N-cell deployment, push 10 * N batches of the above mix, for a total of 210 * N LRPs with a total of 250 * N instances.
+For an N-cell deployment, push 10 * N batches of the above mix, for a total of 200 * N LRPs with a total of 250 * N instances.
 These instances will allocate a total of 28.48 * N GB of memory, with non-crashing app instances accounting for 25.92 * N GB of this allocation.
 
-For a 1000-cell deployment, this results in 250,000 LRP instances from 210,000 LRPs (10,000 pushes of the above mix).
+For a 1000-cell deployment, this results in 250,000 LRP instances from 200,000 LRPs (10,000 pushes of the above mix).
 These instances will allocate a total of 28,480 GB of memory.
 Non-crashing app instances account for 25,920 GB of this allocation.
 
