@@ -53,7 +53,7 @@ interesting to observe how they change as we're filling up the deployment.
 
 
 | Quantity | Source | Metric | Pathway to Influx |
-|---|---|---|
+|---|---|---|---|
 | cedar: Time to push CF app (no-start) | cedar report  |  | perfchug |
 | cedar: Time to start CF app | cedar report  |  | perfchug |
 | BBS: latency by endpoint | BBS logs |  | perfchug |
