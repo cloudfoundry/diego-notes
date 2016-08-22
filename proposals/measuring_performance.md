@@ -232,7 +232,7 @@ Once the system is filled to this initial baseline, we will push an additional N
 | -----------    | ------ | -------- | ---------- | -------------- | ---------------- | -------------------- | ----------------- |
 | *light-group*  | 0      | no       | 1          | 4              | 4                | 32                   | 128               |
 | *light*        | 0      | no       | 9          | 1              | 9                | 32                   | 288               |
-| *medium-group* | 0      | no       | 2          | 2              | 2                | 128                  | 512               |
+| *medium-group* | 0      | no       | 2          | 2              | 4                | 128                  | 512               |
 | *medium*       | 0      | no       | 7          | 1              | 7                | 128                  | 896               |
 | *heavy*        | 0      | no       | 1          | 1              | 1                | 1024                 | 1024              |
 | **Total**      | **0**  |          | **20**     |                | **25**           |                      | **2848M**         |
