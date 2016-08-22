@@ -222,9 +222,21 @@ Non-crashing app instances account for 25,920 GB of this allocation.
 Crashing apps will crash at a random period from 30s to 6 minutes to make their
 crash-count reset once in a while, so that the deployment contains app instances that continue to crash indefinitely.
 
-We will push the apps N batches at a time, to make it easier to collect environmental data at each 10% increase in baseline load, and to fail faster if the environment is overloaded.
+We will push the apps N batches at a time, to make it easier to collect environmental data at each 10% increase in baseline load, and to fail faster if the environment is overloaded. After each push of 25 * N instances, we will collect logs from the BBS and auctioneer from that push timeframe, convert them and the push logs into metrics, and import them into the influxdb instance for analysis.
 
-Once the system is filled to this initial baseline, we will push an additional N / 25 batches of apps in parallel, measuring the time it takes these apps to stage and then start running. We will then monitor these apps and make sure that they continue to run as expected and to remain routable.
+Once the system is filled to this initial baseline, we will push an additional N / 25 batches of non-crashing apps in parallel, measuring the time it takes these apps to stage and then start running. For a 1000-cell deployment, this is an additional 1000 instances. We will then monitor these apps and make sure that they continue to run as expected and to remain routable.
+
+<span id="experiment-2-apps-matrix-extra"></span>Mix of additional apps:
+
+| Name           | Req/s  | Crash?   | # of Apps  | Instances/App  | # of Instances   | Memory/Instance (MB) | Total Memory (MB) |
+| -----------    | ------ | -------- | ---------- | -------------- | ---------------- | -------------------- | ----------------- |
+| *light-group*  | 0      | no       | 1          | 4              | 4                | 32                   | 128               |
+| *light*        | 0      | no       | 9          | 1              | 9                | 32                   | 288               |
+| *medium-group* | 0      | no       | 2          | 2              | 2                | 128                  | 512               |
+| *medium*       | 0      | no       | 7          | 1              | 7                | 128                  | 896               |
+| *heavy*        | 0      | no       | 1          | 1              | 1                | 1024                 | 1024              |
+| **Total**      | **0**  |          | **20**     |                | **25**           |                      | **2848M**         |
+
 
 
 ### Experiment 3: Fault-recovery
