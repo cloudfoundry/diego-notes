@@ -51,20 +51,48 @@ tests.
 We want to observe the running system using the following metrics. It is also
 interesting to observe how they change as we're filling up the deployment.
 
-- Desired LRPs
-- Running LRPs
-- Missing LRPs
-- Request Latency
-- Auction Time (\*)
-- Bulk loop durations
-  - converger
-  - route-emitter
-  - nsync
-  - rep
-- Cell State
-- Route count
-- BBS Master Elections (consul?)
-- Container Creation
+
+| Quantity | Source | Metric | Pathway to Influx |
+|---|---|---|
+| cedar: Time to push CF app (no-start) | cedar report  |  | perfchug |
+| cedar: Time to start CF app | cedar report  |  | perfchug |
+| BBS: latency by endpoint | BBS logs |  | perfchug |
+| auctioneer: latency by endpoint | auctioneer logs |  | perfchug |
+| Time from desiring task to completing task (successful) | BBS logs |  | perfchug |
+| Time from desiring task to completing task (failed) | BBS logs |  | perfchug |
+| Time from desiring LRP to starting instance at index N | BBS logs |  | perfchug |
+| auctioneer: time to place LRP instance | auctioneer logs |  | perfchug |
+| auctioneer: time to place Task | auctioneer logs |  | perfchug |
+| BBS: LRP convergence duration | BBS metrics | bbs.ConvergenceLRPDuration | influxdb-firehose-nozzle |
+| BBS: Task convergence duration | BBS metrics | bbs.ConvergenceTaskDuration | influxdb-firehose-nozzle |
+| BBS: Total Claimed DesiredLRP instances | BBS metrics | bbs.LRPsClaimed | influxdb-firehose-nozzle |
+| BBS: Total Crashing DesiredLRP instances | BBS metrics | bbs.CrashedActualLRPs | influxdb-firehose-nozzle |
+| BBS: Total DesiredLRP instances | BBS metrics | bbs.LRPsDesired | influxdb-firehose-nozzle |
+| BBS: Total Extra DesiredLRP instances | BBS metrics | bbs.LRPsExtra | influxdb-firehose-nozzle |
+| BBS: Total Missing DesiredLRP instances | BBS metrics | bbs.LRPsMissing | influxdb-firehose-nozzle |
+| BBS: Total Running DesiredLRP instances | BBS metrics | bbs.LRPsRunning | influxdb-firehose-nozzle |
+| BBS: Total Unclaimed DesiredLRP instances | BBS metrics | bbs.LRPsUnclaimed | influxdb-firehose-nozzle |
+| Cell: Available container capacity | rep metrics | rep.CapacityRemainingContainers | influxdb-firehose-nozzle |
+| Cell: Available disk capacity | rep metrics | rep.CapacityRemainingDisk | influxdb-firehose-nozzle |
+| Cell: Available memory capacity | rep metrics | rep.CapacityRemainingMemory | influxdb-firehose-nozzle |
+| Cell: Garden Container Creation duration | rep metrics | rep.GardenContainerCreationDuration | influxdb-firehose-nozzle |
+| Cell: Rep bulk duration | rep metrics | rep.RepBulkSyncDuration | influxdb-firehose-nozzle |
+| Golang metrics: GC pause time | component metrics | *.memoryStats.numBytesAllocatedStack | influxdb-firehose-nozzle |
+| Golang metrics: goroutine count | component metrics | *.numGoRoutines | influxdb-firehose-nozzle |
+| Golang metrics: heap | component metrics | *.memoryStats.lastGCPauseTimeNS | influxdb-firehose-nozzle |
+| Golang metrics: stack | component metrics | *.memoryStats.numBytesAllocatedHeap | influxdb-firehose-nozzle |
+| nsync-bulker: sync duration | nsync-bulker metrics | nsync_bulker.DesiredLRPSyncDuration | influxdb-firehose-nozzle |
+| route-emitter: sync duration | route-emitter metrics | route_emitter.RouteEmitterSyncDuration | influxdb-firehose-nozzle |
+| route-emitter: Total routes | route-emitter metrics | route_emitter.RoutesTotal | influxdb-firehose-nozzle |
+| BOSH VM metrics: CPU system | BOSH HM | bosh.healthmonitor.system.cpu.sys | boshhmforwarder + influxdb-firehose-nozzle |
+| BOSH VM metrics: CPU user | BOSH HM | bosh.healthmonitor.system.cpu.user | boshhmforwarder + influxdb-firehose-nozzle |
+| BOSH VM metrics: CPU wait | BOSH HM | bosh.healthmonitor.system.cpu.wait | boshhmforwarder + influxdb-firehose-nozzle |
+| BOSH VM metrics: Load average, 1m | BOSH HM | bosh.healthmonitor.system.load.1m | boshhmforwarder + influxdb-firehose-nozzle |
+| BOSH VM metrics: Memory usage | BOSH HM | bosh.healthmonitor.system.mem.kb | boshhmforwarder + influxdb-firehose-nozzle |
+| BOSH VM metrics: Swap usage | BOSH HM | bosh.healthmonitor.system.swap.kb | boshhmforwarder + influxdb-firehose-nozzle |
+| BOSH VM metrics: Ephemeral disk usage | BOSH HM | bosh.healthmonitor.system.disk.ephemeral.percent | boshhmforwarder + influxdb-firehose-nozzle |
+| BOSH VM metrics: Persistent disk usage | BOSH HM | bosh.healthmonitor.system.disk.persistent.percent | boshhmforwarder + influxdb-firehose-nozzle |
+| BOSH VM metrics: System disk usage | BOSH HM | bosh.healthmonitor.system.disk.system.percent | boshhmforwarder + influxdb-firehose-nozzle |
 
 Success:
 
@@ -74,14 +102,6 @@ Success:
   - Cells can be upgrades when the system is at load with no loss of running applications.
     - Cell evacuation time on systems with X% full.
   - Diego recovers from data loss in a "reasonable" amount of time and currently running apps remain running.
-
-Monitoring Points:
-
-- bbs
-- cells
-- auctioneer
-- route-emitter
-- cc-bridge
 
 ### Extracting Metrics
 
