@@ -8,6 +8,7 @@
 - [Metrics](#metrics)
 - [Experiments](#experiments)
   - [Scaling the Deployment](#scaling-the-deployment)
+  - [Tuning the Deployment](#tuning-the-deployment)
   - [Experiment 1: Fezzik](#experiment-1-fezzik)
   - [Experiment 2: Launching and running many CF applications](#cf-app-expt)
   - [Experiment 3: Fault-recovery](#experiment-3-fault-recovery)
@@ -128,7 +129,7 @@ Some VMs are horizontally scalable, and so will scale in proportion to the `N` c
 | Traffic Controller | N / 40 | c3.large: 3.75 GB, 2 CPU |
 | Router | N / 10 | c3.xlarge: 7.5 GB, 4 CPU |
 | UAA | N / 250 | m3.large: 7.5 GB, 2 CPU |
-| Diego Cell | N | r3.xlarge: 30 GB, 4 CPU + 100GB gp2 ephemeral disk |
+| Diego Cell | 1.25 * N | m3.large: 7.5 GB, 2 CPU + 100GB gp2 ephemeral disk (see [128239799](https://www.pivotaltracker.com/story/show/128239799)) |
 | CC Bridge | N / 100 | c3.large: 3.75 GB, 2 CPU |
 | Access VM | N / 250 | m3.medium: 3.75 GB, 1 CPU |
 
@@ -158,6 +159,13 @@ When using a single Postgres deployment as the Diego datastore, we expect to req
 | Name | Quantity | VM type (AWS) |
 |------|----------|-----|
 | Postgres (Diego) | 1 | c3.2xlarge: 15 GB, 8 CPU |
+
+### <a name='tuning-the-deployment'></a>Tuning the Deployment
+
+In order to perform correctly at scale, certain services in the deployment require additional tuning.
+
+- Set the `diego.executor.memory_capacity_mb` BOSH property to `32768` so that the Diego cells think they have 32 GiB of memory to allocate.
+- Set `garden.max_containers` to `384` and `garden.network_pool` to `10.254.0.0/20` to give Garden enough container headroom when running at high container densities.
 
 
 ### Experiment 1: Fezzik
