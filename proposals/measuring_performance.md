@@ -77,10 +77,10 @@ interesting to observe how they change as we're filling up the deployment.
 | Cell: Available memory capacity | rep metrics | rep.CapacityRemainingMemory | influxdb-firehose-nozzle |
 | Cell: Garden Container Creation duration | rep metrics | rep.GardenContainerCreationDuration | influxdb-firehose-nozzle |
 | Cell: Rep bulk duration | rep metrics | rep.RepBulkSyncDuration | influxdb-firehose-nozzle |
-| Golang metrics: GC pause time | component metrics | *.memoryStats.numBytesAllocatedStack | influxdb-firehose-nozzle |
-| Golang metrics: goroutine count | component metrics | *.numGoRoutines | influxdb-firehose-nozzle |
-| Golang metrics: heap | component metrics | *.memoryStats.lastGCPauseTimeNS | influxdb-firehose-nozzle |
-| Golang metrics: stack | component metrics | *.memoryStats.numBytesAllocatedHeap | influxdb-firehose-nozzle |
+| Golang metrics: GC pause time | component metrics | \*.memoryStats.numBytesAllocatedStack | influxdb-firehose-nozzle |
+| Golang metrics: goroutine count | component metrics | \*.numGoRoutines | influxdb-firehose-nozzle |
+| Golang metrics: heap | component metrics | \*.memoryStats.lastGCPauseTimeNS | influxdb-firehose-nozzle |
+| Golang metrics: stack | component metrics | \*.memoryStats.numBytesAllocatedHeap | influxdb-firehose-nozzle |
 | nsync-bulker: sync duration | nsync-bulker metrics | nsync_bulker.DesiredLRPSyncDuration | influxdb-firehose-nozzle |
 | route-emitter: sync duration | route-emitter metrics | route_emitter.RouteEmitterSyncDuration | influxdb-firehose-nozzle |
 | route-emitter: Total routes | route-emitter metrics | route_emitter.RoutesTotal | influxdb-firehose-nozzle |
