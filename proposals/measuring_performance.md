@@ -222,15 +222,15 @@ in the app's repository.
 
 <span id="experiment-2-apps-matrix"></span>Initial mix of apps:
 
-| Name           | Req/s  | Crash?   | # of Apps  | Instances/App  | # of Instances   | Memory/Instance (MB) | Total Memory (MB) |
-| -----------    | ------ | -------- | ---------- | -------------- | ---------------- | -------------------- | ----------------- |
-| *light-group*  | 0.5    | no       | 1          | 4              | 4                | 32                   | 128               |
-| *light*        | 0.5    | no       | 9          | 1              | 9                | 32                   | 288               |
-| *medium-group* | 1      | no       | 1          | 3              | 3                | 128                  | 384               |
-| *medium*       | 1      | no       | 6          | 1              | 6                | 128                  | 768               |
-| *heavy*        | 1.5    | no       | 1          | 1              | 1                | 1024                 | 1024              |
-| *crashing*     | 0      | 30s-360s | 2          | 1              | 2                | 128                  | 256               |
-| **Total**      | **17** |          | **20**     |                | **25**           |                      | **2848M**         |
+| Name           | Req/s     | Crash?   | # of Apps  | Instances/App  | # of Instances   | Memory/Instance (MB) | Total Memory (MB) |
+| -----------    | ------    | -------- | ---------- | -------------- | ---------------- | -------------------- | ----------------- |
+| *light-group*  | 0.3       | no       | 1          | 4              | 4                | 32                   | 128               |
+| *light*        | 0.3       | no       | 9          | 1              | 9                | 32                   | 288               |
+| *medium-group* | 0.6       | no       | 1          | 3              | 3                | 128                  | 384               |
+| *medium*       | 0.6       | no       | 6          | 1              | 6                | 128                  | 768               |
+| *heavy*        | 0.75      | no       | 1          | 1              | 1                | 1024                 | 1024              |
+| *crashing*     | 0         | 30s-360s | 2          | 1              | 2                | 128                  | 256               |
+| **Total**      | **10.45** |          | **20**     |                | **25**           |                      | **2848M**         |
 
 For an N-cell deployment, push 10 * N batches of the above mix, for a total of 200 * N LRPs with a total of 250 * N instances.
 These instances will allocate a total of 28.48 * N GB of memory, with non-crashing app instances accounting for 25.92 * N GB of this allocation.
