@@ -232,7 +232,7 @@ in the app's repository.
 | *crashing*     | 0         | 30s-360s | 2          | 1              | 2                | 128                  | 256               |
 | **Total**      | **10.45** |          | **20**     |                | **25**           |                      | **2848M**         |
 
-For an N-cell deployment, push 10 * N batches of the above mix, for a total of 200 * N LRPs with a total of 250 * N instances.
+For an N-cell deployment, push 10 * N batches of the above mix, N at a time, for a total of 200 * N LRPs with a total of 250 * N instances.
 These instances will allocate a total of 28.48 * N GB of memory, with non-crashing app instances accounting for 25.92 * N GB of this allocation.
 
 For a 1000-cell deployment, this results in 250,000 LRP instances from 200,000 LRPs (10,000 pushes of the above mix).
