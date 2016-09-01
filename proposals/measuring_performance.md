@@ -182,10 +182,11 @@ When using a single Postgres deployment as the Diego datastore, we expect to req
 
 ### <a name='tuning-the-deployment'></a>Tuning the Deployment
 
-In order to perform correctly at scale, certain services in the deployment require additional tuning.
+In order to perform correctly at scale or to generate the necessary logs for analysis, certain services in the CF and Diego deployments require additional tuning.
 
-- Set the `diego.executor.memory_capacity_mb` BOSH property to `32768` so that the Diego cells think they have 32 GiB of memory to allocate.
+- Set the `diego.executor.memory_capacity_mb` BOSH property to `32768` so that the Diego cells are consistently configured with 32 GiB of memory to allocate.
 - Set `garden.max_containers` to `384` and `garden.network_pool` to `10.254.0.0/20` to give Garden enough container headroom when running at high container densities.
+- Set `diego.bbs.enable_access_log` to `true` to enable the BBS access log for later analysis by perfchug.
 
 
 ### Experiment 1: Fezzik
