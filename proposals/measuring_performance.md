@@ -285,3 +285,43 @@ for a while, long enough for several convergence ticks.
 
 `bosh cck` to recover the missing Cells and Database VMs.  How long does it
 take for us to recover?  How does the routing table handle this?
+
+## GCE Information
+
+### Instance Sizing
+
+| Deployment | Job | Scalability H/V | Number of Instance |Resource Pool | 5000 Test Instance Size  |
+| ---------- | --- | --------------- | ------------------ | ------------ | ------------------------ |
+|CF| api | H |2 |large | n1-standard-2|
+|CF| api_worker | H | 2 | small | n1-standard-2|
+|CF| blobstore | V | 1 | medium | n1-standard-2
+|CF| consul|V | 3 | small | n1-standard-2|
+|CF|doppler|H|2|medium|n1-standard-2|
+|CF|etcd|V|3|medium|n1-standard-2|
+|CF|ha_proxy|H|2|ha_proxy|n1-standard-4|
+|CF|loggregator_trafficcontroller|H|1|small|n1-standard-2
+|CF|nats|V|2|medium|n1-standard-2
+|CF|postgres|V|1|postgres|n1-standard-8
+|CF|router|H|2|router|n1-standard-4
+|CF|uaa|H|2|medium|n1-standard-2
+|Diego|access|H|2|access|n1-standard-1
+|Diego|brain|V|2|brain|n1-standard-4
+|Diego|cc_bridge|H|2|cc_bridge|n1-standard-2
+|Diego|cell|H|25|cell|n1-standard-2
+|Diego|database|V|2|database|n1-standard-8
+|Diego|route-emitter|V|2|route-emitter|n1-standard-4
+|Influx|grafana|V|1|standard|n1-standard-4
+|Influx|influxdb|V|1|standard|n1-standard-4
+|Influx|influxdb-firehose-nozzle|V|1|standard|n1-standard-4
+|MySQL|arbitrator|V|0|
+|MySQL|mysql|V|0|
+|MySQL|proxy|V|0|
+|Perf|cedar|V|1|perf|n1-standard-2|
+|Diego-Postgres|postgres|V|0|
+
+### Performance Tuning Comments
+
+
+1. Set the `ha_proxy.log_to_file` property to true in the manifest. This makes the HA Proxy store logs on `/var/vcap/sys/log` instead of `/var/log`.
+1. Validate size of Influxdb VM during larger runs--it seems CPU-bound.
+1. Validate size of Perf VM during larger runs as disk can fill due to logs and results.
