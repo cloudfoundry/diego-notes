@@ -290,34 +290,34 @@ take for us to recover?  How does the routing table handle this?
 
 ### Instance Sizing
 
-| Deployment | Job | Scalability H/V | Number of Instance |Resource Pool | 5000 Test Instance Size  |
-| ---------- | --- | --------------- | ------------------ | ------------ | ------------------------ |
-|CF| api | H |2 |large | n1-standard-2|
-|CF| api_worker | H | 2 | small | n1-standard-2|
-|CF| blobstore | V | 1 | medium | n1-standard-2
-|CF| consul|V | 3 | small | n1-standard-2|
-|CF|doppler|H|2|medium|n1-standard-2|
-|CF|etcd|V|3|medium|n1-standard-2|
-|CF|ha_proxy|H|2|ha_proxy|n1-standard-4|
-|CF|loggregator_trafficcontroller|H|1|small|n1-standard-2
-|CF|nats|V|2|medium|n1-standard-2
-|CF|postgres|V|1|postgres|n1-standard-8
-|CF|router|H|2|router|n1-standard-4
-|CF|uaa|H|2|medium|n1-standard-2
-|Diego|access|H|2|access|n1-standard-1
-|Diego|brain|V|2|brain|n1-standard-4
-|Diego|cc_bridge|H|2|cc_bridge|n1-standard-2
-|Diego|cell|H|25|cell|n1-standard-2
-|Diego|database|V|2|database|n1-standard-8
-|Diego|route-emitter|V|2|route-emitter|n1-standard-4
-|Influx|grafana|V|1|standard|n1-standard-4
-|Influx|influxdb|V|1|standard|n1-standard-4
-|Influx|influxdb-firehose-nozzle|V|1|standard|n1-standard-4
-|MySQL|arbitrator|V|0|
-|MySQL|mysql|V|0|
-|MySQL|proxy|V|0|
-|Perf|cedar|V|1|perf|n1-standard-2|
-|Diego-Postgres|postgres|V|0|
+|  Deployment   |             Job               | Scalability H/V | Number of Instance | Resource Pool | 5000 Test Instance Size  |
+| ------------- | ----------------------------- | --------------- | ------------------ | ------------- | ------------------------ |
+| CF            | api                           | H               | 20                 | large         | n1-standard-2            |
+| CF            | api_worker                    | H               | 2                  | small         | n1-standard-1            |
+| CF            | blobstore                     | V               | 0                  | medium        | n1-standard-2            |
+| CF            | consul                        | V               | 3                  | small         | n1-standard-1            |
+| CF            | doppler                       | H               | 16                 | medium        | n1-standard-2            |
+| CF            | etcd                          | V               | 3                  | medium        | n1-standard-2            |
+| CF            | ha_proxy                      | H               | 2                  | ha_proxy      | n1-standard-4            |
+| CF            | loggregator_trafficcontroller | H               | 4                  | medium        | n1-standard-2            |
+| CF            | nats                          | V               | 2                  | small         | n1-standard-1            |
+| CF            | postgres                      | V               | 1                  | postgres      | n1-standard-2            |
+| CF            | router                        | H               | 8                  | router        | n1-highcpu-4             |
+| CF            | uaa                           | H               | 2                  | medium        | n1-standard-2            |
+| Diego         | access                        | H               | 2                  | access        | n1-standard-1            |
+| Diego         | brain                         | V               | 2                  | brain         | n1-highcpu-4             |
+| Diego         | cc_bridge                     | H               | 2                  | cc_bridge     | n1-highcpu-2             |
+| Diego         | cell                          | H               | 250                | cell          | n1-standard-2            |
+| Diego         | database                      | V               | 2                  | database      | n1-highcpu-8             |
+| Diego         | route-emitter                 | V               | 2                  | route-emitter | n1-standard-2            |
+| MySQL         | arbitrator                    | V               | 1                  |               | n1-standard-2            |
+| MySQL         | mysql                         | V               | 2                  |               | n1-standard-8            |
+| MySQL         | proxy                         | V               | 2                  |               | n1-standard-2            |
+| Diego-Postgres| postgres                      | V               | 1                  | postgres      | n1-standard-8            |
+| Influx        | grafana                       | V               | 1                  | standard      | n1-standard-1            |
+| Influx        | influxdb                      | V               | 1                  | standard      | n1-standard-8            |
+| Influx        | influxdb-firehose-nozzle      | V               | 1                  | standard      | n1-highcpu-4             |
+| Perf          | cedar                         | V               | 1                  | perf          | n1-standard-8            |
 
 ### Performance Tuning Comments
 
