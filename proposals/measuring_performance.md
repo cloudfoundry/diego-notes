@@ -125,9 +125,7 @@ We decided to go with InfluxDB and Grafana to solve those issues:
   minimal and should straightforward.
 
 
-## Experiments
-
-### Scaling the Deployment
+# Scaling the Deployment
 
 Let `N` denote the number of cells in the deployment.
 
@@ -153,6 +151,8 @@ Some VMs are horizontally scalable, and so will scale in proportion to the `N` c
 | CC Bridge | N / 100 | c3.large: 3.75 GB, 2 CPU |
 | Access VM | N / 250 | m3.medium: 3.75 GB, 1 CPU |
 
+
+## AWS Information
 Some VMs host services that are scaled out only for redundancy across availability zones, but may require vertical scaling as `N` increases.
 We estimate the following capacities for these types of VMs at the `250 * N` app-instance scale:
 
@@ -187,6 +187,50 @@ In order to perform correctly at scale or to generate the necessary logs for ana
 - Set the `diego.executor.memory_capacity_mb` BOSH property to `32768` so that the Diego cells are consistently configured with 32 GiB of memory to allocate.
 - Set `garden.max_containers` to `384` and `garden.network_pool` to `10.254.0.0/20` to give Garden enough container headroom when running at high container densities.
 - Set `diego.bbs.enable_access_log` to `true` to enable the BBS access log for later analysis by perfchug.
+
+
+## GCE Information
+
+### Instance Sizing (50K experiment projection)
+
+|  Deployment   |             Job               | Scalability H/V | Number of Instance | Resource Pool | 5000 Test Instance Size  |
+| ------------- | ----------------------------- | --------------- | ------------------ | ------------- | ------------------------ |
+| CF            | api                           | H               | 20                 | large         | n1-standard-2            |
+| CF            | api_worker                    | H               | 2                  | small         | n1-standard-1            |
+| CF            | blobstore                     | V               | 0                  | medium        | n1-standard-2            |
+| CF            | consul                        | V               | 3                  | small         | n1-standard-1            |
+| CF            | doppler                       | H               | 16                 | medium        | n1-standard-2            |
+| CF            | etcd                          | V               | 3                  | medium        | n1-standard-2            |
+| CF            | ha_proxy                      | H               | 2                  | ha_proxy      | n1-standard-4            |
+| CF            | loggregator_trafficcontroller | H               | 4                  | medium        | n1-standard-2            |
+| CF            | nats                          | V               | 2                  | small         | n1-standard-1            |
+| CF            | postgres                      | V               | 1                  | postgres      | n1-standard-2            |
+| CF            | router                        | H               | 8                  | router        | n1-highcpu-4             |
+| CF            | uaa                           | H               | 2                  | medium        | n1-standard-2            |
+| Diego         | access                        | H               | 2                  | access        | n1-standard-1            |
+| Diego         | brain                         | V               | 2                  | brain         | n1-highcpu-4             |
+| Diego         | cc_bridge                     | H               | 2                  | cc_bridge     | n1-highcpu-2             |
+| Diego         | cell                          | H               | 250                | cell          | n1-standard-2            |
+| Diego         | database                      | V               | 2                  | database      | n1-highcpu-8             |
+| Diego         | route-emitter                 | V               | 2                  | route-emitter | n1-standard-2            |
+| MySQL         | arbitrator                    | V               | 1                  |               | n1-standard-2            |
+| MySQL         | mysql                         | V               | 2                  |               | n1-standard-8            |
+| MySQL         | proxy                         | V               | 2                  |               | n1-standard-2            |
+| Diego-Postgres| postgres                      | V               | 1                  | postgres      | n1-standard-8            |
+| Influx        | grafana                       | V               | 1                  | standard      | n1-standard-1            |
+| Influx        | influxdb                      | V               | 1                  | standard      | n1-standard-8            |
+| Influx        | influxdb-firehose-nozzle      | V               | 1                  | standard      | n1-highcpu-4             |
+| Perf          | cedar                         | V               | 1                  | perf          | n1-standard-8            |
+
+### Performance Tuning Comments
+
+
+1. Set the `ha_proxy.log_to_file` property to true in the manifest. This makes the HA Proxy store logs on `/var/vcap/sys/log` instead of `/var/log`.
+1. Validate size of Influxdb VM during larger runs--it seems CPU-bound.
+1. Validate size of Perf VM during larger runs as disk can fill due to logs and results.
+
+
+# Experiments
 
 
 ### Experiment 1: Fezzik
@@ -285,43 +329,3 @@ for a while, long enough for several convergence ticks.
 
 `bosh cck` to recover the missing Cells and Database VMs.  How long does it
 take for us to recover?  How does the routing table handle this?
-
-## GCE Information
-
-### Instance Sizing
-
-|  Deployment   |             Job               | Scalability H/V | Number of Instance | Resource Pool | 5000 Test Instance Size  |
-| ------------- | ----------------------------- | --------------- | ------------------ | ------------- | ------------------------ |
-| CF            | api                           | H               | 20                 | large         | n1-standard-2            |
-| CF            | api_worker                    | H               | 2                  | small         | n1-standard-1            |
-| CF            | blobstore                     | V               | 0                  | medium        | n1-standard-2            |
-| CF            | consul                        | V               | 3                  | small         | n1-standard-1            |
-| CF            | doppler                       | H               | 16                 | medium        | n1-standard-2            |
-| CF            | etcd                          | V               | 3                  | medium        | n1-standard-2            |
-| CF            | ha_proxy                      | H               | 2                  | ha_proxy      | n1-standard-4            |
-| CF            | loggregator_trafficcontroller | H               | 4                  | medium        | n1-standard-2            |
-| CF            | nats                          | V               | 2                  | small         | n1-standard-1            |
-| CF            | postgres                      | V               | 1                  | postgres      | n1-standard-2            |
-| CF            | router                        | H               | 8                  | router        | n1-highcpu-4             |
-| CF            | uaa                           | H               | 2                  | medium        | n1-standard-2            |
-| Diego         | access                        | H               | 2                  | access        | n1-standard-1            |
-| Diego         | brain                         | V               | 2                  | brain         | n1-highcpu-4             |
-| Diego         | cc_bridge                     | H               | 2                  | cc_bridge     | n1-highcpu-2             |
-| Diego         | cell                          | H               | 250                | cell          | n1-standard-2            |
-| Diego         | database                      | V               | 2                  | database      | n1-highcpu-8             |
-| Diego         | route-emitter                 | V               | 2                  | route-emitter | n1-standard-2            |
-| MySQL         | arbitrator                    | V               | 1                  |               | n1-standard-2            |
-| MySQL         | mysql                         | V               | 2                  |               | n1-standard-8            |
-| MySQL         | proxy                         | V               | 2                  |               | n1-standard-2            |
-| Diego-Postgres| postgres                      | V               | 1                  | postgres      | n1-standard-8            |
-| Influx        | grafana                       | V               | 1                  | standard      | n1-standard-1            |
-| Influx        | influxdb                      | V               | 1                  | standard      | n1-standard-8            |
-| Influx        | influxdb-firehose-nozzle      | V               | 1                  | standard      | n1-highcpu-4             |
-| Perf          | cedar                         | V               | 1                  | perf          | n1-standard-8            |
-
-### Performance Tuning Comments
-
-
-1. Set the `ha_proxy.log_to_file` property to true in the manifest. This makes the HA Proxy store logs on `/var/vcap/sys/log` instead of `/var/log`.
-1. Validate size of Influxdb VM during larger runs--it seems CPU-bound.
-1. Validate size of Perf VM during larger runs as disk can fill due to logs and results.
