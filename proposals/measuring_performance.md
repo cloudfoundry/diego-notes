@@ -2,9 +2,6 @@
 
 **Table of Contents**
 
-- [Events](#events)
-  - [Tasks](#tasks)
-  - [LRPs](#lrps)
 - [Metrics](#metrics)
 - [Experiments](#experiments)
   - [Scaling the Deployment](#scaling-the-deployment)
@@ -14,37 +11,6 @@
   - [Experiment 3: Fault-recovery](#experiment-3-fault-recovery)
   - [Experiment 4: Tolerating catastrophic cell and etcd failure](#experiment-4-tolerating-catastrophic-cell-and-etcd-failure)
 
-
-## Events
-
-Given the centralization of the logic on Diego, we've decided to focus our
-efforts in analyzing logs straight from the BBS. Since every state transition
-operation goes through it, we should have easy access to logging those and then
-later processing those logs effectively. These should be accessible through the
-BBS logs.
-
-### Tasks
-
-Running:
-- Requested
-- Started
-- Completed
-
-### LRPs
-
-Running:
-- Desired
-- Claimed
-- Running
-
-Stopping:
-- Stopping
-- Stopped
-
-On stable system, if no catastrophes happen, no events should be triggered.
-
-These can be used to analyze both cold start smoke tests and full scale stress
-tests.
 
 ## Metrics
 
