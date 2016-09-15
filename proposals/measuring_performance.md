@@ -4,6 +4,8 @@
 
 - [Metrics](#metrics)
 - [Scaling the Deployment](#scaling-the-deployment)
+  - [AWS](#aws)
+  - [GCP](#gcp)
 - [Tuning the Deployment](#tuning-the-deployment)
 - [Experiments](#experiments)
   - [Experiment 1: Fezzik](#fezzik)
@@ -98,8 +100,9 @@ Let `N` denote the number of cells in the deployment.
 We intend to run a total of `250 * N` app instances in the deployment. The mix of apps
 is defined in the [next section](#experiment-2-apps-matrix) of this document.
 
+### <a name='aws'></a>AWS
 
-The following estimates  come from an estimate of total requests per second and logs per second in the system (where logs = log and metric messages going through the Loggregator
+The following estimates come from an estimate of total requests per second and logs per second in the system (where logs = log and metric messages going through the Loggregator
 system).
 
 We initially estimate the following VM types and resources for the CF, Diego, and database VMs in the deployment.
@@ -117,8 +120,6 @@ Some VMs are horizontally scalable, and so will scale in proportion to the `N` c
 | CC Bridge | N / 100 | c3.large: 3.75 GB, 2 CPU |
 | Access VM | N / 250 | m3.medium: 3.75 GB, 1 CPU |
 
-
-### AWS Information
 
 Some VMs host services that are scaled out only for redundancy across availability zones, but may require vertical scaling as `N` increases.
 We estimate the following capacities for these types of VMs at the `250 * N` app-instance scale:
@@ -148,8 +149,7 @@ When using a single Postgres deployment as the Diego datastore, we expect to req
 | Postgres (Diego) | 1 | c3.2xlarge: 15 GB, 8 CPU |
 
 
-
-### GCE Information
+### <a name='gcp'></a>GCP
 
 #### Instance Sizing (50K experiment projection)
 
