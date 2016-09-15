@@ -6,10 +6,10 @@
 - [Scaling the Deployment](#scaling-the-deployment)
 - [Tuning the Deployment](#tuning-the-deployment)
 - [Experiments](#experiments)
-  - [Experiment 1: Fezzik](#experiment-1-fezzik)
+  - [Experiment 1: Fezzik](#fezzik)
   - [Experiment 2: Launching and running many CF applications](#cf-app-expt)
-  - [Experiment 3: Fault-recovery](#experiment-3-fault-recovery)
-  - [Experiment 4: Tolerating catastrophic cell and etcd failure](#experiment-4-tolerating-catastrophic-cell-and-etcd-failure)
+  - [Experiment 3: Fault-recovery](#fault-recovery)
+  - [Experiment 4: Tolerating catastrophic cell and database failure](#catastrophic-failure)
 
 
 ## Metrics
@@ -200,7 +200,7 @@ Depending on the scale of the run, we may also need to validate the sizing of th
 
 ## Experiments
 
-### Experiment 1: Fezzik
+### <a name='fezzik'></a>Experiment 1: Fezzik
 
 Fezzik exercises the BBS API and launches very many Tasks and LRPs in tandem.
 These Tasks and LRPs are very lightweight so Fezzik is isolated to benchmarking
@@ -271,7 +271,7 @@ Once the system is filled to this initial baseline, we will push an additional N
 
 
 
-### Experiment 3: Fault-recovery
+### <a name='fault-recovery'></a>Experiment 3: Fault-recovery
 
 After a day, kill N/10 cells across the AZs and see how long it takes to recover the missing applications.
 
@@ -281,7 +281,7 @@ We'll want:
 
 Leave those cells dead for the next experiment.
 
-### Experiment 4: Tolerating catastrophic cell and database failure
+### <a name='catastrophic-failure'></a>Experiment 4: Tolerating catastrophic cell and database failure
 
 Kill another N/10 cells, again roughly balanced across AZs.
 At this point, the workload will exceed capacity.
