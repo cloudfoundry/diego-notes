@@ -3,9 +3,9 @@
 **Table of Contents**
 
 - [Metrics](#metrics)
+- [Scaling the Deployment](#scaling-the-deployment)
+- [Tuning the Deployment](#tuning-the-deployment)
 - [Experiments](#experiments)
-  - [Scaling the Deployment](#scaling-the-deployment)
-  - [Tuning the Deployment](#tuning-the-deployment)
   - [Experiment 1: Fezzik](#experiment-1-fezzik)
   - [Experiment 2: Launching and running many CF applications](#cf-app-expt)
   - [Experiment 3: Fault-recovery](#experiment-3-fault-recovery)
@@ -91,7 +91,7 @@ We decided to go with InfluxDB and Grafana to solve those issues:
   minimal and should straightforward.
 
 
-# Scaling the Deployment
+## <a name='scaling-the-deployment'></a>Scaling the Deployment
 
 Let `N` denote the number of cells in the deployment.
 
@@ -118,7 +118,8 @@ Some VMs are horizontally scalable, and so will scale in proportion to the `N` c
 | Access VM | N / 250 | m3.medium: 3.75 GB, 1 CPU |
 
 
-## AWS Information
+### AWS Information
+
 Some VMs host services that are scaled out only for redundancy across availability zones, but may require vertical scaling as `N` increases.
 We estimate the following capacities for these types of VMs at the `250 * N` app-instance scale:
 
@@ -146,18 +147,11 @@ When using a single Postgres deployment as the Diego datastore, we expect to req
 |------|----------|-----|
 | Postgres (Diego) | 1 | c3.2xlarge: 15 GB, 8 CPU |
 
-### <a name='tuning-the-deployment'></a>Tuning the Deployment
-
-In order to perform correctly at scale or to generate the necessary logs for analysis, certain services in the CF and Diego deployments require additional tuning.
-
-- Set the `diego.executor.memory_capacity_mb` BOSH property to `32768` so that the Diego cells are consistently configured with 32 GiB of memory to allocate.
-- Set `garden.max_containers` to `384` and `garden.network_pool` to `10.254.0.0/20` to give Garden enough container headroom when running at high container densities.
-- Set `diego.bbs.enable_access_log` to `true` to enable the BBS access log for later analysis by perfchug.
 
 
-## GCE Information
+### GCE Information
 
-### Instance Sizing (50K experiment projection)
+#### Instance Sizing (50K experiment projection)
 
 |  Deployment   |             Job               | Scalability H/V | Number of Instance | Resource Pool | 5000 Test Instance Size  |
 | ------------- | ----------------------------- | --------------- | ------------------ | ------------- | ------------------------ |
@@ -188,16 +182,23 @@ In order to perform correctly at scale or to generate the necessary logs for ana
 | Influx        | influxdb-firehose-nozzle      | V               | 1                  | standard      | n1-highcpu-4             |
 | Perf          | cedar                         | V               | 1                  | perf          | n1-standard-8            |
 
-### Performance Tuning Comments
+## <a name='tuning-the-deployment'></a>Tuning the Deployment
+
+In order to perform correctly at scale or to generate the necessary logs for analysis, certain services in the CF and Diego deployments require additional tuning.
+
+- Set `diego.bbs.enable_access_log` to `true` to enable the BBS access log for later analysis by perfchug.
+- Set the `diego.executor.disk_capacity_mb` BOSH property to `32768` so that the Diego cells are consistently configured with 32 GiB of disk to allocate.
+- Set the `diego.executor.memory_capacity_mb` BOSH property to `32768` so that the Diego cells are consistently configured with 32 GiB of memory to allocate.
+- Set the `ha_proxy.log_to_file` property to `true` in the manifest, so that HAProxy stores logs in `/var/vcap/sys/log` on ephemeral disk instead of in `/var/log` on the root disk.
+
+Depending on the scale of the run, we may also need to validate the sizing of the VMs in the diego-perf deployment itself and in the metric-collection system:
+
+- Validate the CPU size of the `influxdb` VM during larger runs.
+- Validate the disk size of the diego-perf `cedar` VM during larger runs as the disk can fill due to logs and results.
 
 
-1. Set the `ha_proxy.log_to_file` property to true in the manifest. This makes the HA Proxy store logs on `/var/vcap/sys/log` instead of `/var/log`.
-1. Validate size of Influxdb VM during larger runs--it seems CPU-bound.
-1. Validate size of Perf VM during larger runs as disk can fill due to logs and results.
 
-
-# Experiments
-
+## Experiments
 
 ### Experiment 1: Fezzik
 
