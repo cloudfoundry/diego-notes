@@ -153,41 +153,41 @@ When using a single Postgres deployment as the Diego datastore, we expect to req
 
 #### Instance Sizing (50K experiment projection)
 
-|  Deployment   |             Job               | Scalability H/V | Number of Instance | Resource Pool | 5000 Test Instance Size  |
-| ------------- | ----------------------------- | --------------- | ------------------ | ------------- | ------------------------ |
-| CF            | api                           | H               | 20                 | large         | n1-standard-2            |
-| CF            | api_worker                    | H               | 2                  | small         | n1-standard-1            |
-| CF            | blobstore                     | V               | 0                  | medium        | n1-standard-2            |
-| CF            | consul                        | V               | 3                  | small         | n1-standard-1            |
-| CF            | doppler                       | H               | 16                 | medium        | n1-standard-2            |
-| CF            | etcd                          | V               | 3                  | medium        | n1-standard-2            |
-| CF            | ha_proxy                      | H               | 2                  | ha_proxy      | n1-standard-4            |
-| CF            | loggregator_trafficcontroller | H               | 4                  | medium        | n1-standard-2            |
-| CF            | nats                          | V               | 2                  | small         | n1-standard-1            |
-| CF            | postgres                      | V               | 1                  | postgres      | n1-standard-2            |
-| CF            | router                        | H               | 8                  | router        | n1-highcpu-4             |
-| CF            | uaa                           | H               | 2                  | medium        | n1-standard-2            |
-| Diego         | access                        | H               | 2                  | access        | n1-standard-1            |
-| Diego         | brain                         | V               | 2                  | brain         | n1-highcpu-4             |
-| Diego         | cc_bridge                     | H               | 2                  | cc_bridge     | n1-highcpu-2             |
-| Diego         | cell                          | H               | 250                | cell          | n1-standard-2            |
-| Diego         | database                      | V               | 2                  | database      | n1-highcpu-8             |
-| Diego         | route-emitter                 | V               | 2                  | route-emitter | n1-standard-2            |
-| MySQL         | arbitrator                    | V               | 1                  |               | n1-standard-2            |
-| MySQL         | mysql                         | V               | 2                  |               | n1-standard-8            |
-| MySQL         | proxy                         | V               | 2                  |               | n1-standard-2            |
-| Diego-Postgres| postgres                      | V               | 1                  | postgres      | n1-standard-8            |
-| Influx        | grafana                       | V               | 1                  | standard      | n1-standard-1            |
-| Influx        | influxdb                      | V               | 1                  | standard      | n1-standard-8            |
-| Influx        | influxdb-firehose-nozzle      | V               | 1                  | standard      | n1-highcpu-4             |
-| Perf          | cedar                         | V               | 1                  | perf          | n1-standard-8            |
+|  Deployment   |             Job               | Scalability H/V | Number of Instance | Resource Pool | 5000 Test Instance Size  | Disk type   | Disk capacity |
+| ------------- | ----------------------------- | --------------- | ------------------ | ------------- | ------------------------ |-------------|---------------|
+| CF            | api                           | H               | 20                 | large         | n1-standard-2            | pd-standard | 20 GB         |
+| CF            | api_worker                    | H               | 2                  | small         | n1-standard-1            | pd-standard | 20 GB         |
+| CF            | blobstore                     | V               | 0                  | medium        | n1-standard-2            | pd-standard | 20 GB         |
+| CF            | consul                        | V               | 3                  | small         | n1-standard-1            | pd-standard | 20 GB         |
+| CF            | doppler                       | H               | 16                 | medium        | n1-standard-2            | pd-standard | 20 GB         |
+| CF            | etcd                          | V               | 3                  | medium        | n1-standard-2            | pd-standard | 20 GB         |
+| CF            | ha_proxy                      | H               | 2                  | ha_proxy      | n1-standard-4            | pd-standard | 20 GB         |
+| CF            | loggregator_trafficcontroller | H               | 4                  | medium        | n1-standard-2            | pd-standard | 20 GB         |
+| CF            | nats                          | V               | 2                  | small         | n1-standard-1            | pd-standard | 20 GB         |
+| CF            | postgres                      | V               | 1                  | postgres      | n1-standard-2            | pd-standard | 20 GB         |
+| CF            | router                        | H               | 8                  | router        | n1-highcpu-4             | pd-standard | 20 GB         |
+| CF            | uaa                           | H               | 2                  | medium        | n1-standard-2            | pd-standard | 20 GB         |
+| Diego         | access                        | H               | 2                  | access        | n1-standard-1            | pd-standard | 20 GB         |
+| Diego         | brain                         | V               | 2                  | brain         | n1-highcpu-4             | pd-standard | 20 GB         |
+| Diego         | cc_bridge                     | H               | 2                  | cc_bridge     | n1-highcpu-2             | pd-standard | 20 GB         |
+| Diego         | cell                          | H               | 250                | cell          | n1-standard-2            | pd-standard | 35 GB         |
+| Diego         | database                      | V               | 2                  | database      | n1-highcpu-8             | pd-standard | 20 GB         |
+| Diego         | route-emitter                 | V               | 2                  | route-emitter | n1-standard-2            | pd-standard | 20 GB         |
+| MySQL         | arbitrator                    | V               | 1                  | arbitrator    | n1-standard-2            | pd-standard | 20 GB         |
+| MySQL         | mysql                         | V               | 2                  | mysql         | n1-standard-8            | pd-ssd      | 50 GB         |
+| MySQL         | proxy                         | V               | 2                  | proxy         | n1-standard-2            | pd-standard | 20 GB         |
+| Diego-Postgres| postgres                      | V               | 1                  | postgres      | n1-standard-8            | pd-ssd      | 50 GB         |             
+| Influx        | grafana                       | V               | 1                  | standard      | n1-standard-1            | pd-standard | 100 GB        |
+| Influx        | influxdb                      | V               | 1                  | standard      | n1-standard-8            | pd-standard | 100 GB        |
+| Influx        | influxdb-firehose-nozzle      | V               | 1                  | standard      | n1-highcpu-4             | pd-standard | 100 GB        |
+| Perf          | cedar                         | V               | 1                  | perf          | n1-standard-8            | pd-standard | 20 GB         |
 
 ## <a name='tuning-the-deployment'></a>Tuning the Deployment
 
 In order to perform correctly at scale or to generate the necessary logs for analysis, certain services in the CF and Diego deployments require additional tuning.
 
 - Set `diego.bbs.enable_access_log` to `true` to enable the BBS access log for later analysis by perfchug.
-- Set the `diego.executor.disk_capacity_mb` BOSH property to `32768` so that the Diego cells are consistently configured with 32 GiB of disk to allocate.
+- Set the `diego.executor.disk_capacity_mb` BOSH property to `65536` so that the Diego cells are consistently configured with 64 GiB of disk to allocate.
 - Set the `diego.executor.memory_capacity_mb` BOSH property to `32768` so that the Diego cells are consistently configured with 32 GiB of memory to allocate.
 - Set the `ha_proxy.log_to_file` property to `true` in the manifest, so that HAProxy stores logs in `/var/vcap/sys/log` on ephemeral disk instead of in `/var/log` on the root disk.
 
