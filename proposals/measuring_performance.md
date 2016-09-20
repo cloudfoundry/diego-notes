@@ -131,7 +131,7 @@ We estimate the following capacities for these types of VMs at the `250 * N` app
 | NATS | 2 | c3.large: 3.75 GB, 2 CPU |
 | Postgres | 1 | c3.large: 3.75 GB, 2 CPU |
 | Diego Brain | 2 | c3.xlarge: 7.5 GB, 4 CPU |
-| Diego Database | 2 | c4.4xlarge: 30 GB, 4 CPU |
+| Diego Database | 2 | c4.4xlarge: 30 GB, 4 CPU + 200GB gp2 ephemeral disk (for logs) |
 | Route-Emitter | 2 | c3.large: 3.75 GB, 2 CPU |
 
 When using an HA CF-MySQL deployment as the Diego datastore, we expect to require the following sizes at the `250 * N` app-instance scale:
@@ -171,7 +171,7 @@ When using a single Postgres deployment as the Diego datastore, we expect to req
 | Diego         | brain                         | V               | 2                  | brain         | n1-highcpu-4             | pd-standard | 20 GB         |
 | Diego         | cc_bridge                     | H               | 2                  | cc_bridge     | n1-highcpu-2             | pd-standard | 20 GB         |
 | Diego         | cell                          | H               | 250                | cell          | n1-standard-2            | pd-standard | 35 GB         |
-| Diego         | database                      | V               | 2                  | database      | n1-highcpu-8             | pd-standard | 20 GB         |
+| Diego         | database                      | V               | 2                  | database      | n1-highcpu-8             | pd-standard | 20 GB + 200GB ephemeral disk (for logs)|
 | Diego         | route-emitter                 | V               | 2                  | route-emitter | n1-standard-2            | pd-standard | 20 GB         |
 | MySQL         | arbitrator                    | V               | 1                  | arbitrator    | n1-standard-2            | pd-standard | 20 GB         |
 | MySQL         | mysql                         | V               | 2                  | mysql         | n1-standard-8            | pd-ssd      | 50 GB         |
