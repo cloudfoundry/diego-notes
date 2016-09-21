@@ -148,6 +148,16 @@ When using a single Postgres deployment as the Diego datastore, we expect to req
 |------|----------|-----|
 | Postgres (Diego) | 1 | c3.2xlarge: 15 GB, 8 CPU |
 
+Finally, the tooling we use for the experiments (cedar and influx) have their own resource requirements and costs to take into account:
+
+| Name | Quantity | VM type (AWS) |
+|------|----------|-----|
+| grafana (Influx) | 1 |  c3.large*: 7 GB, 2 CPU |
+| influxdb (Influx) | 1 | r3.xlarge: 30.5 GB, 4 CPU |
+| influxdb-firehose-nozzle (Influx) | 1 | c3.large*: 7 GB, 2 CPU |
+| cedar (Perf) | 1 | m3.large: 7.5 GB, 2 CPU |
+
+Instance types marked with an asterisk (*) are projections based on the results of a 5K instance run.
 
 ### <a name='gcp'></a>GCP
 
