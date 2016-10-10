@@ -20,17 +20,17 @@ The auctioneer API interactions are relatively constrained in the Diego deployme
 
 ### Transition to Secure Communication
 
-Consequently, once suitable configuration is available, an operator can switch the deployment to communicate over mutual TLS in two deploys:
+Consequently, once suitable configuration is available, an operator can switch the deployment to communicate only over mutual TLS in two deploys:
 
 - existing deployment:
 	- auctioneer listens insecurely on port 9016
 	- BBS makes requests insecurely to auctioneer on port 9016
 - deploy #1:
 	- BBS continues to make requests insecurely to auctioneer on port 9016
-	- auctioneer changes also to listen with mutual TLS on port 9017
+	- auctioneer changes also to listen with mutual TLS on same port 9016
 - deploy #2:
-	- BBS changes to make requests to auctioneer using mutual TLS on port 9017
-	- auctioneer changes to stop listening on port 9016 and to serve only securely on port 9017
+	- BBS changes to make requests to auctioneer using mutual TLS on port 9016
+	- auctioneer changes to serve only securely on port 9016
 
 The certificate for the auctioneer server will include `auctioneer.service.cf.internal` as a domain SAN so that the BBS client will consider the server valid when addressed through Consul DNS.
 
@@ -74,7 +74,7 @@ The existing rep API server will stop serving the auction, Task, and LRP endpoin
 
 ### Auctioneer
 
-- As a Diego operator, I expect the auctioneer also to serve its API on a TLS-configurable port
+- As a Diego operator, I expect the auctioneer also to be able to serve its API over TLS
 	- include docs for new set of config values, recommended way to transition
 	- script to generate new set of certs and keys
 - As a Diego operator, I expect to be able to configure the BBS to communicate with the auctioneer on its TLS-configurable port
@@ -117,38 +117,28 @@ Existing:
 Add in Diego release version 0.X:
 
 ```yaml
-  diego.auctioneer.listen_addr_securable:
-    description: "address where auctioneer listens for LRP and task start auction requests"
-    default: "0.0.0.0:9017"
-
-  diego.auctioneer.enable_insecurable_api_server:
-    description: "Whether to enable the legacy, insecurable API server"
-    default: true
-
   diego.auctioneer.require_tls:
-    description: "Whether to require TLS for all communication to the securable auctioneer port"
+    description: "Whether to require mutual TLS for all communication to the auctioneer API port"
     default: true
 
   diego.auctioneer.ca_cert:
-    description: "PEM-encoded CA certificate"
+    description: "PEM-encoded CA certificate for the auctioneer API server."
 
   diego.auctioneer.server_cert:
-    description: "PEM-encoded client certificate"
+    description: "PEM-encoded certificate for the auctioneer API server."
 
   diego.auctioneer.server_key:
-    description: "PEM-encoded client key"
+    description: "PEM-encoded key for the auctioneer API server."
 ```
 
 Change in Diego release version 1.0:
 
-- `diego.auctioneer.listen_addr` becomes `diego.auctioneer.listen_addr_insecurable`.
-- `diego.auctioneer.listen_addr_securable` becomes `diego.auctioneer.listen_addr`.
+- Dual-serving mode deprecated.
 
 Change in Diego release version 2.0:
 
-- Remove `diego.auctioneer.listen_addr_insecurable`.
-- Remove `diego.auctioneer.enable_insecurable_api_server`.
-- Auctioneer API server listens only on one port, defaulting to 9017.
+- Dual-serving mode removed. Auctioneer either accepts only HTTP connections when run in insecure mode or accepts only mutual TLS connections when run in secure mode.
+
 
 #### BBS as Auctioneer Client
 
@@ -163,16 +153,12 @@ Existing:
 Add in Diego release version 0.X:
 
 ```yaml
-  diego.bbs.auctioneer.use_insecurable_client:
-    description: "Whether to use the legacy, insecurable auctioneer client instead of the TLS-configurable client."
-    default: true
-
   diego.bbs.auctioneer.api_location:
     description: "Hostname and port of the auctioneer API."
-    default: "auctioneer.service.cf.internal:9017"
+    default: "auctioneer.service.cf.internal:9016"
 
   diego.bbs.auctioneer.require_tls:
-    description: "Whether to use TLS for communication with the auctioneer API."
+    description: "Whether to use mutual TLS for communication with the auctioneer API."
     default: true
 
   diego.bbs.auctioneer.ca_cert:
@@ -185,10 +171,14 @@ Add in Diego release version 0.X:
     description: "Client key for communication to the auctioneer."
 ```
 
-Change in Diego release version 2.0:
+Change in Diego release version 0.X:
+
+- Deprecate `diego.bbs.auctioneer.api_url`: `diego.bbs.auctioneer.api_location` preferred.
+
+
+Change in Diego release version 1.0?:
 
 - Remove `diego.bbs.auctioneer.api_url`.
-- Remove `diego.bbs.auctioneer.use_insecurable_client`.
 
 
 #### Deployment configurations
@@ -212,40 +202,33 @@ Change in Diego release version 2.0:
 - deploy 1:
 	- BBS communicates to 9016, insecure
 		- `b.a.api_url: "http://auctioneer.service.cf.internal:9016"`
-		- `b.a.use_insecurable_client: true`
 		- `b.a.api_location: "auctioneer.service.cf.internal:9017"`
 		- `b.a.require_tls: false (*)`
 		- `b.a.ca_cert: null`
 		- `b.a.client_cert: null`
 		- `b.a.client_key: null`
-	- auctioneer listens on 9016, insecure, and 9017, secure
+	- auctioneer listens on 9016, insecure AND secure
 		- `a.listen_addr: "0.0.0.0:9016"`
-		- `a.listen_addr_securable: "0.0.0.0:9017"`
-		- `a.enable_insecurable_api_server: true`
-		- `a.require_tls: true`
+		- `a.require_tls: false (*)`
 		- `a.ca_cert: DIEGO_CA (*)`
 		- `a.server_cert: AUCTIONEER_SERVER_CERT (*)`
 		- `a.server_key: AUCTIONEER_SERVER_KEY (*)`
 - deploy 2:
-	- BBS communicates to 9017, secure
+	- BBS communicates to 9016, secure
 		- `b.a.api_url: "http://auctioneer.service.cf.internal:9016"`
-		- `b.a.use_insecurable_client: false (*)`
-		- `b.a.api_location: "auctioneer.service.cf.internal:9017"`
 		- `b.a.require_tls: true`
 		- `b.a.ca_cert: DIEGO_CA_CERT (*)`
 		- `b.a.client_cert: AUCTIONEER_CLIENT_CERT (*)`
 		- `b.a.client_key: AUCTIONEER_CLIENT_KEY (*)`
-	- auctioneer listens only on 9017, secure
+	- auctioneer listens only on 9016, secure
 		- `a.listen_addr: "0.0.0.0:9016"`
-		- `a.listen_addr_securable: "0.0.0.0:9017"`
-		- `a.enable_insecurable_api_server: false (*)`
 		- `a.require_tls: true`
 		- `a.ca_cert: DIEGO_CA_CERT (*)`
 		- `a.server_cert: AUCTIONEER_SERVER_CERT (*)`
 		- `a.server_key: AUCTIONEER_SERVER_KEY (*)`
 - auctioneer serving only secure endpoint
 
-##### Migrate existing deployment to new port without TLS
+##### Maintain existing deployment without TLS
 
 - existing deployment:
 	- BBS communicates to 9016, insecure
@@ -256,33 +239,12 @@ Change in Diego release version 2.0:
 - deploy 1:
 	- BBS communicates to 9016, insecure
 		- `b.a.api_url: "http://auctioneer.service.cf.internal:9016"`
-		- `b.a.use_insecurable_client: true`
-		- `b.a.api_location: "auctioneer.service.cf.internal:9017"`
 		- `b.a.require_tls: false (*)`
 		- `b.a.ca_cert: null # TODO: ok value without spec default?`
 		- `b.a.client_cert: null`
 		- `b.a.client_key: null`
-	- auctioneer listens on 9016, insecure, and 9017, insecure
+	- auctioneer listens on 9016, insecure only
 		- `a.listen_addr: "0.0.0.0:9016"`
-		- `a.listen_addr_securable: "0.0.0.0:9017"`
-		- `a.enable_insecurable_api_server: true`
-		- `a.require_tls: false (*)`
-		- `a.ca_cert: null`
-		- `a.server_cert: null`
-		- `a.server_key: null`
-- deploy 2:
-	- BBS communicates to 9017, insecure
-		- `b.a.api_url: "http://auctioneer.service.cf.internal:9016"`
-		- `b.a.use_insecurable_client: false (*)`
-		- `b.a.api_location: "auctioneer.service.cf.internal:9017"`
-		- `b.a.require_tls: false (*)`
-		- `b.a.ca_cert: null`
-		- `b.a.client_cert: null`
-		- `b.a.client_key: null`
-	- auctioneer listens only on 9017, insecure
-		- `a.listen_addr: "0.0.0.0:9016"`
-		- `a.listen_addr_securable: "0.0.0.0:9017"`
-		- `a.enable_insecurable_api_server: false (*)`
 		- `a.require_tls: false (*)`
 		- `a.ca_cert: null`
 		- `a.server_cert: null`
@@ -317,17 +279,17 @@ Add in Diego release version 0.X:
     default: "cell.service.cf.internal"
 
   diego.rep.require_tls:
-    description: "Whether to require TLS for communication to the securable rep API server"
+    description: "Whether to require mutual TLS for communication to the securable rep API server"
     default: true
 
   diego.rep.ca_cert:
     description: "PEM-encoded CA certificate"
 
   diego.rep.server_cert:
-    description: "PEM-encoded client certificate"
+    description: "PEM-encoded server certificate"
 
   diego.rep.server_key:
-    description: "PEM-encoded client key"
+    description: "PEM-encoded server key"
 ```
 
 Change in Diego 2.0:
