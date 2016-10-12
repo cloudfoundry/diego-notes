@@ -161,36 +161,33 @@ Instance types marked with an asterisk (*) are projections based on the results 
 
 ### <a name='gcp'></a>GCP
 
-#### Instance Sizing (50K experiment projection)
+#### Instance Sizing (used for the 50K instance experiment)
 
-|  Deployment   |             Job               | Scalability H/V | Number of Instance | Resource Pool | 5000 Test Instance Size  | Disk type   | Disk capacity |
-| ------------- | ----------------------------- | --------------- | ------------------ | ------------- | ------------------------ |-------------|---------------|
-| CF            | api                           | H               | 20                 | large         | n1-standard-2            | pd-standard | 20 GB         |
-| CF            | api_worker                    | H               | 2                  | small         | n1-standard-1            | pd-standard | 20 GB         |
-| CF            | blobstore                     | V               | 0                  | medium        | n1-standard-2            | pd-standard | 20 GB         |
-| CF            | consul                        | V               | 3                  | small         | n1-standard-1            | pd-standard | 20 GB         |
-| CF            | doppler                       | H               | 16                 | medium        | n1-standard-2            | pd-standard | 20 GB         |
-| CF            | etcd                          | V               | 3                  | medium        | n1-standard-2            | pd-standard | 20 GB         |
-| CF            | ha_proxy                      | H               | 2                  | ha_proxy      | n1-standard-4            | pd-standard | 20 GB         |
-| CF            | loggregator_trafficcontroller | H               | 4                  | medium        | n1-standard-2            | pd-standard | 20 GB         |
-| CF            | nats                          | V               | 2                  | small         | n1-standard-1            | pd-standard | 20 GB         |
-| CF            | postgres                      | V               | 1                  | postgres      | n1-standard-2            | pd-standard | 20 GB         |
-| CF            | router                        | H               | 8                  | router        | n1-highcpu-4             | pd-standard | 20 GB         |
-| CF            | uaa                           | H               | 2                  | medium        | n1-standard-2            | pd-standard | 20 GB         |
-| Diego         | access                        | H               | 2                  | access        | n1-standard-1            | pd-standard | 20 GB         |
-| Diego         | brain                         | V               | 2                  | brain         | n1-highcpu-4             | pd-standard | 20 GB         |
-| Diego         | cc_bridge                     | H               | 2                  | cc_bridge     | n1-highcpu-2             | pd-standard | 20 GB         |
-| Diego         | cell                          | H               | 250                | cell          | n1-standard-2            | pd-standard | 35 GB         |
-| Diego         | database                      | V               | 2                  | database      | n1-highcpu-8             | pd-standard | 20 GB + 200GB ephemeral disk (for logs)|
-| Diego         | route-emitter                 | V               | 2                  | route-emitter | n1-standard-2            | pd-standard | 20 GB         |
-| MySQL         | arbitrator                    | V               | 1                  | arbitrator    | n1-standard-2            | pd-standard | 20 GB         |
-| MySQL         | mysql                         | V               | 2                  | mysql         | n1-standard-8            | pd-ssd      | 50 GB         |
-| MySQL         | proxy                         | V               | 2                  | proxy         | n1-standard-2            | pd-standard | 20 GB         |
-| Diego-Postgres| postgres                      | V               | 1                  | postgres      | n1-standard-8            | pd-ssd      | 50 GB         |             
-| Influx        | grafana                       | V               | 1                  | standard      | n1-standard-1            | pd-standard | 100 GB        |
-| Influx        | influxdb                      | V               | 1                  | standard      | n1-standard-8            | pd-standard | 100 GB        |
-| Influx        | influxdb-firehose-nozzle      | V               | 1                  | standard      | n1-highcpu-4             | pd-standard | 100 GB        |
-| Perf          | cedar                         | V               | 1                  | perf          | n1-standard-8            | pd-standard | 20 GB         |
+|  Deployment   |             Job               | Scalability H/V | Number of Instance | Resource Pool | Instance Type  | Disk type   | Disk capacity |
+| ------------- | ----------------------------- | --------------- | ------------------ | ------------- | -------------- |-------------|---------------|
+| CF            | api                           | H               | 20                 | large         | n1-standard-2  | pd-standard | 20 GB         |
+| CF            | api_worker                    | H               | 10                 | small         | n1-standard-1  | pd-standard | 20 GB         |
+| CF            | blobstore                     | V               | 3                  | small         | n1-standard-1  | pd-standard | 20 GB         |
+| CF            | consul                        | V               | 3                  | small         | n1-standard-1  | pd-standard | 20 GB         |
+| CF            | doppler                       | H               | 16                 | highmem       | n1-standard-2  | pd-standard | 20 GB         |
+| CF            | etcd                          | V               | 3                  | medium        | n1-standard-2  | pd-standard | 20 GB         |
+| CF            | ha_proxy                      | H               | 16                 | ha_proxy      | n1-standard-2  | pd-standard | 20 GB         |
+| CF            | loggregator_trafficcontroller | H               | 4                  | medium        | n1-standard-2  | pd-standard | 20 GB         |
+| CF            | nats                          | V               | 2                  | medium        | n1-standard-2  | pd-standard | 20 GB         |
+| CF            | postgres                      | V               | 1                  | postgres      | n1-standard-4  | pd-standard | 20 GB         |
+| CF            | router                        | H               | 8                  | router        | n1-standard-8  | pd-standard | 20 GB         |
+| CF            | uaa                           | H               | 2                  | medium        | n1-standard-2  | pd-standard | 20 GB         |
+| Diego         | access                        | H               | 2                  | access        | n1-standard-1  | pd-standard | 20 GB         |
+| Diego         | brain                         | V               | 2                  | brain         | n1-highcpu-4   | pd-standard | 20 GB         |
+| Diego         | cc_bridge                     | H               | 2                  | cc_bridge     | n1-highcpu-4   | pd-standard | 20 GB         |
+| Diego         | cell                          | H               | 250                | cell          | n1-standard-2  | pd-standard | 35 GB         |
+| Diego         | database                      | V               | 2                  | database      | n1-highcpu-8   | pd-standard | 20 GB         |
+| Diego         | route-emitter                 | V               | 2                  | route-emitter | n1-standard-2  | pd-standard | 20 GB         |
+| Diego-Postgres| postgres                      | V               | 1                  | postgres      | n1-standard-4  | pd-standard | 20 GB         |
+| Influx        | grafana                       | V               | 1                  | grafana       | n1-standard-2  | pd-standard | 100 GB        |
+| Influx        | influxdb                      | V               | 1                  | influxdb      | n1-highmem-8   | pd-standard | 100 GB        |
+| Influx        | influxdb-firehose-nozzle      | V               | 2                  | standard      | n1-highcpu-4   | pd-standard | 100 GB        |
+| Perf          | cedar                         | V               | 1                  | perf          | n1-standard-8  | pd-standard | 100 GB        |
 
 ## <a name='tuning-the-deployment'></a>Tuning the Deployment
 
