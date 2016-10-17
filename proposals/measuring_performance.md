@@ -188,7 +188,6 @@ Instance types marked with an asterisk (*) are projections based on the results 
 | Influx        | influxdb                      | V               | 1                  | influxdb      | n1-highmem-8   | pd-standard | 100 GB        |
 | Influx        | influxdb-firehose-nozzle      | V               | 2                  | standard      | n1-highcpu-4   | pd-standard | 100 GB        |
 | MySQL         | mysql                         | V               | 1                  | standard      | n1-standard-8  | pd-ssd      | 50 GB        |
-| Influx        | influxdb-firehose-nozzle      | V               | 2                  | standard      | n1-highcpu-4   | pd-standard | 100 GB        |
 | Perf          | cedar                         | V               | 1                  | perf          | n1-standard-8  | pd-standard | 100 GB        |
 
 #### Instance Sizing (projected for the 250K instance experiment)
