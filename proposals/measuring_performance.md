@@ -187,7 +187,7 @@ Instance types marked with an asterisk (*) are projections based on the results 
 | Influx        | grafana                       | V               | 1                  | grafana       | n1-standard-2  | pd-standard | 100 GB        |
 | Influx        | influxdb                      | V               | 1                  | influxdb      | n1-highmem-8   | pd-standard | 100 GB        |
 | Influx        | influxdb-firehose-nozzle      | V               | 2                  | standard      | n1-highcpu-4   | pd-standard | 100 GB        |
-| MySQL         | mysql                         | V               | 1                  | standard      | n1-standard-8  | pd-ssd      | 50 GB        |
+| MySQL         | mysql                         | V               | 1                  | standard      | n1-standard-8  | pd-ssd      | 50 GB         |
 | Perf          | cedar                         | V               | 1                  | perf          | n1-standard-8  | pd-standard | 100 GB        |
 
 #### Instance Sizing (projected for the 250K instance experiment)
@@ -196,14 +196,14 @@ Instance types marked with an asterisk (*) are projections based on the results 
 | ------------- | ----------------------------- | --------------- | ------------------ | ------------- | -------------- |-------------|---------------|
 | CF            | api                           | H               | 100                | large         | custom-api     | pd-standard | 20 GB         |
 | CF            | api_worker                    | H               | 50                 | small         | n1-standard-1  | pd-standard | 20 GB         |
-| CF            | consul                        | V               | 3                  | small         | n1-standard-1  | pd-standard | 20 GB         |
+| CF            | consul                        | V               | 3                  | medium        | n1-standard-2  | pd-standard | 20 GB         |
 | CF            | doppler                       | H               | 80                 | medium        | n1-standard-2  | pd-standard | 20 GB         |
-| CF            | etcd                          | V               | 3                  | small         | n1-standard-1  | pd-standard | 20 GB         |
+| CF            | etcd                          | V               | 3                  | medium        | n1-standard-2  | pd-standard | 20 GB         |
 | CF            | ha_proxy                      | H               | 80                 | small         | n1-standard-1  | pd-standard | 20 GB         |
 | CF            | loggregator_trafficcontroller | H               | 20                 | large         | custom-api     | pd-standard | 20 GB         |
-| CF            | nats                          | V               | 2                  | small         | n1-standard-1  | pd-standard | 20 GB         |
-| CF            | postgres                      | V               | 1                  | postgres      | custom-postgres| pd-ssd      | 50 GB         |
-| CF            | router                        | H               | 40                 | router        | custom-router  | pd-standard | 20 GB         |
+| CF            | nats                          | V               | 2                  | medium        | n1-standard-2  | pd-standard | 20 GB         |
+| CF            | postgres                      | V               | 1                  | postgres      | n1-highcpu-16  | pd-ssd      | 50 GB         |
+| CF            | router                        | H               | 20                 | router        | n1-highcpu-8   | pd-standard | 20 GB         |
 | CF            | uaa                           | H               | 2                  | medium        | n1-standard-2  | pd-standard | 20 GB         |
 | Diego         | access                        | H               | 2                  | access        | n1-standard-1  | pd-standard | 20 GB         |
 | Diego         | brain                         | V               | 2                  | brain         | n1-highcpu-4   | pd-standard | 20 GB         |
@@ -215,14 +215,12 @@ Instance types marked with an asterisk (*) are projections based on the results 
 | Influx        | grafana                       | V               | 1                  | grafana       | n1-standard-2  | pd-standard | 100 GB        |
 | Influx        | influxdb                      | V               | 1                  | influxdb      | n1-highmem-8   | pd-ssd      | 100 GB        |
 | Influx        | influxdb-firehose-nozzle      | V               | 2                  | standard      | n1-highcpu-8   | pd-standard | 100 GB        |
-| MySQL         | mysql                         | V               | 1                  | standard      | n1-standard-16 | pd-ssd      | 50 GB        |
+| MySQL         | mysql                         | V               | 1                  | standard      | n1-standard-16 | pd-ssd      | 50 GB         |
 | Perf          | cedar                         | V               | 1                  | perf          | n1-highcpu-32  | pd-standard | 100 GB        |
 
 ##### Custom Instance Types
 
 1. `custom-api`: 2 VCPUs, 4GB Memory
-1. `custom-postgres`: 16 VCPUs, 6GB Memory
-1. `custom-router`: 4 VCPUs, 2GB Memory
 
 ## <a name='tuning-the-deployment'></a>Tuning the Deployment
 
