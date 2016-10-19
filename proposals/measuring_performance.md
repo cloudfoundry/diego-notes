@@ -195,7 +195,7 @@ Instance types marked with an asterisk (*) are projections based on the results 
 |  Deployment   |             Job               | Scalability H/V | Number of Instance | Resource Pool | Instance Type  | Disk type   | Disk capacity |
 | ------------- | ----------------------------- | --------------- | ------------------ | ------------- | -------------- |-------------|---------------|
 | CF            | api                           | H               | 100                | large         | custom-api     | pd-standard | 20 GB         |
-| CF            | api_worker                    | H               | 50                 | small         | n1-standard-1  | pd-standard | 20 GB         |
+| CF            | api_worker                    | H               | 15                 | small         | n1-standard-1  | pd-standard | 20 GB         |
 | CF            | consul                        | V               | 3                  | medium        | n1-standard-2  | pd-standard | 20 GB         |
 | CF            | doppler                       | H               | 80                 | medium        | n1-standard-2  | pd-standard | 20 GB         |
 | CF            | etcd                          | V               | 3                  | medium        | n1-standard-2  | pd-standard | 20 GB         |
