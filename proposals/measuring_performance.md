@@ -266,11 +266,8 @@ For this experiment we plan to start (for `N` = number of cells in the deploymen
 
 ### <a name='cf-app-expt'></a>Experiment 2: Launching and running many CF applications
 
-Apps are defined as different modes of [this app](https://github.com/cloudfoundry/diego-stress-tests/tree/master/assets/stress-app).
-
-The mix of apps can be found in the [manifest
-template](https://github.com/cloudfoundry/diego-stress-tests/tree/master/assets/stress-app/manifest.yml.template)
-in the app's repository.
+Apps are defined as different modes of [this app](https://github.com/cloudfoundry/diego-stress-tests/tree/master/cedar/assets/stress-app).
+The manifests [here](https://github.com/cloudfoundry/diego-stress-tests/tree/master/cedar/assets/manifests) correspond to the configurations for the mix of apps below.
 
 <span id="experiment-2-apps-matrix"></span>Initial mix of apps:
 
