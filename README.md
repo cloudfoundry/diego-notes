@@ -321,7 +321,7 @@ Container State | ActualLRP State | Action | Reason
 `INITIALIZING/CREATED` | `CRASHED` | Delete Container | **Conceivable**: This Cell is incorrectly starting the instance - some other Cell will pick this up later.
 `RUNNING` | No ActualLRP | CREATE `RUNNING α` | **Conceivable**: This Cell is running the ActualLRP, let Diego know so it can take action appropriately (we don't allow blank ActualLRPs to shut down containers as this would lead to catastrophic fail should the BBS be accidentally purged).
 `RUNNING` | `UNCLAIMED` | CAS to `RUNNING α` | **Conceivable**: This Cell is running the ActualLRP, no need to start it elsewhere
-`RUNNING` | `CLAIMED α` | CAS to `RUNNING α` | **Expected**: This Cell is running the ActualLRP
+`RUNNING` | `CLAIMED α` | CAS to `RUNNING α` & CAD `/e` | **Expected**: This Cell is running the ActualLRP. Delete the evacuating instance if any
 `RUNNING` | `CLAIMED ω` | CAS to `RUNNING α` | **Conceivable**: This Cell is running the ActualLRP, no need to start it elsewhere
 `RUNNING` | `RUNNING α` | Do Nothing | **Expected**: This Cell is running the ActualLRP, no need to write to the BBS
 `RUNNING` | `RUNNING ω` | Delete Container | **Conceivable**: The ActualLRP is running elsewhere, stop running it on this Cell
@@ -398,7 +398,7 @@ Instance key state | Evacuating key state | Action | Reason
 `RUNNING-α` | - | CREATE /e: `RUNNING α`, CAS /i: `UNCLAIMED` | **Expected**: This is the initial action during evacuation
 `RUNNING-α` | `RUNNING-α` | CAS /i: `UNCLAIMED` | **Conceivable**: α failed to update the BBS to UNCLAIMED while evacuating
 `RUNNING-α` | `RUNNING-β` | CAS /e: `RUNNING α`, CAS /i: `UNCLAIMED` | **Conceivable**: β evacuated the container, α CLAIMED it, ran it, and then began evacuating
-`RUNNING-ω` | - | Delete container | **Conceivable**: The actualLRP is now running elsewhere but the /e was somehow lost
+`RUNNING-ω` | - | Delete container | **Conceivable**: The actualLRP is now running elsewhere but the /e was removed when the instance transitioned to running state
 `RUNNING-ω` | `RUNNING-α` | CAD /e && Delete container | **Expected**: Cleanup after successful evacuation
 `RUNNING-ω` | `RUNNING-β` | Delete container | **Conceivable**: β evacuated the container, ω CLAIMED it, ran it, and then began evacuating, and then α noticed
 `CRASHED` | - | Delete container | **Conceivable**: The actualLRP is now running elsewhere but the /e was somehow lost
