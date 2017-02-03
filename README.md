@@ -380,14 +380,14 @@ RCD = RepCrashDance
 
 ##### When the container is in the Running state
 
-Assuming a `RUNNING` container on α, the α-rep performs these actions, always ensuring that keys under /evacuating have their TTL set to the evacuation timeout. `β` and `ω` represent other cells in the cluster. `ε` indicates that the UNCLAIMED ActualLRP has a placement error set.
+Assuming a `RUNNING` container on `α`, the α-rep performs these actions, always ensuring that keys under /evacuating have their TTL set to the evacuation timeout. `β` and `ω` represent other cells in the cluster. `ε` indicates that the UNCLAIMED ActualLRP has a placement error set.
 
 Instance key state | Evacuating key state | Action | Reason
 ---|---|---|---
 `UNCLAIMED` | - | CREATE /e: `RUNNING-α` | **Inconceivable?**: Ensure routing to our running instance
-`UNCLAIMED+ε` | - | Delete Container | **Inconceivable?**: No one won the auction, so this instance will not evacuate successfully. Accept the inevitable.
+`UNCLAIMED+ε` | - | Do Nothing | **Inconceivable?**: No one won the auction, so the evacuating container stays put while the auctioneer has another go.
 `UNCLAIMED` | `RUNNING-α` | Do Nothing | **Expected**: Waiting for other rep to win auction
-`UNCLAIMED+ε` | `RUNNING-α` | CAD /e && Delete Container | **Conceivable**: No one won the auction, so this instance will not evacuate successfully. Accept the inevitable.
+`UNCLAIMED+ε` | `RUNNING-α` | Do Nothing | **Conceivable**: No one won the auction, so the evacuating container stays put while the auctioneer has another go.
 `UNCLAIMED` | `RUNNING-β` | Delete container | **Conceivable**: β ran our evacuated instance, then evacuated itself
 `CLAIMED-α` | - | CREATE /e: `RUNNING α`, CAS /i: `UNCLAIMED` | **Conceivable**: α has a RUNNING container but didn't get to update the BBS to `RUNNING` yet
 `CLAIMED-α` | `RUNNING-α` | CAS /i: `UNCLAIMED` | **Conceivable**: α failed to update the BBS to UNCLAIMED while evacuating
