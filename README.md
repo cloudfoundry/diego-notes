@@ -164,9 +164,9 @@ When an ActualLRP needs to be started or restarted (in the case of crashes/evacu
 - if restarting a crashed ActualLRP:
 	- Update the ActualLRP record from CRASHED to UNCLAIMED *(if this fails: do nothing if the record already exists, it means the ActualLRP is already being restarted)*.
 - in both cases: upon success, a start is sent to the Auctioneer.
-- the Auctioneer picks a Rep *(if this fails: the Auctioneer updates the `placement_error` on the ActualLRP and another start will be issued by the BBS)*.
+- the Auctioneer picks a Rep *(if this fails: the Auctioneer updates the `PlacementError` on the ActualLRP and another start will be issued by the BBS)*.
 - the Rep is told to start the ActualLRP.
-- the Rep creates a container reservation *(if this fails: the Auctioneer updates the `placement_error` on the ActualLRP and another start request will be issued by the BBS)*.
+- the Rep creates a container reservation *(if this fails: the Auctioneer updates the `PlacementError` on the ActualLRP and another start request will be issued by the BBS)*.
 - upon success, the Rep responds to the Auctioneer successfully (this ensure the Auctioneer isn't kept waiting).
 - the Rep then tells the BBS to update the ActualLRP from `UNCLAIMED` to `CLAIMED`  *(upon failure: the Rep aborts and cleans up the reservation and we rely on the BBS's convergence process to try again)*.
 - upon success, the Rep then starts running the container *(upon failure: the Rep aborts, cleans up the reservation, and deletes the ActualLRP. We rely on the BBS's convergence process to try again)*.
@@ -181,18 +181,23 @@ When an ActualLRP should be stopped:
 	- the Rep deletes the container *(if this fails: the rep aborts - convergence will pick this up later)*
 	- the Rep then removes the ActualLRP from the BBS *(if this fails: the rep aborts - the rep will retry later in its polling loop)*
 - for `UNCLAIMED` or `CRASHED` ActualLRPs:
- 	- compare-and-delete the ActualLRP *(if this fails: convergence will pick it up later)*
+ 	- delete the ActualLRP *(if this fails: convergence will pick it up later)*
 
 ### Distributing ActualLRPs: Auctioneer
 
-The Auctioneer is responsible for distributing ActualLRPs optimally and efficiently.  There is only one Auctioneer ever handling requests.  Requests are handled on demand: when a request to start work (an ActualLRP or Task) arrives the Auctioneer immediately fetches state from all Cells, picks the optimal placement, and then tells the corresponding Cell to perform its assigned work.
+The Auctioneer is responsible for distributing ActualLRPs optimally and efficiently.
+There is only one Auctioneer ever handling requests.
+Requests are handled on demand: when a request to start work (an ActualLRP or Task) arrives the Auctioneer immediately fetches state from all Cells, picks the optimal placement, and then tells the corresponding Cell to perform its assigned work.
 
-Doing this for each individual piece of work would incur a large communication overhead.  As such the entire flow of information around starting Tasks and LRPs supports batching.  There are two notions of "batch":
+Doing this for each individual piece of work would incur a large communication overhead.
+As such the entire flow of information around starting Tasks and LRPs supports batching.
+There are two notions of "batch":
 
-1. When a component knows it must request many starts it submits a batch request ot the Auctioneer.  For example, if the BBS needs to scale an application to 100 instances it submits a single batched request to the Auctioneer.  Similarly if the BBS needs to start a number of missing LRPs, it sends a single batch request to the Auctioneer.  The Auctioneer in turn submits work to Reps in batches.
-2. Work sent to the Auctioneer is added to the next batch of work.  The entire batch is scheduled on the next scheduling loop.  Batches are heterogenous and include both ActualLRPs and Tasks.  Batches are deduped before being scheduled -- so identical units of work in a single batch will not be scheduled multiple times.
+1. When the BBS knows it must request many starts, it submits a batch request to the Auctioneer. For example, if the BBS needs to scale an application to 100 instances it submits a single batched request to the Auctioneer. Similarly if the BBS needs to start a number of missing LRPs, it sends a single batch request to the Auctioneer. The Auctioneer in turn submits work to Reps in batches.
+2. Work sent to the Auctioneer is added to the next batch of work. The entire batch is scheduled on the next scheduling loop. Batches are heterogeneous and include both ActualLRPs and Tasks. Batches are de-duped before being scheduled -- so identical units of work in a single batch will not be scheduled multiple times.
 
-Here are some details around the scheduling loop.  When a new ActualLRP arrives:
+Here are some details around the scheduling loop.
+When a new ActualLRP arrives:
 
 - the Auctioneer fetches the state of each Cell.  This includes information about the available capacity on the Cell, the Cell's stack, and the set of ActualLRPs currently running on the Cell.
 - the Auctioneer then distributes the ActualLRPs across the Cells (in-memory).  It ensures that ActualLRPs are only placed on Cells with matching `stack`s that have sufficient resources to host the ActualLRP.  Once the Auctioneer identifies the set of Cells matching this criteria it choses the winning Cell by optimizing for (in increasing priority):
@@ -207,7 +212,11 @@ Here are some details around the scheduling loop.  When a new ActualLRP arrives:
 
 #### Auction Work Prioritization
 
-When the Auctioneer receives a batch of work it must decide the order in which the work must be distributed.  This is important.  When scheduling heterogenous work the Auctioneer could, incorrectly, fill the Cells with small units of work before attempting to place large units of work.  As a result, these large units may fail to place even if - in principal - there is sufficient capacity in the cluster. However, naively prioritizing large units of work over small units of work could lead to a situation in which, for example, a single large application fills the cells and prevents a smaller application from having *any* instances running.
+When the Auctioneer receives a batch of work it must decide the order in which the work must be distributed.
+This is important.
+When scheduling heterogeneous work the Auctioneer could, incorrectly, fill the Cells with small units of work before attempting to place large units of work.
+As a result, these large units may fail to place even if - in principal - there is sufficient capacity in the cluster.
+However, naively prioritizing large units of work over small units of work could lead to a situation in which, for example, a single large application fills the cells and prevents a smaller application from having *any* instances running.
 
 To mitigate these issue the Auctioneer first sorts the batch of work it is operating on in the following order (high priority to low priority):
 
@@ -219,38 +228,53 @@ To mitigate these issue the Auctioneer first sorts the batch of work it is opera
 
 Within each priority group, work is sorted in order of decreasing memory (so larger units of work are placed before smaller units of work).
 
-It is important to note that this prioritization only applies within an Auctioneer's single batch of work.  Since applications can arrive in arbitrary order the effectiveness of this scheme is somewhat limited.  However, since communication around starts is generally distributed in batches, this prioritization will apply when (for example) a cell is evacuating or during convergence when the BBS is submitting a batch of work.
+It is important to note that this prioritization only applies within an Auctioneer's single batch of work.
+Since applications can arrive in arbitrary order the effectiveness of this scheme is somewhat limited.
+However, since communication around starts is generally distributed in batches, this prioritization will apply when (for example) a cell is evacuating or during convergence when the BBS is submitting a batch of work.
 
 #### Communicating Fullness
 
-When an ActualLRP cannot be placed because there are no resources to place it, the Auctioneer leaves the `ActualLRP` in the `UNCLAIMED` state and sets the `PlacementError` field.  Whenever the `ActualLRP` transitions out of the `UNCLAIMED` state the `PlacementError` should be cleared.
+When an ActualLRP cannot be placed because there are no resources to place it, the Auctioneer leaves the ActualLRP in the `UNCLAIMED` state and sets the `PlacementError` field.
+Whenever the ActualLRP transitions out of the `UNCLAIMED` state the `PlacementError` should be cleared.
 
-There are multiple reasons why an `ActualLRP` may fail to be placed; these should be communicated to the user.  For example, in the presence of placement pool rules it is possible that the Auctioneer simply cannot find appropriate host Cells (`PlacementError="found no compatible cells"`).  Alternatively, the Auctioneer may *find* appropriate Cells but all those Cells might be full (`PlacementError="insufficient resources"`).
+There are multiple reasons why an ActualLRP may fail to be placed; these should be communicated to the user.
+For example, in the presence of placement pool rules it is possible that the Auctioneer simply cannot find appropriate host Cells (`PlacementError="found no compatible cells"`).
+Alternatively, the Auctioneer may *find* appropriate Cells but all those Cells might be full (`PlacementError="insufficient resources"`).
 
-Diego continues to attempt to schedule `UNCLAIMED` `ActualLRP`s.  Should an operator add spare capacity, Diego will automatically schedule the `ActualLRP`s.
+Diego continues to attempt to schedule `UNCLAIMED` ActualLRPs.
+Should an operator add spare capacity, Diego will automatically schedule the ActualLRPs.
 
 ### Crashes
 
-When an ActualLRP instance crashes, Diego is responsible for restarting the instance.  There is a tension, however, between restarting a failed instance immediately and overloading the system with endless immediate restarts of instances that never succeed.
+When an ActualLRP instance crashes, Diego is responsible for restarting the instance.
+There is a tension, however, between restarting a failed instance immediately and overloading the system with endless immediate restarts of instances that never succeed.
 
-To strike this balance Diego immediately restarts a crashed instance up to 3 times.  We perform immediate restarts for a few reasons:
+To strike this balance Diego immediately restarts a crashed instance up to 3 times.
+We perform immediate restarts for a few reasons:
 - they make for good demos (look it crashed -- look it's back!)
-- they handle cases where a healthy well-written application has truly crashed and shold be restarted ASAP.
+- they handle cases where a healthy well-written application has truly crashed and should be restarted ASAP.
 
-Sometimes, however, an instance crashes because some external dependency is down. In these cases it makes more sense for Diego to wait (and alleviate the strain of a thrashing instance hopping from one Cell to another) between restarts.  So for crashes 3 - 8 Diego applies an exponential backoff in the waittime between restarts.
+Sometimes, however, an instance crashes because some external dependency is down.
+In these cases it makes more sense for Diego to wait (and alleviate the strain of a thrashing instance hopping from one Cell to another) between restarts.
+So for crashes 3 - 8 Diego applies an exponential backoff in the wait time between restarts.
 
-Finally, we've learned from existing large public installations (PWS, Bluemix) that the vast majority of crashed instances in the system are poorly-written instances that never even manage to come up.  Instead of endlessly restarting them (which puts a substantial strain on the system) Diego will (eventually) give up on these instances.
+Finally, we've learned from existing large public installations (PWS, Bluemix) that the vast majority of crashed instances in the system are poorly-written instances that never even manage to come up.
+Instead of endlessly restarting them (which puts a substantial strain on the system) Diego will (eventually) give up on these instances.
 
-All that remains is the question of how we reset the exponential backoff.  Instances that thrash and place a heavy load on the system typically crash quickly.  So we apply a simple heuristic: if an instance manages to stay running for > 5 minutes (defined below), we reset its crash count.
+All that remains is the question of how we reset the exponential backoff.
+Instances that thrash and place a heavy load on the system typically crash quickly.
+So we apply a simple heuristic: if an instance manages to stay running for > 5 minutes (defined below), we reset its crash count.
 
-When the container associated with an ActualLRP enters the `COMPLETED` state the Rep takes actions to ensure the ActualLRP gets restarted.  Let's call this the `RepCrashDance`:
+When the container associated with an ActualLRP enters the `COMPLETED` state the Rep takes actions to ensure the ActualLRP gets restarted.
+Let's call this the `RepCrashDance`:
 
 - If `CrashCount` < 3:
-	-  Increment the `CrashCount` and bump `Since`,  udpate the ActualLRP state to `UNCLAIMED`, and emit a start to the Auctioneer.
+	-  Increment the `CrashCount` and bump `Since`, udpate the ActualLRP state to `UNCLAIMED`, and emit a start to the Auctioneer.
 - If `CrashCount` > 3:
-	- Increment the `CrashCount` and bump `Since`.  update the ActualLRP state to `CRASHED`.
+	- Increment the `CrashCount` and bump `Since`, update the ActualLRP state to `CRASHED`.
 
-The `CRASHED` ActualLRP is eventually restarted by the BBS.  The `WaitTime` is computed like so:
+The `CRASHED` ActualLRP is eventually restarted by the BBS.
+The wait time is computed like so:
 
 - If `CrashCount < 8`
 	- the BBS should restart the ActualLRP `N` seconds after `Since` (exponential backoff in [this story](https://www.pivotaltracker.com/story/show/83638710))
@@ -259,7 +283,8 @@ The `CRASHED` ActualLRP is eventually restarted by the BBS.  The `WaitTime` is c
 - If `CrashCount > 200`
 	- the ActualLRP is never restarted
 
-It is important that the `CrashCount` be reset eventually.  The Rep does this when marking an ActualLRP as crashed:
+It is important that the `CrashCount` be reset eventually.
+The BBS does this when the Rep marks an ActualLRP as crashed:
 
 - If, at the time the crash occurs, the ActualLRP in the BBS is in the `RUNNING` state with a `Since` time that is `>= 5 minutes` ago:
 	- Reset the `CrashCount` to 0 and the then do the `RepCrashDance`
@@ -267,16 +292,18 @@ It is important that the `CrashCount` be reset eventually.  The Rep does this wh
 	- Do the `RepCrashDance`
 
 
-> Note: the Rep is responsbile for immediately restarting `ActualLRP`s that have `CrashCount < 3`.  These `ActualLRP`s never enter the `CRASHED` state.  The BBS is responsible for restarting `ActualLRP`s that are in the `CRASHED` state.
+> Note: the Rep is responsible for immediately restarting ActualLRPs that have `CrashCount < 3`. These ActualLRPs never enter the `CRASHED` state. The BBS is responsible for restarting ActualLRPs that are in the `CRASHED` state.
 
 ### Evacuation
 
-When a Cell must be evacuated its ActualLRPs must first transfer to another Cell.  Here's how this works.
+When a Cell must be evacuated its ActualLRPs must first transfer to another Cell.
+Here's how this works.
 
 #### The Rep's Role during Evacuation
 
-After the rep is signaled to evacuate, it communicates the evacuating state to the rest of its components and periodically attempts to resolve its containers. For the details of all the resolution cases, consult the ["Harmonizing during evacuation"](#harmonizing-during-evacuation) section below. The rep shuts down once all of its containers have been destroyed or it reaches its evacuation timeout.
-
+After the rep is signaled to evacuate, it communicates the evacuating state to the rest of its components and periodically attempts to resolve its containers.
+For the details of all the resolution cases, consult the ["Harmonizing during evacuation"](#harmonizing-during-evacuation) section below.
+The rep shuts down once all of its containers have been destroyed or it reaches its evacuation timeout.
 
 #### The BBS's Role during Evacuation
 
@@ -287,19 +314,23 @@ When queried for ActualLRPs the BBS follows the following rules:
 	+ There is no `instance` instance
 	+ The `instance` instance is `UNCLAIMED` or `CLAIMED` (to be clear: if `instance` is `RUNNING` or `CRASHED`, return `instance` instead of `evacuating`)
 
-When performing convergence, the BBS pays no attention to `/evacuating`.
+When performing convergence, the BBS pays no attention to evacuating ActualLRPs.
 
-### Harmonizing DesiredLRPs with Actual LRPs: Convergence
+### Harmonizing DesiredLRPs with ActualLRPs: Convergence
 
-Messages get lost.  Connections time out.  Components fail.  Bugs happen.
+Messages get lost.
+Connections time out.
+Components fail.
+Bugs happen.
 
-*Convergence* is the process of bringing Diego into eventual consistency in the face of these eventualities.  The BBS periodically performs convergence, striving to bring the actual state (the set of ActualLRPs) into consistency with the desired state (DesiredLRPs).
+*Convergence* is the process of bringing Diego into eventual consistency in the face of these eventualities.
+The BBS periodically performs convergence, striving to bring the actual state (the set of ActualLRPs) into consistency with the desired state (DesiredLRPs).
 
 Here are it's responsibilities and the actions it takes:
 
 1. *Reaping ActualLRPs on failed Cells:*
-	- Cells periodically maintain their presence in the BBS.  If a Cell disappears the BBS will notice and update `CLAIMED` and `RUNNING` ActualLRPs associated with the missing Cell to `UNCLAIMED`.  The BBS will also emit starts for these missing ActualLRPs.
-	- In addition to polling periodically, the BBS actively watches for Cells disappearing.  When a Cell goes away, convergence is triggered immediately.  This was covered in #11.
+	- Cells periodically maintain their presence in the BBS. If a Cell disappears, the BBS will notice and update `CLAIMED` and `RUNNING` ActualLRPs associated with the missing Cell to `UNCLAIMED`. The BBS will also emit starts requests for these missing ActualLRPs.
+	- In addition to polling periodically, the BBS actively watches for Cells disappearing. When a Cell goes away, convergence is triggered immediately. This was covered in #11.
 2. *Starting missing ActualLRPs:*
 	- If there is no ActualLRP in the BBS for a particular DesiredLRP index, it creates an `UNCLAIMED` ActualLRP and requests a start.
 3. *Stopping extra ActualLRPs:*
@@ -308,15 +339,22 @@ Here are it's responsibilities and the actions it takes:
 4. *Restarting `CRASHED` ActualLRPs:*
 	- It is the BBS's responsibility to restart `CRASHED` ActualLRPs (see above).
 5. *Re-emitting start requests:*
-	- The request to start the ActualLRP may have failed.  This can be detected if the ActualLRP remains in the `UNCLAIMED` state for longer than some timescale.  The BBS acts by resubmitting a start request.
+	- The request to start the ActualLRP may have failed. This can be detected if the ActualLRP remains in the `UNCLAIMED` state for longer than some timescale. The BBS acts by resubmitting a start request.
 
 ### Harmonizing ActualLRPs with Container State: Rep
 
-The Rep is responsible for ensuring that the BBS is kept up-to-date with what is running.  It does this by periodically fetching containers from the executor and taking actions.  Here is an outline of how the Rep should act to reconcile the ActualLRPs in the BBS with the set of containers.
+The Rep is responsible for ensuring that the BBS is kept up-to-date with what is running.
+It does this by periodically fetching containers from the executor and taking actions.
+Here is an outline of how the Rep should act to reconcile the ActualLRPs in the BBS with the set of containers.
 
-When performing reconciliation the Rep compares the container associated with a `ProcessGuid` and `Index` with the entry in the BBS for that `ProcessGuid` and `Index`.  It then reconciles the state of the container (`RESERVED`, `INITIALIZING`, `CREATED`, `RUNNING`, `COMPLETED`) with the state of the `ActualLRP` (`UNCLAIMED, CLAIMED, RUNNING, CRASHED`).  In addition it must reconcile the `InstanceGuid` and `CellID` associated with the container and the BBS (this covers cases where (e.g.) the ActualLRP at a given index ends up running on two different Cells, or (e.g.) a single Cell has multiple ActualLRPs running on it).  
+When performing reconciliation, the Rep compares the container associated with a `ProcessGuid` and `Index` with the entry in the BBS for that `ProcessGuid` and `Index`.
+It then reconciles the state of the container (`RESERVED`, `INITIALIZING`, `CREATED`, `RUNNING`, `COMPLETED`) with the state of the `ActualLRP` (`UNCLAIMED, CLAIMED, RUNNING, CRASHED`).
+In addition it must reconcile the `InstanceGuid` and `CellID` associated with the container and the BBS (this covers cases where (e.g.) the ActualLRP at a given index ends up running on two different Cells, or (e.g.) a single Cell has multiple ActualLRPs running on it).
 
-In the following table we describe the actions the Rep must take to bring the BBS and the containers on a given Cell into harmony.  This table is from the vantage point of a BBS running on `CellID=A` with a container with `InstanceGuid=A` -- we'll call the `(InstanceGuid=A,CellID=A)` pair `α`.  It's possible that the Rep will see some other pair of identifiers in the BBS.  We call such a pair `ω`: this could be any other pairing including `(InstanceGuid B, Cell B)`, `(InstanceGuid B, Cell A)` or `(InstanceGuid A, Cell B)` -- the same reconciliation logic applies to either case.
+In the following table we describe the actions the Rep must take to bring the BBS and the containers on a given Cell into harmony.
+This table is from the vantage point of a BBS running on `CellID=A` with a container with `InstanceGuid=A` -- we'll call the `(InstanceGuid=A,CellID=A)` pair `α`.
+It's possible that the Rep will see some other pair of identifiers in the BBS.
+We call such a pair `ω`: this could be any other pairing including `(InstanceGuid B, Cell B)`, `(InstanceGuid B, Cell A)` or `(InstanceGuid A, Cell B)` -- the same reconciliation logic applies to either case.
 
 Container State | ActualLRP State | Action | Reason
 ----------------|-----------------|--------|-------
@@ -360,10 +398,10 @@ No Container | `RUNNING α` | Delete ActualLRP | **Conceivable**: There is no ma
 
 Some notes:
 
-- `COMPLETED` comes in two flavors.  `crashed` implies the container died unexpectedly.  `shutdown` implies the container was asked to shut down (e.g. the Rep was sent a stop). This can be determined by looking at `RunResult.Stopped`.
-- The "No Container" rows are necessary to ensure that the BBS reflects the reality of what is - and is *not* - running on the Cell.  Note that "No Container" includes "No Reservation".
-- In principal several of these combinations should not be possible.  However in the presence of network partitions and partial failures it is difficult to make such a statement with confidence.  An exhaustive analysis of all possible combinations (such as this) ensures eventual consistency... eventually.
-- When the Action described in this table fails, the Rep should log and do nothing.  In this way we defer to the next polling cycle to retry actions.
+- `COMPLETED` comes in two flavors. `crashed` implies the container died unexpectedly. `shutdown` implies the container was asked to shut down (e.g. the Rep was sent a stop). This can be determined by looking at `RunResult.Stopped`.
+- The "No Container" rows are necessary to ensure that the BBS reflects the reality of what is - and is *not* - running on the Cell. Note that "No Container" includes "No Reservation".
+- In principal several of these combinations should not be possible. However in the presence of network partitions and partial failures it is difficult to make such a statement with confidence. An exhaustive analysis of all possible combinations (such as this) ensures eventual consistency... eventually.
+- When the Action described in this table fails, the Rep should log and do nothing. In this way we defer to the next polling cycle to retry actions.
 
 Alternate view of table above:
 
@@ -390,12 +428,13 @@ RCD = RepCrashDance
 	+ if any work comes in from the auctioneer, the rep immediately returns it all as failed work
 - the Rep then periodically attempts to resolve its remaining containers according to their container states:
 
-
 ##### When the container is in the Running state
 
-Assuming a `RUNNING` container on `α`, the α-rep performs these actions, always ensuring that keys under /evacuating have their TTL set to the evacuation timeout. `β` and `ω` represent other cells in the cluster. `ε` indicates that the UNCLAIMED ActualLRP has a placement error set.
+Assuming a `RUNNING` container on `α`, the α-rep performs these actions, always ensuring that records with `evacuating` set have their TTL set to the evacuation timeout.
+`β` and `ω` represent other cells in the cluster.
+`ε` indicates that the UNCLAIMED ActualLRP has a placement error set.
 
-Instance key state | Evacuating key state | Action | Reason
+Instance ActualLRP state | Evacuating ActualLRP state | Action | Reason
 ---|---|---|---
 `UNCLAIMED` | - | CREATE /e: `RUNNING-α` | **Inconceivable?**: Ensure routing to our running instance
 `UNCLAIMED+ε` | - | Do Nothing | **Inconceivable?**: No one won the auction, so the evacuating container stays put while the auctioneer has another go.
@@ -411,54 +450,64 @@ Instance key state | Evacuating key state | Action | Reason
 `RUNNING-α` | - | CREATE /e: `RUNNING α`, Update /i: `UNCLAIMED` | **Expected**: This is the initial action during evacuation
 `RUNNING-α` | `RUNNING-α` | Update /i: `UNCLAIMED` | **Conceivable**: α failed to update the BBS to UNCLAIMED while evacuating
 `RUNNING-α` | `RUNNING-β` | Update /e: `RUNNING α`, Update /i: `UNCLAIMED` | **Conceivable**: β evacuated the container, α CLAIMED it, ran it, and then began evacuating
-`RUNNING-ω` | - | Delete container | **Conceivable**: The actualLRP is now running elsewhere but the /e was removed when the instance transitioned to running state
+`RUNNING-ω` | - | Delete container | **Conceivable**: The ActualLRP is now running elsewhere but the /e was removed when the instance transitioned to running state
 `RUNNING-ω` | `RUNNING-α` | Delete /e && Delete container | **Expected**: Cleanup after successful evacuation
 `RUNNING-ω` | `RUNNING-β` | Delete container | **Conceivable**: β evacuated the container, ω CLAIMED it, ran it, and then began evacuating, and then α noticed
-`CRASHED` | - | Delete container | **Conceivable**: The actualLRP is now running elsewhere but the /e was somehow lost
+`CRASHED` | - | Delete container | **Conceivable**: The ActualLRP is now running elsewhere but the /e was somehow lost
 `CRASHED` | `RUNNING-α` | Delete /e && Delete container | **Expected**: Cleanup after successful evacuation (but then the new instance crashed)
 `CRASHED` | `RUNNING-β` | Delete container | **Conceivable**: β evacuated the container, some rep CLAIMED it, ran it, `CRASHED` it, and then α noticed
-- | - | Delete container | **Conceivable**: The actualLRP is now running elsewhere but the /e was somehow lost
+- | - | Delete container | **Conceivable**: The ActualLRP is now running elsewhere but the /e was somehow lost
 - | `RUNNING-α` | Delete /e && Delete container | **Expected**: Cleanup after scaling down during evacuation
-- | `RUNNING-β` | Delete container | **Conceivable**: β evacuated the container, the actualLRP was scaled down, and then α noticed
+- | `RUNNING-β` | Delete container | **Conceivable**: β evacuated the container, the ActualLRP was scaled down, and then α noticed
 
 ##### When the container is not Running
 
-When the /instance ActualLRP changes to the `UNCLAIMED` state, the BBS will also request a new auction for it.
+When the instance ActualLRP changes to the `UNCLAIMED` state, the BBS will also request a new auction for it.
 
-- In container states that are not `RUNNING` or `COMPLETED`, the rep destroys the container, deletes the /evacuating ActualLRP if is `RUNNING-α`, and request a new auction for the ActualLRP by updating /instance to `UNCLAIMED`
-- In a `COMPLETED (SHUTDOWN)` container state, the rep destroys the container and deletes the /evacuating ActualLRP if is `RUNNING-α`, and deletes the /instance ActualLRP as usual.
-- In a `COMPLETED (CRASHED)` container state, the rep destroys the container and deletes the /evacuating ActualLRP if is `RUNNING-α`, and performs the RepCrashDance on the /instance ActualLRP as usual.
+- In container states that are not `RUNNING` or `COMPLETED`, the rep destroys the container, deletes the evacuating ActualLRP if is `RUNNING-α`, and requests a new auction for the instance ActualLRP by updating its state to `UNCLAIMED`
+- In a `COMPLETED (SHUTDOWN)` container state, the rep destroys the container and deletes the evacuating ActualLRP if is `RUNNING-α`, and deletes the instance ActualLRP as usual.
+- In a `COMPLETED (CRASHED)` container state, the rep destroys the container and deletes the evacuating ActualLRP if is `RUNNING-α`, and performs the `RepCrashDance` on the instance ActualLRP as usual.
 
 - the Rep shuts down when either all containers have been destroyed OR an evacuation timeout is exceeded:
-	+ in either case, the Rep ensures that any ActualLRPs associated with it are removed from `/evacuating` and that any tasks it still has running transition to `COMPLETED`.
+	+ in either case, the Rep ensures that any evacuating ActualLRPs associated with it are removed and that any tasks it still has running transition to `COMPLETED`.
 
 ### Detecting Cell Failures
 
-Cells can fail for a variety of reasons and in a variety of ways.  When a Cell fails Diego must respond by 1) rescuing LRPs that were running on the Cell and 2) ensuring that no new work gets scheduled on the failed Cell.
+Cells can fail for a variety of reasons and in a variety of ways.
+When a Cell fails Diego must respond by:
+
+1. rescuing LRPs that were running on the Cell
+2. ensuring that no new work gets scheduled on the failed Cell
 
 We support handling two failure modes:
 
 1. *When a Cell disappears.*
 
-  Cells periodically heartbeat their `CellPresence` into Consul.  If a Cell fails to report in time it is considered lost and the Cell's LRPs are rescheduled.  This responsibility is handled by the BBS, which is notified immediately by Consul (via a watch) if a Cell disappears.
+  Cells periodically heartbeat their `CellPresence` into Consul. If a Cell fails to report in time it is considered lost and the Cell's LRPs are rescheduled. This responsibility is handled by the BBS, which is notified immediately by Consul (via a watch) if a Cell disappears.
 
 2. *When a Cell fails to create new containers.*
 
-  We have seen issues crop up where a Cell may enter a bad state and consistently fail to create containers.  These have typically been bugs in Garden.  When this occurs existing LRPs on the Cell are likely OK, however new LRPs should not be placed on the Cell.  This is a catastrophic failure mode when the Cell is relatively empty - as the auctioneer will consistently place work on the busted Cell.
-
-  To avoid this, the Rep periodically runs a self-test health check that verifies that containers and network bridges can be created.  If this self-test health check fails repeatedly, the Rep marks it self as unavailable to perform work and informs the Auctioneer of this when providing its State.
+  We have seen issues crop up where a Cell may enter a bad state and consistently fail to create containers. These have typically been bugs in Garden. When this occurs existing LRPs on the Cell are likely OK, however new LRPs should not be placed on the Cell. This is a catastrophic failure mode when the Cell is relatively empty - as the auctioneer will consistently place work on the busted Cell.
+  To avoid this, the Rep periodically runs a self-test health check that verifies that containers and network bridges can be created. If this self-test health check fails repeatedly, the Rep marks it self as unavailable to perform work and informs the Auctioneer of this when providing its State.
 
 ### Pruning Corrupt/Invalid Data
 
-During convergence, the BBS fetches all ActualLRP and DesiredLRP data and pre-processes it before determining what convergence actions to take.  As part of this process, it prunes any data that has become corrupt (e.g. the raw data cannot be deserialized into an object) or invalid (an unversioned BBS schema change may make existing data invalid).  Currently this is done as part of the main convergence loop, but it is **not** critical to convergence behaviour.
+During convergence, the BBS fetches all ActualLRP and DesiredLRP data and pre-processes it before determining what convergence actions to take.
+As part of this process, it prunes any data that has become corrupt (e.g. the raw data cannot be deserialized into an object) or invalid (an unversioned BBS schema change may make existing data invalid).
+Currently this is done as part of the main convergence loop, but it is **not** critical to convergence behaviour.
 
 ## Tasks
 
-All things Tasks.  Here's an outline:
+All things Tasks.
+Here's an outline:
 
 ### Task States
 
-The lifecycle of a Task in Diego is quite different from that of an LRP.  Tasks are guaranteed to run at most once: they're never restarted, they don't "crash", they don't move during an evacuation.  Instead Tasks `COMPLETE`.  Once in the `COMPLETE` state the Tasks have a notion of whether they have failed or not.  Failed Tasks include a `FailureReason`; succesful Tasks (may) include a `Result` (the contents of a file requested by the user).
+The lifecycle of a Task in Diego is quite different from that of an LRP.
+Tasks are guaranteed to run at most once: they're never restarted, they don't "crash", they don't move during an evacuation.
+Instead Tasks `COMPLETE`.
+Once in the `COMPLETE` state the Tasks have a notion of whether they have failed or not.
+Failed Tasks include a `FailureReason`; succesful Tasks (may) include a `Result` (the contents of a file requested by the user).
 
 Here are the states for the Tasks:
 
@@ -481,34 +530,38 @@ Here's a happy path overview of the Task lifecycle:
 - In its processing loop, the Rep update the Task from `PENDING` to `RUNNING` *(if this fails: the Rep deletes the reservation -- the BBS will eventually see the `PENDING` task and ask the auctioneer to try again)*.
 - Upon success the Rep starts the container running *(if this fails: the Rep marks the Task `COMPLETED` and failed)*.
 - When the container completes (succesfully or otherwise) the Rep update the Task to `COMPLETED` *(if the update fails, the Rep will try again in its polling cycle)*.
-	+ If the Task has a `CompletionCallback` URL this sends a message to the BBS to handle resolving the Task (BBS takes care of this).
-- The BBS updates the Task to `RESOLVING` and calls the `CompletionCallback` *(if the update fails it does not call the `CompletionCallback`)*.
+- The BBS updates the Task to `RESOLVING` and calls the `CompletionCallback` if present *(if the update fails it does not call the `CompletionCallback`)*.
 - Upon success BBS and Rep deletes the Task *(if the delete fails the BBS does nothing: during convergence it will eventually demote the Task to `COMPLETE` and we'll try again)*.
 
 ### Distributing Tasks: Auctioneer
 
-Tasks are distributed much like ActualLRPs.  In fact the batch of work performed by the Auctioneer includes both Tasks and ActualLRPs.  The only differences are around how Tasks are optimally placed (unsurprisingly, they are simpler).  For Tasks the Auctioneer only:
+Tasks are distributed much like ActualLRPs.
+In fact the batch of work performed by the Auctioneer includes both Tasks and ActualLRPs.
+The only differences are around how Tasks are optimally placed (unsurprisingly, they are simpler).
+For Tasks the Auctioneer only:
 
 - ensures the Task lands on a Cell with matching `stack`
 - ensures an even distribution of memory and disk usage across Cells
 
 #### Communicating Fullness
 
-When a Task cannot be allocated the Auctioneer updates the Task from the `PENDING` state to the `COMPLETED` state, marking it as `Failed` and including a `FailureReason` that explains that the cluster has no capacity for the task.  It is up to the consumer to retry the Task.
+When a Task cannot be allocated the Auctioneer updates the Task from the `PENDING` state to the `COMPLETED` state, marking it as `Failed` and including a `FailureReason` that explains that the cluster has no capacity for the task.
+It is up to the consumer to retry the Task.
 
 ### Resolving Completed Tasks
 
-When a Task is `COMPLETED` it is up-to the consumer to delete the Task (though the BBS will clean up Tasks that have been `COMPLETED` for a lengthy period of time).  Consumers can either poll Tasks to see them enter the `COMPLETED` state or can register a `CompletionCallback` to be told the Task has been completed:
+When a Task is `COMPLETED` it is up-to the consumer to delete the Task (though the BBS will clean up Tasks that have been `COMPLETED` for a lengthy period of time).
+Consumers can either poll Tasks to see them enter the `COMPLETED` state or can register a `CompletionCallback` to be told the Task has been completed:
 
 - When polling:
-	+ consumers instruct the BBS to delete the Task.  This updates `COMPLETED => RESOLVING` then deletes `RESOLVING`.
+	+ consumers instruct the BBS to delete the Task. This updates `COMPLETED => RESOLVING` then deletes `RESOLVING`.
 - When handling the `CompletionCallback`
-	+ the BBS updates `COMPLETED => RESOLVING` to indicate that it is handling resolving the Task.  This is necessary to ensure that no two BBSes attempt to call the `CompletionCallback`.
+	+ the BBS updates `COMPLETED => RESOLVING` to indicate that it is handling resolving the Task. This is necessary to ensure that no two BBSes attempt to call the `CompletionCallback`.
 	+ when the `CompletionCallback` returns, the BBS deletes the Task.
 
 It is an error to attempt to delete a Task that is *not* in the `COMPLETED` state.
 
-> There are a few details around retrying the `CompletionCallback` -- these are documented in the BBS API docs.
+> There are a few details around retrying the `CompletionCallback` -- these are documented in the [BBS API docs](https://github.com/cloudfoundry/bbs/tree/master/doc).
 
 ### Cancelling Tasks
 
@@ -519,43 +572,49 @@ Tasks in the `PENDING` and `RUNNING` state can be cancelled via the BBS at any t
 	+ The BBS then sends a cancellation message to the Rep in question.
 - The Rep's poller will react to the cancel message and delete its container.
 
-The consumer then deletes the `COMPLETED` task.  It is an error to attempt to cancel a Task that is not in the `PENDING` or `RUNNING` states.
+The consumer then deletes the `COMPLETED` task.
+It is an error to attempt to cancel a Task that is not in the `PENDING` or `RUNNING` states.
 
-> There is a bit of a hole here.  A user could cancel then delete a Task and then request a new Task with the same `TaskGuid` *before* the Rep notices the container should be deleted.  This gap is narrowed by emitting a message to the Rep.  One option would be to generate a unique InstanceGuid so that the Rep can converge correctly, but this is a relatively minor issue that is unlikely to impact CF.
+> There is a bit of a hole here. A user could cancel then delete a Task and then request a new Task with the same `TaskGuid` *before* the Rep notices the container should be deleted. This gap is narrowed by emitting a message to the Rep. One option would be to generate a unique InstanceGuid so that the Rep can converge correctly, but this is a relatively minor issue that is unlikely to impact CF.
 
 ### Evacuation
 
-Tasks never migrate from one Cell to another.  They effectively block Cell evacuation. Here's what happens when a Cell must be evacuated:
+Tasks never migrate from one Cell to another.
+They effectively block Cell evacuation.
+Here's what happens when a Cell must be evacuated:
 
 - the Rep is told to evacuate.
 - the Rep subsequently refuses to take on any new work
 - the Rep shuts down when either all containers have been destroyed OR an evacuation timeout is exceeded:
-	- in either case, the Rep ensures that any `RUNNING` Tasks associated with it are updated to the `COMPLETED` state.  These should be marked `Failed` with the `FailureReason = "timed out during cell evacuation"`
+	- in either case, the Rep ensures that any `RUNNING` Tasks associated with it are updated to the `COMPLETED` state. These should be marked `Failed` with the `FailureReason = "timed out during cell evacuation"`
 
 ### Maintaining Consistency: Convergence
 
-Since tasks are guaranteed to run at most once, the BBS never attempts to "restart" Tasks.  Instead its role is:
+Since tasks are guaranteed to run at most once, the BBS never attempts to "restart" Tasks.
+Instead its role is:
 
 1. The BBS will update the database records of Tasks that are `RUNNING` on failed Cells.
-	- Cells periodically maintain their presence in the BBS.  If a Cell disappears the BBS will notice and set `RUNNING` Tasks associated with the missing Cell to `COMPLETED` and `Failed`.
+	- Cells periodically maintain their presence in the BBS. If a Cell disappears the BBS will notice and set `RUNNING` Tasks associated with the missing Cell to `COMPLETED` and `Failed`.
 2. The BBS will re-emit start requests for Tasks stuck in the `PENDING` state.
 	- If a Task is stuck in the `PENDING` state and has been there for a long period of time a start request is re-emitted to the auctioneer.
-3. The BBS will delete the record of a `COMPLETED`  Task that has first entered the `COMPLETED` state too long ago (2 minutes ago).
+3. The BBS will delete the record of a `COMPLETED` Task that has first entered the `COMPLETED` state too long ago (2 minutes ago).
 4. The BBS will ask the BBS to resolve a `COMPLETED` Task that has been in the `COMPLETED` state for too long (30 seconds).
 5. The BBS will set a `RESOLVING` Task to the `COMPLETED` state and notify the BBS if it has been `RESOLVING` for too long.
-	- Perhaps the resolving BBS died?  If a Task is stuck at `RESOLVING` for too long, the BBS gives it another change to resolve by moving it back to `COMPLETED`.
+	- Perhaps the resolving BBS died. If a Task is stuck at `RESOLVING` for too long, the BBS gives it another change to resolve by moving it back to `COMPLETED`.
 
 ### Harmonizing Tasks with Container State: Rep
 
-The Rep is responsible for ensuring that the BBS is kept up-to-date with what is running.  It does this periodically by fetching containers from the executor and taking actions.
+The Rep is responsible for ensuring that the BBS is kept up-to-date with what is running.
+It does this periodically by fetching containers from the executor and taking actions.
 
-Here is an outline of how the Rep should act to reconcile the Tasks in the BBS with the set of containers.  In this example, α will represent the Cell performing the reconciliation and ω will represent a different Cell (possibly empty):
+Here is an outline of how the Rep should act to reconcile the Tasks in the BBS with the set of containers.
+In this example, α will represent the Cell performing the reconciliation and ω will represent a different Cell (possibly empty):
 
 Container State | Task State | Action | Reason
 ----------------|-----------------|--------|-------
 `RESERVED` | No Task | Delete Container | **Conceivable**: The task has been cancelled, α should not act.
 `RESERVED` | `PENDING` | Start Task **THEN** Run Container | **Expected**: α has a reservation for this task and should start the task and run it in the container.
-`RESERVED` | `RUNNING on α` | Do Nothing | **Expected**: The container is likely about to be initialized (the Rep tells the BBS running right after it reserves).  Things won't get stuck in this state because the reservation will either enter a new state, or be reaped by the executor.
+`RESERVED` | `RUNNING on α` | Do Nothing | **Expected**: The container is likely about to be initialized (the Rep tells the BBS running right after it reserves). Things won't get stuck in this state because the reservation will either enter a new state, or be reaped by the executor.
 `RESERVED` | `RUNNING on ω` | Delete Container | **Conceivable**: Don't start running this task
 `RESERVED` | `COMPLETED on α` | Delete Container | **Conceivable**: Don't start running this Task
 `RESERVED` | `COMPLETED on ω` | Delete Container | **Conceivable**: Don't start running this Task
@@ -584,9 +643,9 @@ No Container | `RESOLVING on α` | Do Nothing | **Expected**: The client is reso
 
 Some notes:
 
-- The "No Container" rows are necessary to ensure that the BBS reflects the reality of what is - and is *not* - running on the Cell.  Note that "No Container" includes "No Reservation".
-- In principal several of these combinations should not be possible.  However in the presence of network partitions and partial failures it is difficult to make such a statement with confidence.  An exhaustive analysis of all possible combinations (such as this) ensures more safety around the Task lifecycle.
-- When the Action described in this table fails, the Rep should log and do nothing.  In this way we defer to the next polling cycle to retry actions.
+- The "No Container" rows are necessary to ensure that the BBS reflects the reality of what is - and is *not* - running on the Cell. Note that "No Container" includes "No Reservation".
+- In principal several of these combinations should not be possible. However in the presence of network partitions and partial failures it is difficult to make such a statement with confidence. An exhaustive analysis of all possible combinations (such as this) ensures more safety around the Task lifecycle.
+- When the Action described in this table fails, the Rep should log and do nothing. In this way we defer to the next polling cycle to retry actions.
 
 BBS | Reserved | I/C/Running | Completed | No Container
 ---|---|---|---|---|---
@@ -601,4 +660,6 @@ Resolving-ω | Delete Container          | Delete Container          | Delete Co
 
 ### Pruning Corrupt/Invalid Data
 
-The BBS fetches all Task data, and pre-processes it before determining what convergence actions to take.  As part of this process, it prunes any data that has become corrupt (e.g. the raw data cannot be deserialized into an object) or invalid (an unversioned BBS schema change may make existing data invalid).  Currently this is done as part of the main convergence loop, but it is **not** critical to convergence behaviour.
+The BBS fetches all Task data, and pre-processes it before determining what convergence actions to take.
+As part of this process, it prunes any data that has become corrupt (e.g. the raw data cannot be de-serialized into an object) or invalid (an unversioned BBS schema change may make existing data invalid).
+Currently this is done as part of the main convergence loop, but it is **not** critical to convergence behaviour.
