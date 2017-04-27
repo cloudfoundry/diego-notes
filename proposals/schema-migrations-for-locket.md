@@ -136,3 +136,45 @@ At this point we have a cluster of L2 servers following the code paths of L1, th
 - [CAPI Migration Guidelines](https://github.com/cloudfoundry/cloud_controller_ng/wiki/CAPI-Migration-Style-Guide)
 - [Expand-Then-Contract](https://martinfowler.com/bliki/ParallelChange.html)
 
+### Proposal 3
+
+In the migration strategy the locket service is aware of two schemas viz: the `migrating from` schema and the `migrating to` schema.
+
+#### Requirements
+
+- A management table with the schema: `locket_id, schema_version, ttl`
+- A schema version table with the schema `current, desired`
+
+#### Performing a Migration
+
+For the purposes of this proposal, we will assume that we have 3 locket servers (L1, L2, L3) and 2 schema versions (S1, S2).
+
+- BOSH deploy begins updating L1.
+  L1 updates the desired column in the schema version table to S2.
+  L1 creates a new table with the desired schema S2.
+  L1 updates its registration to S2.
+  At this point in time L1 will continue respecting both the original table with S1 and the new table with S2, writing/reading locks and presences to both.
+  This ensures that L1 respects locks that are acquired through L2 and L3.
+
+- BOSH deploy updates L2
+  L2 updates its registration to S2.
+  At this point in time L2 will continue respecting both the original table with S1 and the new table with S2, writing/reading locks and presences to both.
+  This ensures that L2 respects locks that are acquired through L1 and L3.
+
+- BOSH deploy updates L3
+  L3 updates its registration to S2.
+  At this point in time L3 will continue respecting both the original table with S1 and the new table with S2, writing/reading locks and presences to both.
+  This ensures that L3 respects locks that are acquired through L1 and L2.
+
+- One of L1, L2, or L3 recognizes that all locket registrations have moved to S2.
+  Update the current version in the schema version table to S2.
+  Drop the S1 table.
+  Old locket servers will no longer be able to start, as the current version is past their latest known version.
+
+- At this point all locket servers are writing/reading from only S2 and the migration is complete.
+
+#### Questions
+
+- Can we use a post deploy trigger from BOSH to update the `current` version?
+- Do we need all of this orchestration?
+- This strategy does not solve migrating data into the new table (for example if we used this for the BBS). Could it? Proposal 2 is probably more useful in this case.
