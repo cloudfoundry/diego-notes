@@ -162,3 +162,7 @@ We revisit release version testing with the following changes in mind:
     -   we should excercise the different capacity constraints and ensure we don't violate them, total disk & memory usage of apps never go above the limit
     -   More generically i think we need to test both good and happy paths
     -   what else ?
+-   How do we test the diego client
+    -   gopkg.in/diego-client-v0 ? (use in directly from the test suite)
+    -   cfdot-v0 the only drawback is that we are not excercising the protobuf api directly
+    -   some other binary that can excercise the proto api compiled with v0 bbs client
