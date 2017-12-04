@@ -17,123 +17,16 @@ We revisit release version testing with the following changes in mind:
 
 # Test configurations<a id="sec-2" name="sec-2"></a>
 
-<table border="2" cellspacing="0" cellpadding="6" rules="groups" frame="hsides">
 
-
-<colgroup>
-<col  class="left" />
-
-<col  class="left" />
-
-<col  class="left" />
-
-<col  class="left" />
-
-<col  class="left" />
-
-<col  class="left" />
-
-<col  class="left" />
-
-<col  class="left" />
-</colgroup>
-<tbody>
-<tr>
-<td class="left">Configuration</td>
-<td class="left">Locket</td>
-<td class="left">BBS</td>
-<td class="left">Diego Client</td>
-<td class="left">Router (2)</td>
-<td class="left">SSH proxy + Auctioneer</td>
-<td class="left">Cells (2)</td>
-<td class="left">Notes</td>
-</tr>
-
-
-<tr>
-<td class="left">C0</td>
-<td class="left">v0</td>
-<td class="left">v0</td>
-<td class="left">v0</td>
-<td class="left">v0</td>
-<td class="left">v0</td>
-<td class="left">v0</td>
-<td class="left">Initial configuration</td>
-</tr>
-
-
-<tr>
-<td class="left">C1</td>
-<td class="left">v1</td>
-<td class="left">v0</td>
-<td class="left">v0</td>
-<td class="left">v0</td>
-<td class="left">v0</td>
-<td class="left">v0</td>
-<td class="left">Simulates upgrading diego-api</td>
-</tr>
-
-
-<tr>
-<td class="left">C2</td>
-<td class="left">v0</td>
-<td class="left">v1</td>
-<td class="left">v0</td>
-<td class="left">v0</td>
-<td class="left">v0</td>
-<td class="left">v0</td>
-<td class="left">&#xa0;</td>
-</tr>
-
-
-<tr>
-<td class="left">C3</td>
-<td class="left">v1</td>
-<td class="left">v1</td>
-<td class="left">v1</td>
-<td class="left">v0</td>
-<td class="left">v0</td>
-<td class="left">v0</td>
-<td class="left">Simulates API upgrading</td>
-</tr>
-
-
-<tr>
-<td class="left">C3</td>
-<td class="left">v1</td>
-<td class="left">v1</td>
-<td class="left">v1</td>
-<td class="left">v1</td>
-<td class="left">v0</td>
-<td class="left">v0</td>
-<td class="left">Simulates Router upgrading</td>
-</tr>
-
-
-<tr>
-<td class="left">C4</td>
-<td class="left">v1</td>
-<td class="left">v1</td>
-<td class="left">v1</td>
-<td class="left">v1</td>
-<td class="left">v1</td>
-<td class="left">v0</td>
-<td class="left">Simulates scheduler upgrading</td>
-</tr>
-
-
-<tr>
-<td class="left">C5</td>
-<td class="left">v1</td>
-<td class="left">v1</td>
-<td class="left">v1</td>
-<td class="left">v1</td>
-<td class="left">v1</td>
-<td class="left">v1</td>
-<td class="left">Simulates cell upgrading</td>
-</tr>
-</tbody>
-</table>
+| Configuration | Locket | BBS | Diego Client | Router (2) | SSH proxy + Auctioneer | Cells (2) | Notes                         |
+|---------------|--------|-----|--------------|------------|------------------------|-----------|-------------------------------|
+| C0            | v0     | v0  | v0           | v0         | v0                     | v0        | Initial configuration         |
+| C1            | v1     | v0  | v0           | v0         | v0                     | v0        | Simulates upgrading diego-api |
+| C2            | v0     | v1  | v0           | v0         | v0                     | v0        |                               |
+| C3            | v1     | v1  | v1           | v0         | v0                     | v0        | Simulates API upgrading       |
+| C3            | v1     | v1  | v1           | v1         | v0                     | v0        | Simulates Router upgrading    |
+| C4            | v1     | v1  | v1           | v1         | v1                     | v0        | Simulates scheduler upgrading |
+| C5            | v1     | v1  | v1           | v1         | v1                     | v1        | Simulates cell upgrading      |
 
 ## Notes<a id="sec-2-1" name="sec-2-1"></a>
 
@@ -152,17 +45,30 @@ We revisit release version testing with the following changes in mind:
 ## Tests to run after each configuration update<a id="sec-3-2" name="sec-3-2"></a>
 
 -   Again, we can adapt DUSTs smoke test for this
+    -   push an app and make sure it is routable
+    -   scale up the app and make sure the 2 instances are routable
+-   Should also add ssh to the smoke test
 -   May be run a stripped down version of inigo/vizzini (doesn't have to be the actual test suite, as long as it offers the same test coverage) ?
 -   This could potentially be a separate Ginkgo `Context` each configuration which start the corresponding versions and run the smoke test
 
 # Questions<a id="sec-4" name="sec-4"></a>
 
+-   Is HTTP routing suffucient ?
+    -   we don't need to do anything since the routers upgrade before the cells (**preferred solution**)
+    -   it is the responsbility of the routing team to ensure the router/routing-api are backward compatible with an cells
+-   does everyone follow the same upgrade order in cf-dep ? What about cell blocks with different placement tags for example
+    -   We should communicate this requirement to operators, i.e. cells need to upgrade last (**preferred solution**)
+-   getting rid of bosh-lite removes all test coverage we had for bosh upgradability. for example not cleaning up pid files; which is something we ran into before
+    -   can we ask release-integration to own this ?
+    -   we can also have a more focused test suite, i.e. deploy C0 then upgrade to C5 and make sure everything come up and is healthy
 -   Which subset of vizzini/inigo are we interested in ?
+    -   run the entire vizzini suite, it is fast enough. This way we don't have to worry about client version, i.e. when the diego client is V0 run vizzini from diego-release-v0 (**preferred solution**). The only drawback is that we cannot add any tests to the v0 vizzini and we don't have access to the v0 bbs client
 -   We had a regeression with quota enforcement due to a breaking change in rep how can we excercise these kind of changes in a generic way that doesn't require prior knowledge of the bug:
+    -   run the entire vizzini test suite (**preferred solution**)
     -   we should excercise the different capacity constraints and ensure we don't violate them, total disk & memory usage of apps never go above the limit
     -   More generically i think we need to test both good and happy paths
-    -   what else ?
 -   How do we test the diego client
-    -   gopkg.in/diego-client-v0 ? (use in directly from the test suite)
+    -   run v0 or v1 of vizzini which will excercise the bbs api (**preferred solution**)
+    -   gopkg.in/diego-client-v0 ? (use directly from the test suite)
     -   cfdot-v0 the only drawback is that we are not excercising the protobuf api directly
     -   some other binary that can excercise the proto api compiled with v0 bbs client
