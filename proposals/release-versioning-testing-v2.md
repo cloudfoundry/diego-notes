@@ -17,6 +17,18 @@ We revisit release version testing with the following changes in mind:
 
 # Test configurations<a id="sec-2" name="sec-2"></a>
 
+## BBS running with Consul (v1.0.0 -> develop)<a id="sec-2-1" name="sec-2-1"></a>
+
+| Configuration | BBS | Diego Client | Router (2) | SSH proxy + Auctioneer | Cells (2) | Notes                         |
+|---------------|-----|--------------|------------|------------------------|-----------|-------------------------------|
+| C0            | v0  | v0           | v0         | v0                     | v0        | Initial configuration         |
+| C1            | v1  | v0           | v0         | v0                     | v0        | Simulates upgrading diego-api |
+| C2            | v1  | v1           | v0         | v0                     | v0        | Simulates API upgrading       |
+| C3            | v1  | v1           | v1         | v0                     | v0        | Simulates Router upgrading    |
+| C4            | v1  | v1           | v1         | v1                     | v0        | Simulates scheduler upgrading |
+| C5            | v1  | v1           | v1         | v1                     | v1        | Simulates cell upgrading      |
+
+## BBS running with locket (v1.25.2 -> develop)<a id="sec-2-2" name="sec-2-2"></a>
 
 | Configuration | Locket | BBS | Diego Client | Router (2) | SSH proxy + Auctioneer | Cells (2) | Notes                         |
 |---------------|--------|-----|--------------|------------|------------------------|-----------|-------------------------------|
@@ -24,16 +36,17 @@ We revisit release version testing with the following changes in mind:
 | C1            | v1     | v0  | v0           | v0         | v0                     | v0        | Simulates upgrading diego-api |
 | C2            | v0     | v1  | v0           | v0         | v0                     | v0        |                               |
 | C3            | v1     | v1  | v1           | v0         | v0                     | v0        | Simulates API upgrading       |
-| C3            | v1     | v1  | v1           | v1         | v0                     | v0        | Simulates Router upgrading    |
-| C4            | v1     | v1  | v1           | v1         | v1                     | v0        | Simulates scheduler upgrading |
-| C5            | v1     | v1  | v1           | v1         | v1                     | v1        | Simulates cell upgrading      |
+| C4            | v1     | v1  | v1           | v1         | v0                     | v0        | Simulates Router upgrading    |
+| C5            | v1     | v1  | v1           | v1         | v1                     | v0        | Simulates scheduler upgrading |
+| C6            | v1     | v1  | v1           | v1         | v1                     | v1        | Simulates cell upgrading      |
 
-## Notes<a id="sec-2-1" name="sec-2-1"></a>
+## Notes<a id="sec-2-3" name="sec-2-3"></a>
 
+-   The above configuration have the added benefit of testing the contract between rep and BBS regarding cell presences (newer BBS can still parse old rep cell presence in both Consul or Locket)
 -   Deploy only one instance for all instance groups except Router and Cell to ensure routability to the test app at all times
 -   Cells are to be updated gracefuly (i.e. each cell evacuates before it stops) to ensure routability to the test app at all times
 -   Configurations follow the order of instance group updates as of [this version of cf-deployment](https://github.com/cloudfoundry/cf-deployment/commit/9be2644da8de08540891e24856bbdb88f9a83f67)
--   We have to test both combinations of different versions of BBS and Locket since different versions can exist during a rolling update
+-   We have to test different versions of BBS and Locket since different versions can exist during a rolling update
 -   SSH proxy and auctioneer don't communicate with each other and exist on the same VM, hence we update them at the same time
 
 # Tests to run<a id="sec-3" name="sec-3"></a>
@@ -44,37 +57,21 @@ We revisit release version testing with the following changes in mind:
 
 ## Tests to run after each configuration update<a id="sec-3-2" name="sec-3-2"></a>
 
--   Again, we can adapt DUSTs smoke test for this
-    -   push an app and make sure it is routable
-    -   scale up the app and make sure the 2 instances are routable
--   Should also add ssh to the smoke test
--   May be run a stripped down version of inigo/vizzini (doesn't have to be the actual test suite, as long as it offers the same test coverage) ?
+-   Run vizzini (v0 for Diego client v0 or v1.x for more recent Diego clients)
 -   This could potentially be a separate Ginkgo `Context` each configuration which start the corresponding versions and run the smoke test
 
-# Questions<a id="sec-4" name="sec-4"></a>
+# Concerns<a id="sec-4" name="sec-4"></a>
 
 -   Is HTTP routing sufficient ?
-    -   we don't need to do anything since the routers upgrade before the cells (**preferred solution**)
-    -   it is the responsbility of the routing team to ensure the router/routing-api are backward compatible with an cells
+    -   we decided not to do anything since the routers upgrade before the cells
+    -   it is the responsibility of the routing team to ensure the router/routing-api are backward compatible with the cells
+-   How do we deal with locket upgrades ? locket was introduced in v1.6.2 of diego-release but was experimental until 1.25.2
+    -   We ended up with separately testing a configuration that uses Consul vs one that uses Locket
 -   does everyone follow the same upgrade order in cf-dep ? What about cell blocks with different placement tags for example
-    -   We should communicate this requirement to operators, i.e. cells need to upgrade last (**preferred solution**)
+    -   We think that is something we should communicate with operators, i.e. cells need to upgrade last, instead of testing different upgrade orders
 -   getting rid of bosh-lite removes all test coverage we had for bosh upgradability. for example not cleaning up pid files; which is something we ran into before
-    -   can we ask release-integration to own this ?
-        - not sure we should. It seems reasonable for us to own our own integration with bosh upgradability. The minimal test suite C0 -> C5 should be sufficient.
-    -   we can also have a more focused test suite, i.e. deploy C0 then upgrade to C5 and make sure everything come up and is healthy
--   Which subset of vizzini/inigo are we interested in ?
-    -   run the entire vizzini suite, it is fast enough. This way we don't have to worry about client version, i.e. when the diego client is V0 run vizzini from diego-release-v0 (**preferred solution**). The only drawback is that we cannot add any tests to the v0 vizzini and we don't have access to the v0 bbs client
--   We had a regression with quota enforcement due to a breaking change in rep how can we exercise these kind of changes in a generic way that doesn't require prior knowledge of the bug:
-    -   run the entire vizzini test suite (**preferred solution** +1)
-    -   we should exercise the different capacity constraints and ensure we don't violate them, total disk & memory usage of apps never go above the limit
-    -   More generically i think we need to test both good and happy paths
-        - Does this mean both a good path and a happy path, or two paths which are each good and happy? Which paths are these?
+    -   we think we should have a separate test suite for that, i.e. deploy C0 then upgrade to C5 and make sure everything come up and is healthy
+-   We had a regeression with quota enforcement due to a breaking change in rep how can we excercise these kind of changes in a generic way that doesn't require prior knowledge of the bug:
+    -   run the entire vizzini test suite
 -   How do we test the diego client
-    -   run v0 or v1 of vizzini which will exercise the bbs api (**preferred solution** +1)
-    -   gopkg.in/diego-client-v0 ? (use directly from the test suite)
-    -   cfdot-v0 the only drawback is that we are not exercising the protobuf api directly
-        - this is a significant drawback
-    -   some other binary that can exercise the proto api compiled with v0 bbs client
--   Is locket downgradable?
-    - We probably don't want to use dusts tests to ensure their downgradability, if we even care about it.
-    - if not, we could deploy two instances of locket, L1 and L2, both at v0. On C1, we upgrade L1 -> v1. On C2, we test with L2 (which stays v2). On runs >=C3, we use L1 which is on v1.
+    -   run v0 or v1 of vizzini which will excercise the bbs api
