@@ -46,7 +46,7 @@ We revisit release version testing with the following changes in mind:
 -   Deploy only one instance for all instance groups except Router and Cell to ensure routability to the test app at all times
 -   Cells are to be updated gracefuly (i.e. each cell evacuates before it stops) to ensure routability to the test app at all times
 -   Configurations follow the order of instance group updates as of [this version of cf-deployment](https://github.com/cloudfoundry/cf-deployment/commit/9be2644da8de08540891e24856bbdb88f9a83f67)
--   We have to test different versions of BBS and Locket since different versions can exist during a rolling update
+-   We have to test both combinations of different versions of BBS and Locket since different versions can exist during a rolling update
 -   SSH proxy and auctioneer don't communicate with each other and exist on the same VM, hence we update them at the same time
 
 # Tests to run<a id="sec-3" name="sec-3"></a>
