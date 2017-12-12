@@ -39,16 +39,16 @@ We select two main configurations of importance, based on the initial major vers
 - Initial Diego version is v1.0.0.
 - Infrastructure components: MySQL database, NATS, Consul.
 - Route-emitter is configured in global mode, with Consul lock.
-- Cell includes the Diego cell rep and garden-runc.
+- Each Cell includes the Diego cell rep and garden-runc.
 
-| Configuration | BBS | BBS Client (Vizzini) | Router     | SSH proxy + Auctioneer | Cells (2) | Notes                                                 |
-|---------------|-----|--------------|------------|------------------------|-----------|-------------------------------------------------------|
-| C0            | v0  | v0           | v0         | v0                     | v0        | Initial configuration                                 |
-| C1            | v1  | v0           | v0         | v0                     | v0        | Simulates upgrading diego-api                         |
-| C2            | v1  | v1           | v0         | v0                     | v0        | Simulates API upgrading                               |
-| C3            | v1  | v1           | v1         | v0                     | v0        | Simulates Router upgrading                            |
-| C4            | v1  | v1           | v1         | v1                     | v0        | Simulates scheduler upgrading                         |
-| C5            | v1  | v1           | v1         | v1                     | v1        | Simulates cell upgrading: start v1 cell, stop v0 cell |
+| Configuration | BBS | BBS Client (Vizzini) | Router     | SSH proxy + Auctioneer | Cells (2) | Notes                         |
+|---------------|-----|----------------------|------------|------------------------|-----------|-------------------------------|
+| C0            | v0  | v0                   | v0         | v0                     | v0        | Initial configuration         |
+| C1            | v1  | v0                   | v0         | v0                     | v0        | Simulates upgrading diego-api |
+| C2            | v1  | v1                   | v0         | v0                     | v0        | Simulates API upgrading       |
+| C3            | v1  | v1                   | v1         | v0                     | v0        | Simulates Router upgrading    |
+| C4            | v1  | v1                   | v1         | v1                     | v0        | Simulates scheduler upgrading |
+| C5            | v1  | v1                   | v1         | v1                     | v1        | Simulates cell upgrading      |
 
 
 ## BBS running with Locket (from v1.25.2 to develop)<a id="sec-3-2" name="sec-3-2"></a>
@@ -56,17 +56,17 @@ We select two main configurations of importance, based on the initial major vers
 - Initial Diego version is v1.25.2.
 - Infrastructure components: MySQL database, NATS.
 - Route-emitter is configured in local mode, with Consul lock.
-- Cell includes the Diego cell rep, garden-runc, grootfs, and local route-emitters.
+- Each Cell includes the Diego cell rep, garden-runc, grootfs, and local route-emitters.
 
-| Configuration | Locket | BBS | BBS Client (Vizzini) | Router     | SSH proxy + Auctioneer | Cells (2) | Notes                                                     |
-|---------------|--------|-----|--------------|------------|------------------------|-----------|-----------------------------------------------------------|
-| C0            | v0     | v0  | v0           | v0         | v0                     | v0        | Initial configuration                                     |
-| C1            | v1     | v0  | v0           | v0         | v0                     | v0        | Simulates upgrading diego-api                             |
-| C2            | v0     | v1  | v0           | v0         | v0                     | v0        |                                                           |
-| C3            | v1     | v1  | v1           | v0         | v0                     | v0        | Simulates API upgrading                                   |
-| C4            | v1     | v1  | v1           | v1         | v0                     | v0        | Simulates Router upgrading                                |
-| C5            | v1     | v1  | v1           | v1         | v1                     | v0        | Simulates scheduler upgrading                             |
-| C6            | v1     | v1  | v1           | v1         | v1                     | v1        | Simulates cell upgrading: start v1 cell, evacuate v0 cell |
+| Configuration | Locket | BBS | BBS Client (Vizzini) | Router     | SSH proxy + Auctioneer | Cells (2) | Notes                         |
+|---------------|--------|-----|----------------------|------------|------------------------|-----------|-------------------------------|
+| C0            | v0     | v0  | v0                   | v0         | v0                     | v0        | Initial configuration         |
+| C1            | v1     | v0  | v0                   | v0         | v0                     | v0        | Simulates upgrading diego-api |
+| C2            | v0     | v1  | v0                   | v0         | v0                     | v0        |                               |
+| C3            | v1     | v1  | v1                   | v0         | v0                     | v0        | Simulates API upgrading       |
+| C4            | v1     | v1  | v1                   | v1         | v0                     | v0        | Simulates Router upgrading    |
+| C5            | v1     | v1  | v1                   | v1         | v1                     | v0        | Simulates scheduler upgrading |
+| C6            | v1     | v1  | v1                   | v1         | v1                     | v1        | Simulates cell upgrading      |
 
 
 ## Notes<a id="sec-3-3" name="sec-3-3"></a>
