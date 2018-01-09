@@ -35,16 +35,16 @@ As in the current [DUSTs](https://github.com/cloudfoundry/diego-upgrade-stabilit
 - Route-emitter is configured in global mode, with Consul lock.
 - Each Cell includes the Diego cell rep and garden-runc.
 
-| Configuration | BBS | BBS Client (Vizzini) | Router | Auctioneer | Cell 0 | Cell  1 | RouteEmitter | Notes                             |
-|---------------|-----|----------------------|--------|------------|--------|---------|--------------|-----------------------------------|
-| C0            | v0  | v0                   | v0     | v0         | v0     | v0      | v0           | Initial configuration             |
-| C1            | v1  | v0                   | v0     | v0         | v0     | v0      | v0           | Simulates upgrading diego-api     |
-| C2            | v1  | v1                   | v0     | v0         | v0     | v0      | v0           | Simulates API upgrading           |
-| C3            | v1  | v1                   | v1     | v0         | v0     | v0      | v0           | Simulates Router upgrading        |
-| C4            | v1  | v1                   | v1     | v1         | v0     | v0      | v0           | Simulates scheduler upgrading     |
-| C5'           | v1  | v1                   | v1     | v1         | v1     | v0      | v0           | Simulates Cell evacuation|upgrade |
-| C5            | v1  | v1                   | v1     | v1         | v1     | v1      | v0           | Simulates cell evacuation|upgrade |
-| C6            | v1  | v1                   | v1     | v1         | v1     | v1      | v1           | Simulates route-emitter upgrade   |
+| Configuration | BBS | BBS Client | Router | Auctioneer | Cell 0 | Cell  1 | RouteEmitter | Notes                           |         |
+|---------------|-----|------------|--------|------------|--------|---------|--------------|---------------------------------|---------|
+| C0            | v0  | v0         | v0     | v0         | v0     | v0      | v0           | Initial configuration           |         |
+| C1            | v1  | v0         | v0     | v0         | v0     | v0      | v0           | Simulates upgrading diego-api   |         |
+| C2            | v1  | v1         | v0     | v0         | v0     | v0      | v0           | Simulates API upgrading         |         |
+| C3            | v1  | v1         | v1     | v0         | v0     | v0      | v0           | Simulates Router upgrading      |         |
+| C4            | v1  | v1         | v1     | v1         | v0     | v0      | v0           | Simulates scheduler upgrading   |         |
+| C5'           | v1  | v1         | v1     | v1         | v1     | v0      | v0           | Simulates Cell evacuation       | upgrade |
+| C5            | v1  | v1         | v1     | v1         | v1     | v1      | v0           | Simulates cell evacuation       | upgrade |
+| C6            | v1  | v1         | v1     | v1         | v1     | v1      | v1           | Simulates route-emitter upgrade |         |
 
 ### BBS running with Locket (from v1.25.2 to develop)
 
@@ -75,15 +75,15 @@ Run the vizzini test suite at the appropriate version to verify core functionali
 - Route-emitter is configured in global mode, with Consul lock.
 - Each Cell includes the Diego cell rep and garden-runc.
 
-| Configuration | BBS | BBS Client (Vizzini) | Router | SSH proxy + Auctioneer | Cell | RouteEmitter | Notes                           |
-|---------------|-----|----------------------|--------|------------------------|------|--------------|---------------------------------|
-| C0            | v0  | v0                   | v0     | v0                     | v0   | v0           | Initial configuration           |
-| C1            | v1  | v0                   | v0     | v0                     | v0   | v0           | Simulates upgrading diego-api   |
-| C2            | v1  | v1                   | v0     | v0                     | v0   | v0           | Simulates API upgrading         |
-| C3            | v1  | v1                   | v1     | v0                     | v0   | v0           | Simulates Router upgrading      |
-| C4            | v1  | v1                   | v1     | v1                     | v0   | v0           | Simulates scheduler upgrading   |
-| C5            | v1  | v1                   | v1     | v1                     | v1   | v0           | Simulates cell upgrade          |
-| C6            | v1  | v1                   | v1     | v1                     | v1   | v1           | Simulates route-emitter upgrade |
+| Configuration | BBS | BBS Client | Router | SSH proxy + Auctioneer | Cell | RouteEmitter | Notes                           |
+|---------------|-----|------------|--------|------------------------|------|--------------|---------------------------------|
+| C0            | v0  | v0         | v0     | v0                     | v0   | v0           | Initial configuration           |
+| C1            | v1  | v0         | v0     | v0                     | v0   | v0           | Simulates upgrading diego-api   |
+| C2            | v1  | v1         | v0     | v0                     | v0   | v0           | Simulates API upgrading         |
+| C3            | v1  | v1         | v1     | v0                     | v0   | v0           | Simulates Router upgrading      |
+| C4            | v1  | v1         | v1     | v1                     | v0   | v0           | Simulates scheduler upgrading   |
+| C5            | v1  | v1         | v1     | v1                     | v1   | v0           | Simulates cell upgrade          |
+| C6            | v1  | v1         | v1     | v1                     | v1   | v1           | Simulates route-emitter upgrade |
 
 ### BBS running with Locket (from v1.25.2 to develop)
 
