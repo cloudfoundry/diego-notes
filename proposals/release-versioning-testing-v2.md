@@ -11,15 +11,9 @@ We revisit release version testing and the current upgrade testing strategy (the
 
 ## Aspects remaining from [the previous version](https://github.com/cloudfoundry/diego-dev-notes/blob/master/proposals/release-versioning-testing.md)
 
-<!-- # Tests to run -->
-
-<!-- ## Long running tests -->
-
-<!-- - As in the current [DUSTs](https://github.com/cloudfoundry/diego-upgrade-stability-tests), there will always be an app pushed right after the initial configuration (`C0`) is deployed and constantly checked for routability, apart for during the upgrade of the Router itself. -->
-
-<!-- ## Tests to run after each configuration update -->
-
-<!-- - Run the vizzini test suite at the appropriate version to verify core functionality of the Diego BBS API. This test could be structured as its own isolated context, in which it starts the appropriate versions of the components and runs the vizzini tests, instead of coupling it to the sequential upgrade of the components. -->
+- We perceive there to be value in maintaining deployments at different heterogeneous combinations of versions and running an appropriate set of tests to validate functionality, instead of coincidentally running tests while proceeding through an upgrade of a single BOSH deployment.
+- Operational guarantees have not changed regarding compatibility of versions of diego-release. Refer to [this section](https://github.com/cloudfoundry/diego-dev-notes/blob/master/proposals/release-versioning-testing.md#operational-guarantees) in the original version of the document.
+- We still do not require testing every possible upgrade path (i.e. every `(V0, V1)` pair) See [this section](https://github.com/cloudfoundry/diego-dev-notes/blob/master/proposals/release-versioning-testing.md#selection-of-versions-for-testing) for the rationale.
 
 # Test configurations
 
@@ -32,7 +26,7 @@ We select two main configurations of importance, based on the initial major vers
 
 ## App Routability during Upgrades
 
-This test suite checks app routability during a rolling upgrade, similar to the app poller found in [DUSTs](https://github.com/cloudfoundry/diego-upgrade-stability-tests)
+As in the current [DUSTs](https://github.com/cloudfoundry/diego-upgrade-stability-tests), there will always be an app pushed right after the initial configuration (C0) is deployed and constantly checked for routability, apart from during the upgrade of the Router itself.
 
 ### BBS running with Consul (from v1.0.0 to develop)
 
@@ -72,7 +66,7 @@ This test suite checks app routability during a rolling upgrade, similar to the 
 
 ## Smoke Tests
 
-This test suite ensures different configurations are compatible, by running vizzini against each configuration spearately.
+Run the vizzini test suite at the appropriate version to verify core functionality of the Diego BBS API. This test could be structured as its own isolated context, in which it starts the appropriate versions of the components and runs the vizzini tests, instead of coupling it to the sequential upgrade of the components.
 
 ### BBS running with Consul (from v1.0.0 to develop)
 
