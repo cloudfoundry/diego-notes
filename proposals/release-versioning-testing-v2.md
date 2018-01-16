@@ -35,16 +35,16 @@ As in the current [DUSTs](https://github.com/cloudfoundry/diego-upgrade-stabilit
 - Route-emitter is configured in global mode, with Consul lock.
 - Each Cell includes the Diego cell rep and garden-runc.
 
-| Configuration | BBS | BBS Client | Router | Auctioneer | Cell 0 | Cell  1 | RouteEmitter | Notes                           |         |
-|---------------|-----|------------|--------|------------|--------|---------|--------------|---------------------------------|---------|
-| C0            | v0  | v0         | v0     | v0         | v0     | v0      | v0           | Initial configuration           |         |
-| C1            | v1  | v0         | v0     | v0         | v0     | v0      | v0           | Simulates upgrading diego-api   |         |
-| C2            | v1  | v1         | v0     | v0         | v0     | v0      | v0           | Simulates API upgrading         |         |
-| C3            | v1  | v1         | v1     | v0         | v0     | v0      | v0           | Simulates Router upgrading      |         |
-| C4            | v1  | v1         | v1     | v1         | v0     | v0      | v0           | Simulates scheduler upgrading   |         |
-| C5'           | v1  | v1         | v1     | v1         | v1     | v0      | v0           | Simulates Cell evacuation       | upgrade |
-| C5            | v1  | v1         | v1     | v1         | v1     | v1      | v0           | Simulates cell evacuation       | upgrade |
-| C6            | v1  | v1         | v1     | v1         | v1     | v1      | v1           | Simulates route-emitter upgrade |         |
+| Configuration | BBS | BBS Client | Router | Auctioneer | Cell 0 | Cell  1 | RouteEmitter | Notes                               |
+|---------------|-----|------------|--------|------------|--------|---------|--------------|-------------------------------------|
+| C0            | v0  | v0         | v0     | v0         | v0     | v0      | v0           | Initial configuration               |
+| C1            | v1  | v0         | v0     | v0         | v0     | v0      | v0           | Simulates upgrading diego-api       |
+| C2            | v1  | v1         | v0     | v0         | v0     | v0      | v0           | Simulates API upgrading             |
+| C3            | v1  | v1         | v1     | v0         | v0     | v0      | v0           | Simulates Router upgrading          |
+| C4            | v1  | v1         | v1     | v1         | v0     | v0      | v0           | Simulates scheduler upgrading       |
+| C5'           | v1  | v1         | v1     | v1         | v1     | v0      | v0           | Simulates Cell evacuation/upgrading |
+| C5            | v1  | v1         | v1     | v1         | v1     | v1      | v0           | Simulates cell evacuation/upgrading |
+| C6            | v1  | v1         | v1     | v1         | v1     | v1      | v1           | Simulates route-emitter upgrade     |
 
 ### BBS running with Locket (from v1.25.2 to develop)
 
@@ -61,8 +61,8 @@ As in the current [DUSTs](https://github.com/cloudfoundry/diego-upgrade-stabilit
 | C3            | v1     | v1  | v1                   | v0     | v0         | v0     | v0     | Simulates API upgrading             |
 | C4            | v1     | v1  | v1                   | v1     | v0         | v0     | v0     | Simulates Router upgrading          |
 | C5            | v1     | v1  | v1                   | v1     | v1         | v0     | v0     | Simulates scheduler upgrading       |
-| C6'           | v1     | v1  | v1                   | v1     | v1         | v1     | v0     | Simulates cell evacuation|upgrading |
-| C6            | v1     | v1  | v1                   | v1     | v1         | v1     | v1     | Simulates cell evacuation|upgrading |
+| C6'           | v1     | v1  | v1                   | v1     | v1         | v1     | v0     | Simulates cell evacuation/upgrading |
+| C6            | v1     | v1  | v1                   | v1     | v1         | v1     | v1     | Simulates cell evacuation/upgrading |
 
 ## Smoke Tests
 
