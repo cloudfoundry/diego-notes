@@ -26,43 +26,41 @@ We select two main configurations of importance, based on the initial major vers
 
 ## App Routability during Upgrades
 
-As in the current [DUSTs](https://github.com/cloudfoundry/diego-upgrade-stability-tests), there will always be an app pushed right after the initial configuration (C0) is deployed and constantly checked for routability, apart from during the upgrade of the Router itself.
+As in the current [DUSTs](https://github.com/cloudfoundry/diego-upgrade-stability-tests), there will always be an app pushed right after the initial configuration (C0) is deployed and constantly checked for routability.
 
 ### BBS running with Consul (from v1.0.0 to develop)
 
 - Initial Diego version is v1.0.0.
-- Infrastructure components: MySQL database, NATS, Consul.
+- Infrastructure components: MySQL database, NATS, Consul, GoRouter.
 - Route-emitter is configured in global mode, with Consul lock.
 - Each Cell includes the Diego cell rep and garden-runc.
 
-| Configuration | BBS | BBS Client | Router | Auctioneer | Cell 0 | Cell  1 | RouteEmitter | Notes                               |
-|---------------|-----|------------|--------|------------|--------|---------|--------------|-------------------------------------|
-| C0            | v0  | v0         | v0     | v0         | v0     | v0      | v0           | Initial configuration               |
-| C1            | v1  | v0         | v0     | v0         | v0     | v0      | v0           | Simulates upgrading diego-api       |
-| C2            | v1  | v1         | v0     | v0         | v0     | v0      | v0           | Simulates API upgrading             |
-| C3            | v1  | v1         | v1     | v0         | v0     | v0      | v0           | Simulates Router upgrading          |
-| C4            | v1  | v1         | v1     | v1         | v0     | v0      | v0           | Simulates scheduler upgrading       |
-| C5'           | v1  | v1         | v1     | v1         | v1     | v0      | v0           | Simulates Cell evacuation/upgrading |
-| C5            | v1  | v1         | v1     | v1         | v1     | v1      | v0           | Simulates cell evacuation/upgrading |
-| C6            | v1  | v1         | v1     | v1         | v1     | v1      | v1           | Simulates route-emitter upgrade     |
+| Configuration | BBS | BBS Client | Auctioneer | Cell 0 | Cell  1 | RouteEmitter | Notes                               |
+|---------------|-----|------------|------------|--------|---------|--------------|-------------------------------------|
+| C0            | v0  | v0         | v0         | v0     | v0      | v0           | Initial configuration               |
+| C1            | v1  | v0         | v0         | v0     | v0      | v0           | Simulates upgrading diego-api       |
+| C2            | v1  | v1         | v0         | v0     | v0      | v0           | Simulates API upgrading             |
+| C3            | v1  | v1         | v1         | v0     | v0      | v0           | Simulates scheduler upgrading       |
+| C4'           | v1  | v1         | v1         | v1     | v0      | v0           | Simulates Cell evacuation/upgrading |
+| C4            | v1  | v1         | v1         | v1     | v1      | v0           | Simulates cell evacuation/upgrading |
+| C5            | v1  | v1         | v1         | v1     | v1      | v1           | Simulates route-emitter upgrade     |
 
 ### BBS running with Locket (from v1.25.2 to develop)
 
 - Initial Diego version is v1.25.2.
-- Infrastructure components: MySQL database, NATS.
+- Infrastructure components: MySQL database, NATS, GoRouter.
 - Route-emitter is configured in local mode.
 - Each Cell includes the Diego cell rep, garden-runc, grootfs, and local route-emitters.
 
-| Configuration | Locket | BBS | BBS Client (Vizzini) | Router | Auctioneer | Cell 0 | Cell 1 | Notes                               |
-|---------------|--------|-----|----------------------|--------|------------|--------|--------|-------------------------------------|
-| C0            | v0     | v0  | v0                   | v0     | v0         | v0     | v0     | Initial configuration               |
-| C1            | v1     | v0  | v0                   | v0     | v0         | v0     | v0     | Simulates upgrading diego-api       |
-| C2            | v0     | v1  | v0                   | v0     | v0         | v0     | v0     |                                     |
-| C3            | v1     | v1  | v1                   | v0     | v0         | v0     | v0     | Simulates API upgrading             |
-| C4            | v1     | v1  | v1                   | v1     | v0         | v0     | v0     | Simulates Router upgrading          |
-| C5            | v1     | v1  | v1                   | v1     | v1         | v0     | v0     | Simulates scheduler upgrading       |
-| C6'           | v1     | v1  | v1                   | v1     | v1         | v1     | v0     | Simulates cell evacuation/upgrading |
-| C6            | v1     | v1  | v1                   | v1     | v1         | v1     | v1     | Simulates cell evacuation/upgrading |
+| Configuration | Locket | BBS | BBS Client (Vizzini) | Auctioneer | Cell 0 | Cell 1 | Notes                               |
+|---------------|--------|-----|----------------------|------------|--------|--------|-------------------------------------|
+| C0            | v0     | v0  | v0                   | v0         | v0     | v0     | Initial configuration               |
+| C1            | v1     | v0  | v0                   | v0         | v0     | v0     | Simulates upgrading diego-api       |
+| C2            | v0     | v1  | v0                   | v0         | v0     | v0     |                                     |
+| C3            | v1     | v1  | v1                   | v0         | v0     | v0     | Simulates API upgrading             |
+| C4            | v1     | v1  | v1                   | v1         | v0     | v0     | Simulates scheduler upgrading       |
+| C5'           | v1     | v1  | v1                   | v1         | v1     | v0     | Simulates cell evacuation/upgrading |
+| C5            | v1     | v1  | v1                   | v1         | v1     | v1     | Simulates cell evacuation/upgrading |
 
 ## Smoke Tests
 
@@ -71,19 +69,18 @@ Run the vizzini test suite at the appropriate version to verify core functionali
 ### BBS running with Consul (from v1.0.0 to develop)
 
 - Initial Diego version is v1.0.0.
-- Infrastructure components: MySQL database, NATS, Consul.
+- Infrastructure components: MySQL database, NATS, Consul, GoRouter.
 - Route-emitter is configured in global mode, with Consul lock.
 - Each Cell includes the Diego cell rep and garden-runc.
 
-| Configuration | BBS | BBS Client | Router | SSH proxy + Auctioneer | Cell | RouteEmitter | Notes                           |
-|---------------|-----|------------|--------|------------------------|------|--------------|---------------------------------|
-| C0            | v0  | v0         | v0     | v0                     | v0   | v0           | Initial configuration           |
-| C1            | v1  | v0         | v0     | v0                     | v0   | v0           | Simulates upgrading diego-api   |
-| C2            | v1  | v1         | v0     | v0                     | v0   | v0           | Simulates API upgrading         |
-| C3            | v1  | v1         | v1     | v0                     | v0   | v0           | Simulates Router upgrading      |
-| C4            | v1  | v1         | v1     | v1                     | v0   | v0           | Simulates scheduler upgrading   |
-| C5            | v1  | v1         | v1     | v1                     | v1   | v0           | Simulates cell upgrade          |
-| C6            | v1  | v1         | v1     | v1                     | v1   | v1           | Simulates route-emitter upgrade |
+| Configuration | BBS | BBS Client | SSH proxy + Auctioneer | Cell | RouteEmitter | Notes                           |
+|---------------|-----|------------|------------------------|------|--------------|---------------------------------|
+| C0            | v0  | v0         | v0                     | v0   | v0           | Initial configuration           |
+| C1            | v1  | v0         | v0                     | v0   | v0           | Simulates upgrading diego-api   |
+| C2            | v1  | v1         | v0                     | v0   | v0           | Simulates API upgrading         |
+| C3            | v1  | v1         | v1                     | v0   | v0           | Simulates scheduler upgrading   |
+| C4            | v1  | v1         | v1                     | v1   | v0           | Simulates cell upgrade          |
+| C5            | v1  | v1         | v1                     | v1   | v1           | Simulates route-emitter upgrade |
 
 ### BBS running with Locket (from v1.25.2 to develop)
 
@@ -92,15 +89,14 @@ Run the vizzini test suite at the appropriate version to verify core functionali
 - Route-emitter is configured in local mode.
 - Each Cell includes the Diego cell rep, garden-runc, grootfs, and local route-emitters.
 
-| Configuration | Locket | BBS | BBS Client (Vizzini) | Router | SSH proxy + Auctioneer | Cell | Notes                         |
-|---------------|--------|-----|----------------------|--------|------------------------|------|-------------------------------|
-| C0            | v0     | v0  | v0                   | v0     | v0                     | v0   | Initial configuration         |
-| C1            | v1     | v0  | v0                   | v0     | v0                     | v0   | Simulates upgrading diego-api |
-| C2            | v0     | v1  | v0                   | v0     | v0                     | v0   |                               |
-| C3            | v1     | v1  | v1                   | v0     | v0                     | v0   | Simulates API upgrading       |
-| C4            | v1     | v1  | v1                   | v1     | v0                     | v0   | Simulates Router upgrading    |
-| C5            | v1     | v1  | v1                   | v1     | v1                     | v0   | Simulates scheduler upgrading |
-| C6            | v1     | v1  | v1                   | v1     | v1                     | v1   | Simulates cell upgrading      |
+| Configuration | Locket | BBS | BBS Client (Vizzini) | SSH proxy + Auctioneer | Cell | Notes                         |
+|---------------|--------|-----|----------------------|------------------------|------|-------------------------------|
+| C0            | v1     | v0  | v0                   | v0                     | v0   | Initial configuration         |
+| C1            | v1     | v0  | v0                   | v0                     | v0   | Simulates upgrading diego-api |
+| C2            | v0     | v1  | v0                   | v0                     | v0   |                               |
+| C3            | v1     | v1  | v1                   | v0                     | v0   | Simulates API upgrading       |
+| C4            | v1     | v1  | v1                   | v1                     | v0   | Simulates scheduler upgrading |
+| C5            | v1     | v1  | v1                   | v1                     | v1   | Simulates cell upgrading      |
 
 ## Notes
 
@@ -114,9 +110,9 @@ Run the vizzini test suite at the appropriate version to verify core functionali
 
 # Concerns
 
-- Routing: We think testing HTTP routing is sufficient, as that is the main routing tier of importance in CF at present. The Routing team is primarily responsible for ensuring interoperability of the clients and servers in the routing control plane, but because routing is of such key importance and because diego-release contains the route-emitter we do choose to test it in the DUSTs.
+- Routing: We think testing HTTP routing is sufficient, as that is the main routing tier of importance in CF at present. The Routing team is primarily responsible for ensuring interoperability of the clients and servers in the routing control plane.
 - Locket: We test with a separate configuration that includes Locket because of the importance of this architectural change.
 - Cell update order: The most common update order in the deployment is to update the Diego control plane first (BBS, auctioneer, locket) and then the cells, so we focus on those configurations.
 - BOSH upgradability: We do lose test coverage for ensuring that the components restart correctly, and we have encountered issues around pid-file management, but we could handle this with a different test suite.
 - Quota enforcement: We did regress on enforcing instance quotas with a breaking change to the cell rep API, but there were vizzini tests that would have caught that regression.
-- Diego client: Running the appropriate version of vizzini will provide sufficient coverage of the Diego BBS client functionality
+- Diego client: Running the appropriate version of vizzini will provide sufficient coverage of the Diego BBS client functionality.
