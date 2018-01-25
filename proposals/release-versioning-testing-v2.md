@@ -91,7 +91,7 @@ Run the vizzini test suite at the appropriate version to verify core functionali
 
 | Configuration | Locket | BBS | BBS Client (Vizzini) | SSH proxy + Auctioneer | Cell | Notes                         |
 |---------------|--------|-----|----------------------|------------------------|------|-------------------------------|
-| C0            | v1     | v0  | v0                   | v0                     | v0   | Initial configuration         |
+| C0            | v0     | v0  | v0                   | v0                     | v0   | Initial configuration         |
 | C1            | v1     | v0  | v0                   | v0                     | v0   | Simulates upgrading diego-api |
 | C2            | v0     | v1  | v0                   | v0                     | v0   |                               |
 | C3            | v1     | v1  | v1                   | v0                     | v0   | Simulates API upgrading       |
