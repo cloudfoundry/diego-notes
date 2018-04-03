@@ -525,7 +525,7 @@ Here's a happy path overview of the Task lifecycle:
 - When a new Task is created by the BBS it:
 	+ Creates a Task in the `PENDING` state *(if this fails: the BBS returns an unhappy status code)*.
 	+ Sends a start request to the Auctioneer *(if this fails: the BBS does nothing; it will eventually resend the message during convergence)*.
-- The Auctioneer picks a Cell to run the Task *(if this fails: the auctioneer marks the Task completed and failed)*.
+- The Auctioneer picks a Cell to run the Task *(if this fails: the auctioneer tells the BBS; the BBS will either try to place the task again during the next convergence run, or mark it as `COMPLETED` and `Failed`, depending on the BBS configuration and the number of attempts to place this task)*.
 - The Rep creates a container reservation (and then ACKs the Auctioneer's request) *(if this fails: the Rep tells the Auctioneer that the Task could not be started and the auctioneer adds the Task to the next batch)*.
 - In its processing loop, the Rep update the Task from `PENDING` to `RUNNING` *(if this fails: the Rep deletes the reservation -- the BBS will eventually see the `PENDING` task and ask the auctioneer to try again)*.
 - Upon success the Rep starts the container running *(if this fails: the Rep marks the Task `COMPLETED` and failed)*.
