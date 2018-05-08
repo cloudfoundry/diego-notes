@@ -4,42 +4,33 @@ Sorted in roughly reverse-chronological order.
 
 | Topic | Status | Issues & PRs | Documents | Tracker |
 |---|---|---|---|---|
+| BOSH-less Upgrade Testing | Implemented | [#35](https://github.com/cloudfoundry/diego-notes/pull/35), [#36](https://github.com/cloudfoundry/diego-notes/pull/36), [#37](https://github.com/cloudfoundry/diego-notes/pull/37) | [release-versioning-testing-v2.md](release-versioning-testing-v2.md) | [dusts:v2](https://www.pivotaltracker.com/epic/show/3665821) |
+| Updatable LRPs | Abandoned |  | <ul><li>[updatable-lrp-api.md](updatable-lrp-api.md)</li><li>[desired_lrp_update_API.md](desired_lrp_update_API.md)</li><li>[desired_lrp_update_extension.md](desired_lrp_update_extension.md)</li></ul> | [lrp-rolling-updates:exploration](https://www.pivotaltracker.com/epic/show/3667555) |
+| Locket Migrations | Accepted | [#34](https://github.com/cloudfoundry/diego-notes/pull/34) | [schema-migrations-for-locket.md](schema-migrations-for-locket.md) |  |
 | Securing Cell API | Implemented | [#33](https://github.com/cloudfoundry/diego-notes/issues/33) | [secure-auctioneer-cell-apis.md](secure-auctioneer-cell-apis.md) | [secure-cell-api](https://www.pivotaltracker.com/epic/show/3004745) |
 | Securing Auctioneer API | Implemented | [#33](https://github.com/cloudfoundry/diego-notes/issues/33) | [secure-auctioneer-cell-apis.md](secure-auctioneer-cell-apis.md) | [secure-auctioneer-api](https://www.pivotaltracker.com/epic/show/3003189) |
 | Relational BBS Store | Implemented | [#32](https://github.com/cloudfoundry/diego-notes/issues/32) | <ul><li>[relational-bbs-db.md](relational-bbs-db.md)</li><li>[relational-bbs-db-stories-2016-02-16.prolific.md](relational-bbs-db-stories-2016-02-16.prolific.md)</li><li>[relational-bbs-db-stories-2016-04-18.prolific.md](relational-bbs-db-stories-2016-04-18.prolific.md)</li><li>[relational-bbs-db-stories-2016-05-10.prolific.md](relational-bbs-db-stories-2016-05-10.prolific.md)</li></ul> | [bbs:relational](https://www.pivotaltracker.com/epic/show/2339327) |
 | Tuning Health Checks | Rejected | [#31](https://github.com/cloudfoundry/diego-notes/issues/31) | <ul><li>[tuning-health-checks.md](tuning-health-checks.md)</li><li>[tuning-health-checks-stories.prolific.md](tuning-health-checks-stories.prolific.md)</li></ul> | [net-check-action](https://www.pivotaltracker.com/epic/show/2214450) |
 | Bind-Mount Downloads | Implemented | [#25](https://github.com/cloudfoundry/diego-notes/issues/25), [#30](https://github.com/cloudfoundry/diego-notes/issues/30) | <ul><li>[bind-mounting-downloads.md](bind-mounting-downloads.md)</li><li>[bind-mounting-downloads-stories.prolific.md](bind-mounting-downloads-stories.prolific.md)</li><li>[better-buildpack-caching.md](better-buildpack-caching.md)</li></ul> | [bind-mount-downloads](https://www.pivotaltracker.com/epic/show/2200340) |
+| Release Versioning and Upgrade Testing | Implemented | [#29](https://github.com/cloudfoundry/diego-notes/issues/29) | <ul><li>[release-versioning-testing.md](release-versioning-testing.md)</li><li>[release-versioning-testing-stories.prolific.md](release-versioning-testing-stories.prolific.md)</li></ul> | [pipeline:upgrade-stable](https://www.pivotaltracker.com/epic/show/2148462) |
 | BBS Migrations and Versioning | Implemented | | <ul><li>[bbs-migration-stories.prolific.md](bbs-migration-stories.prolific.md)</li><li>[bbs-migrations.md](bbs-migrations.md)</li><li>[versioning.md](versioning.md)</li><li>[diego_versioning.svg](diego_versioning.svg)</li></ul> | <ul><li>[versioning:init](https://www.pivotaltracker.com/epic/show/1869036)</li><li>[versioning:bbs](https://www.pivotaltracker.com/epic/show/1919510)</li></ul> |
+| SSH Auth Codes | Implemented | [#27](https://github.com/cloudfoundry/diego-notes/issues/27), [#28](https://github.com/cloudfoundry/diego-notes/issues/28) | [ssh-one-time-auth-code.md](ssh-one-time-auth-code.md) | [story #103324656](https://www.pivotaltracker.com/story/show/103324656) |
+| Removing Hard-Coded Auth | Implemented | [#26](https://github.com/cloudfoundry/diego-notes/issues/26) |  |  |
 | Better LRP Deduping | Rejected | [#24](https://github.com/cloudfoundry/diego-notes/issues/24) | [better-lrp-deduping.md](https://github.com/cloudfoundry/diego-notes/blob/9f079c4ff02e85549d651e07226e5c75ff02faf7/proposals/better-lrp-deduping.md) |  |
+| Docker Registry Caching | Obsolete | [#19](https://github.com/cloudfoundry/diego-notes/issues/19), [#22](https://github.com/cloudfoundry/diego-notes/issues/22), [#23](https://github.com/cloudfoundry/diego-notes/issues/23) | <ul><li>[private-docker-registry.md](private-docker-registry.md)</li><li>[docker_registry_caching.md](docker_registry_caching.md)</li><li>[docker_registry_configuration.md](docker_registry_configuration.md)</li></ul> |  |
 | RootFS Providers | Implemented | [#21](https://github.com/cloudfoundry/diego-notes/issues/21) | <ul><li>[placement_pools.md](placement_pools.md)</li><li>[placement-constraints-stories.csv](placement-constraints-stories.csv)</li></ul> |  |
+| App Lifecycles | Abandonded | [#20](https://github.com/cloudfoundry/diego-notes/issues/20) | [lifecycle-design.md](lifecycle-design.md) |  |
 | Per-App Crash Restart Policy | Abandonded | [#18](https://github.com/cloudfoundry/diego-notes/issues/18) | <ul><li>[per-application-crash-configuration.md](per-application-crash-configuration.md)</li><li>[per-application-crash-configuration-stories.csv](per-application-crash-configuration-stories.csv)</li></ul> |  |
+| Measuring Performance | Implemented | [#16](https://github.com/cloudfoundry/diego-notes/issues/16) | [measuring_performance.md](measuring_performance.md) | <ul><li>[perf:breadth-10k](https://www.pivotaltracker.com/epic/show/1869026)</li><li>[perf:breadth-250k](https://www.pivotaltracker.com/epic/show/2720331)</li></ul> |
+| Rolling Out Diego | Implemented | [#14](https://github.com/cloudfoundry/diego-notes/issues/14) | [rolling-out-diego.md](rolling-out-diego.md) |  |
+| Faster Cell Recovery | Obsolete | [#11](https://github.com/cloudfoundry/diego-notes/issues/11) | [faster-missing-cell-recovery.md](faster-missing-cell-recovery.md) |  |
 | Granular BOSH releases | Implemented | [#9](https://github.com/cloudfoundry/diego-notes/issues/9) | <ul><li>[bosh-deployments.md](bosh-deployments.md)</li><li>[bosh-deployments.graffle](bosh-deployments.graffle)</li><li>[bosh-deployments.png](bosh-deployments.png)</li></ul> | [composite-releases](https://www.pivotaltracker.com/epic/show/1978444) |
-
+| Generic Routing | Implemented | [#8](https://github.com/cloudfoundry/diego-notes/issues/8) | [routing.md](routing.md) |  |
 
 <!-- |  |  |  |  |  | -->
 <!-- <ul><li></li><li></li></ul> -->
 
 ## Unsorted
-
-### Documents in `proposals` Directory
-
-- [desired_lrp_update_API.md](desired_lrp_update_API.md)
-- [desired_lrp_update_extension.md](desired_lrp_update_extension.md)
-- [docker_registry_caching.md](docker_registry_caching.md)
-- [docker_registry_configuration.md](docker_registry_configuration.md)
-- [faster-missing-cell-recovery.md](faster-missing-cell-recovery.md)
-- [lifecycle-design.md](lifecycle-design.md)
-- [measuring_performance.md](measuring_performance.md)
-- [private-docker-registry.md](private-docker-registry.md)
-- [release-versioning-testing-stories.prolific.md](release-versioning-testing-stories.prolific.md)
-- [release-versioning-testing-v2.md](release-versioning-testing-v2.md)
-- [release-versioning-testing.md](release-versioning-testing.md)
-- [rolling-out-diego.md](rolling-out-diego.md)
-- [routing.md](routing.md)
-- [schema-migrations-for-locket.md](schema-migrations-for-locket.md)
-- [ssh-one-time-auth-code.md](ssh-one-time-auth-code.md)
-- [updatable-lrp-api.md](updatable-lrp-api.md)
-
 
 ### Google Documents
 
@@ -52,24 +43,8 @@ Sorted in roughly reverse-chronological order.
 - [#5](https://github.com/cloudfoundry/diego-notes/issues/5)
 - [#6](https://github.com/cloudfoundry/diego-notes/pull/6)
 - [#7](https://github.com/cloudfoundry/diego-notes/pull/7)
-- [#8](https://github.com/cloudfoundry/diego-notes/issues/8)
 - [#10](https://github.com/cloudfoundry/diego-notes/pull/10)
-- [#11](https://github.com/cloudfoundry/diego-notes/issues/11)
 - [#12](https://github.com/cloudfoundry/diego-notes/pull/12)
 - [#13](https://github.com/cloudfoundry/diego-notes/pull/13)
-- [#14](https://github.com/cloudfoundry/diego-notes/issues/14)
 - [#15](https://github.com/cloudfoundry/diego-notes/pull/15)
-- [#16](https://github.com/cloudfoundry/diego-notes/issues/16)
 - [#17](https://github.com/cloudfoundry/diego-notes/pull/17)
-- [#19](https://github.com/cloudfoundry/diego-notes/issues/19)
-- [#20](https://github.com/cloudfoundry/diego-notes/issues/20)
-- [#22](https://github.com/cloudfoundry/diego-notes/issues/22)
-- [#23](https://github.com/cloudfoundry/diego-notes/issues/23)
-- [#26](https://github.com/cloudfoundry/diego-notes/issues/26)
-- [#27](https://github.com/cloudfoundry/diego-notes/issues/27)
-- [#28](https://github.com/cloudfoundry/diego-notes/issues/28)
-- [#29](https://github.com/cloudfoundry/diego-notes/issues/29)
-- [#34](https://github.com/cloudfoundry/diego-notes/pull/34)
-- [#35](https://github.com/cloudfoundry/diego-notes/pull/35)
-- [#36](https://github.com/cloudfoundry/diego-notes/pull/36)
-- [#37](https://github.com/cloudfoundry/diego-notes/pull/37)
