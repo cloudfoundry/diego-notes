@@ -4,6 +4,8 @@ Sorted in roughly reverse-chronological order.
 
 | Topic | Status | Issues & PRs | Documents | Tracker |
 |---|---|---|---|---|
+| Securing Cell API | Implemented | [#33](https://github.com/cloudfoundry/diego-notes/issues/33) | [secure-auctioneer-cell-apis.md](secure-auctioneer-cell-apis.md) | [secure-cell-api](https://www.pivotaltracker.com/epic/show/3004745) |
+| Securing Auctioneer API | Implemented | [#33](https://github.com/cloudfoundry/diego-notes/issues/33) | [secure-auctioneer-cell-apis.md](secure-auctioneer-cell-apis.md) | [secure-auctioneer-api](https://www.pivotaltracker.com/epic/show/3003189) |
 | Relational BBS Store | Implemented | [#32](https://github.com/cloudfoundry/diego-notes/issues/32) | <ul><li>[relational-bbs-db.md](relational-bbs-db.md)</li><li>[relational-bbs-db-stories-2016-02-16.prolific.md](relational-bbs-db-stories-2016-02-16.prolific.md)</li><li>[relational-bbs-db-stories-2016-04-18.prolific.md](relational-bbs-db-stories-2016-04-18.prolific.md)</li><li>[relational-bbs-db-stories-2016-05-10.prolific.md](relational-bbs-db-stories-2016-05-10.prolific.md)</li></ul> | [bbs:relational](https://www.pivotaltracker.com/epic/show/2339327) |
 | Tuning Health Checks | Rejected | [#31](https://github.com/cloudfoundry/diego-notes/issues/31) | <ul><li>[tuning-health-checks.md](tuning-health-checks.md)</li><li>[tuning-health-checks-stories.prolific.md](tuning-health-checks-stories.prolific.md)</li></ul> | [net-check-action](https://www.pivotaltracker.com/epic/show/2214450) |
 | Bind-Mount Downloads | Implemented | [#25](https://github.com/cloudfoundry/diego-notes/issues/25), [#30](https://github.com/cloudfoundry/diego-notes/issues/30) | <ul><li>[bind-mounting-downloads.md](bind-mounting-downloads.md)</li><li>[bind-mounting-downloads-stories.prolific.md](bind-mounting-downloads-stories.prolific.md)</li><li>[better-buildpack-caching.md](better-buildpack-caching.md)</li></ul> | [bind-mount-downloads](https://www.pivotaltracker.com/epic/show/2200340) |
@@ -11,7 +13,7 @@ Sorted in roughly reverse-chronological order.
 | Better LRP Deduping | Rejected | [#24](https://github.com/cloudfoundry/diego-notes/issues/24) | [better-lrp-deduping.md](https://github.com/cloudfoundry/diego-notes/blob/9f079c4ff02e85549d651e07226e5c75ff02faf7/proposals/better-lrp-deduping.md) |  |
 | RootFS Providers | Implemented | [#21](https://github.com/cloudfoundry/diego-notes/issues/21) | <ul><li>[placement_pools.md](placement_pools.md)</li><li>[placement-constraints-stories.csv](placement-constraints-stories.csv)</li></ul> |  |
 | Per-App Crash Restart Policy | Abandonded | [#18](https://github.com/cloudfoundry/diego-notes/issues/18) | <ul><li>[per-application-crash-configuration.md](per-application-crash-configuration.md)</li><li>[per-application-crash-configuration-stories.csv](per-application-crash-configuration-stories.csv)</li></ul> |  |
-| Granular BOSH releases | Implemented | [#9](https://github.com/cloudfoundry/diego-notes/issues/9) | <ul><li>[bosh-deployments.md](bosh-deployments.md)</li><li>[bosh-deployments.graffle](bosh-deployments.graffle)</li><li>[bosh-deployments.png](bosh-deployments.png)</li></ul> |  |
+| Granular BOSH releases | Implemented | [#9](https://github.com/cloudfoundry/diego-notes/issues/9) | <ul><li>[bosh-deployments.md](bosh-deployments.md)</li><li>[bosh-deployments.graffle](bosh-deployments.graffle)</li><li>[bosh-deployments.png](bosh-deployments.png)</li></ul> | [composite-releases](https://www.pivotaltracker.com/epic/show/1978444) |
 
 
 <!-- |  |  |  |  |  | -->
@@ -35,7 +37,6 @@ Sorted in roughly reverse-chronological order.
 - [rolling-out-diego.md](rolling-out-diego.md)
 - [routing.md](routing.md)
 - [schema-migrations-for-locket.md](schema-migrations-for-locket.md)
-- [secure-auctioneer-cell-apis.md](secure-auctioneer-cell-apis.md)
 - [ssh-one-time-auth-code.md](ssh-one-time-auth-code.md)
 - [updatable-lrp-api.md](updatable-lrp-api.md)
 
@@ -68,7 +69,6 @@ Sorted in roughly reverse-chronological order.
 - [#27](https://github.com/cloudfoundry/diego-notes/issues/27)
 - [#28](https://github.com/cloudfoundry/diego-notes/issues/28)
 - [#29](https://github.com/cloudfoundry/diego-notes/issues/29)
-- [#33](https://github.com/cloudfoundry/diego-notes/issues/33)
 - [#34](https://github.com/cloudfoundry/diego-notes/pull/34)
 - [#35](https://github.com/cloudfoundry/diego-notes/pull/35)
 - [#36](https://github.com/cloudfoundry/diego-notes/pull/36)
