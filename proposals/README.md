@@ -9,6 +9,7 @@ Sorted in roughly reverse-chronological order.
 | BBS Migrations and Versioning | Implemented | | <ul><li>[bbs-migration-stories.prolific.md](bbs-migration-stories.prolific.md)</li><li>[bbs-migrations.md](bbs-migrations.md)</li><li>[versioning.md](versioning.md)</li><li>[diego_versioning.svg](diego_versioning.svg)</li></ul> | <ul><li>[versioning:init](https://www.pivotaltracker.com/epic/show/1869036)</li><li>[versioning:bbs](https://www.pivotaltracker.com/epic/show/1919510)</li></ul> |
 | Better LRP Deduping | Rejected | [#24](https://github.com/cloudfoundry/diego-notes/issues/24) | [better-lrp-deduping.md](https://github.com/cloudfoundry/diego-notes/blob/9f079c4ff02e85549d651e07226e5c75ff02faf7/proposals/better-lrp-deduping.md) |  |
 | RootFS Providers | Implemented | [#21](https://github.com/cloudfoundry/diego-notes/issues/21) | <ul><li>[placement_pools.md](placement_pools.md)</li><li>[placement-constraints-stories.csv](placement-constraints-stories.csv)</li></ul> |  |
+| Per-App Crash Restart Policy | Abandonded | [#18](https://github.com/cloudfoundry/diego-notes/issues/18) | <ul><li>[per-application-crash-configuration.md](per-application-crash-configuration.md)</li><li>[per-application-crash-configuration-stories.csv](per-application-crash-configuration-stories.csv)</li></ul> |  |
 | Granular BOSH releases | Implemented | [#9](https://github.com/cloudfoundry/diego-notes/issues/9) | <ul><li>[bosh-deployments.md](bosh-deployments.md)</li><li>[bosh-deployments.graffle](bosh-deployments.graffle)</li><li>[bosh-deployments.png](bosh-deployments.png)</li></ul> |  |
 
 <!-- |  |  |  |  |  | -->
@@ -25,8 +26,6 @@ Sorted in roughly reverse-chronological order.
 - [faster-missing-cell-recovery.md](faster-missing-cell-recovery.md)
 - [lifecycle-design.md](lifecycle-design.md)
 - [measuring_performance.md](measuring_performance.md)
-- [per-application-crash-configuration-stories.csv](per-application-crash-configuration-stories.csv)
-- [per-application-crash-configuration.md](per-application-crash-configuration.md)
 - [private-docker-registry.md](private-docker-registry.md)
 - [release-versioning-testing-stories.prolific.md](release-versioning-testing-stories.prolific.md)
 - [release-versioning-testing-v2.md](release-versioning-testing-v2.md)
@@ -61,7 +60,6 @@ Sorted in roughly reverse-chronological order.
 - [#15](https://github.com/cloudfoundry/diego-notes/pull/15)
 - [#16](https://github.com/cloudfoundry/diego-notes/issues/16)
 - [#17](https://github.com/cloudfoundry/diego-notes/pull/17)
-- [#18](https://github.com/cloudfoundry/diego-notes/issues/18)
 - [#19](https://github.com/cloudfoundry/diego-notes/issues/19)
 - [#20](https://github.com/cloudfoundry/diego-notes/issues/20)
 - [#22](https://github.com/cloudfoundry/diego-notes/issues/22)
