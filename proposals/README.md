@@ -7,6 +7,7 @@ Sorted in roughly reverse-chronological order.
 | Relational BBS Store | Implemented | [#32](https://github.com/cloudfoundry/diego-notes/issues/32) | <ul><li>[relational-bbs-db.md](relational-bbs-db.md)</li><li>[relational-bbs-db-stories-2016-02-16.prolific.md](relational-bbs-db-stories-2016-02-16.prolific.md)</li><li>[relational-bbs-db-stories-2016-04-18.prolific.md](relational-bbs-db-stories-2016-04-18.prolific.md)</li><li>[relational-bbs-db-stories-2016-05-10.prolific.md](relational-bbs-db-stories-2016-05-10.prolific.md)</li></ul> | [bbs:relational](https://www.pivotaltracker.com/epic/show/2339327) |
 | Bind-Mount Downloads | Implemented | [#25](https://github.com/cloudfoundry/diego-notes/issues/25), [#30](https://github.com/cloudfoundry/diego-notes/issues/30) | <ul><li>[bind-mounting-downloads.md](bind-mounting-downloads.md)</li><li>[bind-mounting-downloads-stories.prolific.md](bind-mounting-downloads-stories.prolific.md)</li><li>[better-buildpack-caching.md](better-buildpack-caching.md)</li></ul> | [bind-mount-downloads](https://www.pivotaltracker.com/epic/show/2200340) |
 | BBS Migrations and Versioning | Implemented | | <ul><li>[bbs-migration-stories.prolific.md](bbs-migration-stories.prolific.md)</li><li>[bbs-migrations.md](bbs-migrations.md)</li><li>[versioning.md](versioning.md)</li></ul> | <ul><li>[versioning:init](https://www.pivotaltracker.com/epic/show/1869036)</li><li>[versioning:bbs](https://www.pivotaltracker.com/epic/show/1919510)</li></ul> |
+| Granular BOSH releases | Implemented | [#9](https://github.com/cloudfoundry/diego-notes/issues/9) | <ul><li>[bosh-deployments.md](bosh-deployments.md)</li><li>[bosh-deployments.graffle](bosh-deployments.graffle)</li><li>[bosh-deployments.png](bosh-deployments.png)</li></ul> |  |
 
 
 <!-- <ul><li></li><li></li></ul> -->
@@ -15,9 +16,6 @@ Sorted in roughly reverse-chronological order.
 
 ### Documents in `proposals` Directory
 
-- [bosh-deployments.graffle](bosh-deployments.graffle)
-- [bosh-deployments.md](bosh-deployments.md)
-- [bosh-deployments.png](bosh-deployments.png)
 - [desired_lrp_update_API.md](desired_lrp_update_API.md)
 - [desired_lrp_update_extension.md](desired_lrp_update_extension.md)
 - [diego_versioning.svg](diego_versioning.svg)
@@ -56,7 +54,6 @@ Sorted in roughly reverse-chronological order.
 - [#6](https://github.com/cloudfoundry/diego-notes/pull/6)
 - [#7](https://github.com/cloudfoundry/diego-notes/pull/7)
 - [#8](https://github.com/cloudfoundry/diego-notes/issues/8)
-- [#9](https://github.com/cloudfoundry/diego-notes/issues/9)
 - [#10](https://github.com/cloudfoundry/diego-notes/pull/10)
 - [#11](https://github.com/cloudfoundry/diego-notes/issues/11)
 - [#12](https://github.com/cloudfoundry/diego-notes/pull/12)
