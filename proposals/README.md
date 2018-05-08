@@ -1,19 +1,18 @@
 ## Index
 
-| Topic | Status | Issues & PRs | Documents |
-|---|---|---|---|
-|||||
+Sorted in roughly reverse-chronological order.
 
+| Topic | Status | Issues & PRs | Documents | Tracker |
+|---|---|---|---|---|
+| Bind-Mount Downloads | Implemented | <ul><li>[#25](https://github.com/cloudfoundry/diego-notes/issues/25)</li><li>[#30](https://github.com/cloudfoundry/diego-notes/issues/30)</li></ul> | <ul><li>[bind-mounting-downloads.md](bind-mounting-downloads.md)</li><li>[bind-mounting-downloads-stories.prolific.md](bind-mounting-downloads-stories.prolific.md)</li><li>[better-buildpack-caching.md](better-buildpack-caching.md)</li></ul> | [bind-mount-downloads](https://www.pivotaltracker.com/epic/show/2200340) |
+| BBS Migrations and Versioning | Implemented | | <ul><li>[bbs-migration-stories.prolific.md](bbs-migration-stories.prolific.md)</li><li>[bbs-migrations.md](bbs-migrations.md)</li></ul> | [versioning:bbs](https://www.pivotaltracker.com/epic/show/1919510) |
+
+<!-- <ul><li></li><li></li></ul> -->
 
 ## Unsorted
 
 ### Documents in `proposals` Directory
 
-- [bbs-migration-stories.prolific.md](bbs-migration-stories.prolific.md)
-- [bbs-migrations.md](bbs-migrations.md)
-- [better-buildpack-caching.md](better-buildpack-caching.md)
-- [bind-mounting-downloads-stories.prolific.md](bind-mounting-downloads-stories.prolific.md)
-- [bind-mounting-downloads.md](bind-mounting-downloads.md)
 - [bosh-deployments.graffle](bosh-deployments.graffle)
 - [bosh-deployments.md](bosh-deployments.md)
 - [bosh-deployments.png](bosh-deployments.png)
@@ -75,12 +74,10 @@
 - [#22](https://github.com/cloudfoundry/diego-notes/issues/22)
 - [#23](https://github.com/cloudfoundry/diego-notes/issues/23)
 - [#24](https://github.com/cloudfoundry/diego-notes/issues/24)
-- [#25](https://github.com/cloudfoundry/diego-notes/issues/25)
 - [#26](https://github.com/cloudfoundry/diego-notes/issues/26)
 - [#27](https://github.com/cloudfoundry/diego-notes/issues/27)
 - [#28](https://github.com/cloudfoundry/diego-notes/issues/28)
 - [#29](https://github.com/cloudfoundry/diego-notes/issues/29)
-- [#30](https://github.com/cloudfoundry/diego-notes/issues/30)
 - [#31](https://github.com/cloudfoundry/diego-notes/issues/31)
 - [#32](https://github.com/cloudfoundry/diego-notes/issues/32)
 - [#33](https://github.com/cloudfoundry/diego-notes/issues/33)
