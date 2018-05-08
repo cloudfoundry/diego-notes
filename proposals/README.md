@@ -4,8 +4,10 @@ Sorted in roughly reverse-chronological order.
 
 | Topic | Status | Issues & PRs | Documents | Tracker |
 |---|---|---|---|---|
-| Bind-Mount Downloads | Implemented | <ul><li>[#25](https://github.com/cloudfoundry/diego-notes/issues/25)</li><li>[#30](https://github.com/cloudfoundry/diego-notes/issues/30)</li></ul> | <ul><li>[bind-mounting-downloads.md](bind-mounting-downloads.md)</li><li>[bind-mounting-downloads-stories.prolific.md](bind-mounting-downloads-stories.prolific.md)</li><li>[better-buildpack-caching.md](better-buildpack-caching.md)</li></ul> | [bind-mount-downloads](https://www.pivotaltracker.com/epic/show/2200340) |
-| BBS Migrations and Versioning | Implemented | | <ul><li>[bbs-migration-stories.prolific.md](bbs-migration-stories.prolific.md)</li><li>[bbs-migrations.md](bbs-migrations.md)</li></ul> | [versioning:bbs](https://www.pivotaltracker.com/epic/show/1919510) |
+| Relational BBS Store | Implemented | [#32](https://github.com/cloudfoundry/diego-notes/issues/32) | <ul><li>[relational-bbs-db.md](relational-bbs-db.md)</li><li>[relational-bbs-db-stories-2016-02-16.prolific.md](relational-bbs-db-stories-2016-02-16.prolific.md)</li><li>[relational-bbs-db-stories-2016-04-18.prolific.md](relational-bbs-db-stories-2016-04-18.prolific.md)</li><li>[relational-bbs-db-stories-2016-05-10.prolific.md](relational-bbs-db-stories-2016-05-10.prolific.md)</li></ul> | [bbs:relational](https://www.pivotaltracker.com/epic/show/2339327) |
+| Bind-Mount Downloads | Implemented | [#25](https://github.com/cloudfoundry/diego-notes/issues/25), [#30](https://github.com/cloudfoundry/diego-notes/issues/30) | <ul><li>[bind-mounting-downloads.md](bind-mounting-downloads.md)</li><li>[bind-mounting-downloads-stories.prolific.md](bind-mounting-downloads-stories.prolific.md)</li><li>[better-buildpack-caching.md](better-buildpack-caching.md)</li></ul> | [bind-mount-downloads](https://www.pivotaltracker.com/epic/show/2200340) |
+| BBS Migrations and Versioning | Implemented | | <ul><li>[bbs-migration-stories.prolific.md](bbs-migration-stories.prolific.md)</li><li>[bbs-migrations.md](bbs-migrations.md)</li><li>[versioning.md](versioning.md)</li></ul> | <ul><li>[versioning:init](https://www.pivotaltracker.com/epic/show/1869036)</li><li>[versioning:bbs](https://www.pivotaltracker.com/epic/show/1919510)</li></ul> |
+
 
 <!-- <ul><li></li><li></li></ul> -->
 
@@ -29,10 +31,6 @@ Sorted in roughly reverse-chronological order.
 - [placement-constraints-stories.csv](placement-constraints-stories.csv)
 - [placement_pools.md](placement_pools.md)
 - [private-docker-registry.md](private-docker-registry.md)
-- [relational-bbs-db-stories-2016-02-16.prolific.md](relational-bbs-db-stories-2016-02-16.prolific.md)
-- [relational-bbs-db-stories-2016-04-18.prolific.md](relational-bbs-db-stories-2016-04-18.prolific.md)
-- [relational-bbs-db-stories-2016-05-10.prolific.md](relational-bbs-db-stories-2016-05-10.prolific.md)
-- [relational-bbs-db.md](relational-bbs-db.md)
 - [release-versioning-testing-stories.prolific.md](release-versioning-testing-stories.prolific.md)
 - [release-versioning-testing-v2.md](release-versioning-testing-v2.md)
 - [release-versioning-testing.md](release-versioning-testing.md)
@@ -44,7 +42,7 @@ Sorted in roughly reverse-chronological order.
 - [tuning-health-checks-stories.prolific.md](tuning-health-checks-stories.prolific.md)
 - [tuning-health-checks.md](tuning-health-checks.md)
 - [updatable-lrp-api.md](updatable-lrp-api.md)
-- [versioning.md](versioning.md)
+
 
 ### Google Documents
 
@@ -79,7 +77,6 @@ Sorted in roughly reverse-chronological order.
 - [#28](https://github.com/cloudfoundry/diego-notes/issues/28)
 - [#29](https://github.com/cloudfoundry/diego-notes/issues/29)
 - [#31](https://github.com/cloudfoundry/diego-notes/issues/31)
-- [#32](https://github.com/cloudfoundry/diego-notes/issues/32)
 - [#33](https://github.com/cloudfoundry/diego-notes/issues/33)
 - [#34](https://github.com/cloudfoundry/diego-notes/pull/34)
 - [#35](https://github.com/cloudfoundry/diego-notes/pull/35)
