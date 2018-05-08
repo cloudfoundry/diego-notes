@@ -5,12 +5,14 @@ Sorted in roughly reverse-chronological order.
 | Topic | Status | Issues & PRs | Documents | Tracker |
 |---|---|---|---|---|
 | Relational BBS Store | Implemented | [#32](https://github.com/cloudfoundry/diego-notes/issues/32) | <ul><li>[relational-bbs-db.md](relational-bbs-db.md)</li><li>[relational-bbs-db-stories-2016-02-16.prolific.md](relational-bbs-db-stories-2016-02-16.prolific.md)</li><li>[relational-bbs-db-stories-2016-04-18.prolific.md](relational-bbs-db-stories-2016-04-18.prolific.md)</li><li>[relational-bbs-db-stories-2016-05-10.prolific.md](relational-bbs-db-stories-2016-05-10.prolific.md)</li></ul> | [bbs:relational](https://www.pivotaltracker.com/epic/show/2339327) |
+| Tuning Health Checks | Rejected | [#31](https://github.com/cloudfoundry/diego-notes/issues/31) | <ul><li>[tuning-health-checks.md](tuning-health-checks.md)</li><li>[tuning-health-checks-stories.prolific.md](tuning-health-checks-stories.prolific.md)</li></ul> | [net-check-action](https://www.pivotaltracker.com/epic/show/2214450) |
 | Bind-Mount Downloads | Implemented | [#25](https://github.com/cloudfoundry/diego-notes/issues/25), [#30](https://github.com/cloudfoundry/diego-notes/issues/30) | <ul><li>[bind-mounting-downloads.md](bind-mounting-downloads.md)</li><li>[bind-mounting-downloads-stories.prolific.md](bind-mounting-downloads-stories.prolific.md)</li><li>[better-buildpack-caching.md](better-buildpack-caching.md)</li></ul> | [bind-mount-downloads](https://www.pivotaltracker.com/epic/show/2200340) |
 | BBS Migrations and Versioning | Implemented | | <ul><li>[bbs-migration-stories.prolific.md](bbs-migration-stories.prolific.md)</li><li>[bbs-migrations.md](bbs-migrations.md)</li><li>[versioning.md](versioning.md)</li><li>[diego_versioning.svg](diego_versioning.svg)</li></ul> | <ul><li>[versioning:init](https://www.pivotaltracker.com/epic/show/1869036)</li><li>[versioning:bbs](https://www.pivotaltracker.com/epic/show/1919510)</li></ul> |
 | Better LRP Deduping | Rejected | [#24](https://github.com/cloudfoundry/diego-notes/issues/24) | [better-lrp-deduping.md](https://github.com/cloudfoundry/diego-notes/blob/9f079c4ff02e85549d651e07226e5c75ff02faf7/proposals/better-lrp-deduping.md) |  |
 | RootFS Providers | Implemented | [#21](https://github.com/cloudfoundry/diego-notes/issues/21) | <ul><li>[placement_pools.md](placement_pools.md)</li><li>[placement-constraints-stories.csv](placement-constraints-stories.csv)</li></ul> |  |
 | Per-App Crash Restart Policy | Abandonded | [#18](https://github.com/cloudfoundry/diego-notes/issues/18) | <ul><li>[per-application-crash-configuration.md](per-application-crash-configuration.md)</li><li>[per-application-crash-configuration-stories.csv](per-application-crash-configuration-stories.csv)</li></ul> |  |
 | Granular BOSH releases | Implemented | [#9](https://github.com/cloudfoundry/diego-notes/issues/9) | <ul><li>[bosh-deployments.md](bosh-deployments.md)</li><li>[bosh-deployments.graffle](bosh-deployments.graffle)</li><li>[bosh-deployments.png](bosh-deployments.png)</li></ul> |  |
+
 
 <!-- |  |  |  |  |  | -->
 <!-- <ul><li></li><li></li></ul> -->
@@ -35,8 +37,6 @@ Sorted in roughly reverse-chronological order.
 - [schema-migrations-for-locket.md](schema-migrations-for-locket.md)
 - [secure-auctioneer-cell-apis.md](secure-auctioneer-cell-apis.md)
 - [ssh-one-time-auth-code.md](ssh-one-time-auth-code.md)
-- [tuning-health-checks-stories.prolific.md](tuning-health-checks-stories.prolific.md)
-- [tuning-health-checks.md](tuning-health-checks.md)
 - [updatable-lrp-api.md](updatable-lrp-api.md)
 
 
@@ -68,7 +68,6 @@ Sorted in roughly reverse-chronological order.
 - [#27](https://github.com/cloudfoundry/diego-notes/issues/27)
 - [#28](https://github.com/cloudfoundry/diego-notes/issues/28)
 - [#29](https://github.com/cloudfoundry/diego-notes/issues/29)
-- [#31](https://github.com/cloudfoundry/diego-notes/issues/31)
 - [#33](https://github.com/cloudfoundry/diego-notes/issues/33)
 - [#34](https://github.com/cloudfoundry/diego-notes/pull/34)
 - [#35](https://github.com/cloudfoundry/diego-notes/pull/35)
