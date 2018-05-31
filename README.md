@@ -504,10 +504,13 @@ Here's an outline:
 ### Task States
 
 The lifecycle of a Task in Diego is quite different from that of an LRP.
-Tasks are guaranteed to run at most once: they're never restarted, they don't "crash", they don't move during an evacuation.
+Tasks are guaranteed to run to completion at most once: they don't "crash", they don't move during an evacuation.
 Instead Tasks `COMPLETE`.
 Once in the `COMPLETE` state the Tasks have a notion of whether they have failed or not.
 Failed Tasks include a `FailureReason`; succesful Tasks (may) include a `Result` (the contents of a file requested by the user).
+
+Tasks however can be retried if they get rejected. Rejection for tasks happens either if auctioning the task fails, or if the task fails during container creation but prior to the actual running of the task.
+Rejections cause BBS to retry the tasks at most `task.max_retries` number of times. This value is configurable in BBS. If `task.max_retries` is reached, the task completes in a failure state.
 
 Here are the states for the Tasks:
 
@@ -545,8 +548,8 @@ For Tasks the Auctioneer only:
 
 #### Communicating Fullness
 
-When a Task cannot be allocated the Auctioneer updates the Task from the `PENDING` state to the `COMPLETED` state, marking it as `Failed` and including a `FailureReason` that explains that the cluster has no capacity for the task.
-It is up to the consumer to retry the Task.
+When a Task cannot be allocated the Auctioneer rejects the task and the BBS retries placement of the task up to `task.max_retries` times. Once `task.max_retries` is reached, the BBS updates the Task from the `PENDING` state to the `COMPLETED` state, marking it as `Failed` and including a `FailureReason` that explains that the cluster has no capacity for the task.
+It is up to the consumer to then retry the Task.
 
 ### Resolving Completed Tasks
 
@@ -590,7 +593,7 @@ Here's what happens when a Cell must be evacuated:
 
 ### Maintaining Consistency: Convergence
 
-Since tasks are guaranteed to run at most once, the BBS never attempts to "restart" Tasks.
+Since tasks are guaranteed to run to completion at most once, the BBS never attempts to "restart" Tasks after they have finished.
 Instead its role is:
 
 1. The BBS will update the database records of Tasks that are `RUNNING` on failed Cells.
@@ -646,17 +649,18 @@ Some notes:
 - The "No Container" rows are necessary to ensure that the BBS reflects the reality of what is - and is *not* - running on the Cell. Note that "No Container" includes "No Reservation".
 - In principal several of these combinations should not be possible. However in the presence of network partitions and partial failures it is difficult to make such a statement with confidence. An exhaustive analysis of all possible combinations (such as this) ensures more safety around the Task lifecycle.
 - When the Action described in this table fails, the Rep should log and do nothing. In this way we defer to the next polling cycle to retry actions.
+- If container creation fails, the rep completes the task but marks it as retryable (Retryable Complete in table below). If the failure happens after container creation, the rep marks it as NonRetryable but completes the task.
 
-BBS | Reserved | I/C/Running | Completed | No Container
+BBS | Reserved | I/C/Running | Retryable Completed | NonRetryable Completed | No Container
 ---|---|---|---|---|---
-Missing     | Delete Container          | Delete Container          | Delete Container |
-Pending     | Start Task, Run Container | Start Task, Run Container | Complete Task, Delete Container
-Running-α   | Do Nothing                | Do Nothing                | Complete Task, Delete Container | Fail Task
-Running-ω   | Delete Container          | Delete Container          | Delete Container          |
-Completed-α | Delete Container          | Delete Container          | Delete Container          | Do Nothing
-Completed-ω | Delete Container          | Delete Container          | Delete Container          |
-Resolving-α | Delete Container          | Delete Container          | Delete Container          | Do Nothing
-Resolving-ω | Delete Container          | Delete Container          | Delete Container          |
+Missing     | Delete Container          | Do Nothing               | Delete Container          | Delete Container |
+Pending     | Start Task, Run Container | Do Nothing               | Start Task, Run Container | Complete Task, Delete Container |
+Running-α   | Do Nothing                | Reject Task              | Do Nothing                | Complete Task, Delete Container | Complete Task with failure
+Running-ω   | Delete Container          | Do Nothing               | Delete Container          | Delete Container          |
+Completed-α | Delete Container          | Do Nothing               | Delete Container          | Delete Container          | Do Nothing
+Completed-ω | Delete Container          | Do Nothing               | Delete Container          | Delete Container          |
+Resolving-α | Delete Container          | Do Nothing               | Delete Container          | Delete Container          | Do Nothing
+Resolving-ω | Delete Container          | Do Nothing               | Delete Container          | Delete Container          |
 
 ### Pruning Corrupt/Invalid Data
 
