@@ -338,7 +338,7 @@ Here are it's responsibilities and the actions it takes:
 
 1. *Reaping ActualLRPs on failed Cells:*
 	- Cells periodically maintain their presence in the BBS.
-		- If a Cell disappears, the BBS will notice and update `CLAIMED` ActualLRPs associated with the missing Cell to `UNCLAIMED`.
+		- If a Cell disappears, the BBS will notice and update `CLAIMED` and `RUNNING` ActualLRPs associated with the missing Cell to `UNCLAIMED`.
 		- A `RUNNING` ActualLRP however, is not readily updated to `UNCLAIMED`. Missing Cell presence could be a result of network jitters or other temporary network failures.
 			- In favor of keeping routability to an already running ActualLRP, the BBS marks the presence for a `RUNNING` ActualLRP on a missing Cell as `SUSPECT`.
 			- At the same time, the BBS starts a backup ActualLRP to take over the suspect ActualLRP in case the missing Cell never reappears.
@@ -375,7 +375,7 @@ _Notes for the Table_:
 
 `i1` Cell State | `i2` Cell State | ActualLRPs (before) | Harmonizing Event | Action | ActualLRPs (after) | Route-Emitter Events
 ----------------|-----------------|-------------------|--------|--------|--------------------|---------------------
-Missing | Present |`i1:` `RUNNING ORDINARY` | BBS Convergence |  BBS marks `i1`'s presence to suspect and creates unclaimed ActualLRP `i2` | `i1: RUNNING SUSPECT` <br> <br> `i2: UNCLAIMED ORDINARY` | None
+Missing | N/A `i2` not running |`i1:` `RUNNING ORDINARY` | BBS Convergence |  BBS marks `i1`'s presence to suspect and creates unclaimed ActualLRP `i2` | `i1: RUNNING SUSPECT` <br> <br> `i2: UNCLAIMED ORDINARY` | None
 Present | Present |`i1:` `RUNNING SUSPECT` <br><br> `i2: CLAIMED ORDINARY` | BBS Convergence | BBS removes `i2` and changes presence for `i1` back to ordinary | `i1: RUNNING ORDINARY` <br><br> `i2: REMOVED` | None
 Present | Present |`i1: RUNNING SUSPECT` <br><br>`i2: RUNNING ORDINARY` | BBS Convergence | BBS removes suspect instance `i1` | `i1: REMOVED` <br><br> `i2: RUNNING ORDINARY`| `ActualLRPRemovedEvent (i1)`
 Missing | Present |`i1: RUNNING SUSPECT` <br><br> `i2: CLAIMED ORDIINARY` | BBS Convergence | BBS has nothing to do | `i1: RUNNING SUSPECT` <br><br> `i2: CLAIMED ORDIINARY` | None
@@ -383,10 +383,10 @@ Missing | Missing |`i1: RUNNING SUSPECT` <br><br> `i2: CLAIMED ORDINARY` | BBS C
 Missing | Present |`i1: RUNNING SUSPECT` <br><br> `i2: UNCLAIMED ORDINARY`  | Auctioneer calls `FailActualLRP` | BBS has nothing to do | `i1: RUNNING SUSPECT` <br><br> `i2: UNCLAIMED ORDINARY` | None
 Missing | Present |`i1: RUNNING SUSPECT` <br><br> `i2: CLAIMED ORDINARY` | `i2` cell calls `StartActualLRP` | BBS removes `i1` | `i1: REMOVED` <br><br> `i2: RUNNING ORDINARY` | `ActualLRPChangedEvent(before: {Instance: i2(claimed)}, after: {Instance: i2(running)}`) <br><br> `ActualLRPRemoved({Suspect: i1}`)
 Missing | Present |`i1: RUNNING SUSPECT` <br><br> `i2: CLAIMED ORDINARY` | `i1` cell calls `StartActualLRP` | BBS has nothing to do | `i1: RUNNING SUSPECT` <br><br> `i2: CLAIMED ORDINARY` | None
-Missing | Present |`i1: RUNNING SUSPECT or NIL` <br><br> `i2: RUNNING ORDINARY` | `i1` cell calls `StartActualLRP` | BBS returns `Error_ActualLRPCannotBeStarted`  | `i1: REMOVED` <br><br> `i2: RUNNING ORDINARY` | `ActualLRPRemovedEvent({Suspect: i1}`
+Missing | Present |`i1: RUNNING SUSPECT or NIL` <br><br> `i2: RUNNING ORDINARY` | `i1` cell calls `StartActualLRP` | BBS returns `ErrorActualLRPCannotBeStarted`  | `i1: RUNNING SUSPECT` <br><br> `i2: RUNNING ORDINARY` | None
 Missing | Present |`i1: RUNNING SUSPECT` <br><br> `i2: CLAIMED ORDINARY` | `i1` cell calls `CrashActualLRP` | BBS removes `i1`  | `i1: REMOVED` <br><br> `i2: CLAIMED ORDINARY` | `ActualLRPRemovedEvent({Suspect: i1}`
 Missing | Present |`i1: RUNNING SUSPECT` <br><br> `i2: CLAIMED ORDINARY` | `i2` cell calls `CrashActualLRP` or `RemoveActualLRP`| BBS deletes new existing `i2` from the DB and creates and auctions another instance | `i1: RUNNING SUSPECT` <br><br> `i2: UNCLAIMED ORDINARY` | None
-Missing | Present |`i1: RUNNING SUSPECT` <br><br> `i2: CLAIMED ORDINARY` | `i1` cell calls `EvacuateRunningActualLRP` | BBS removes suspect ActualLRP `i1` and adds evacuating ActualLRP `i1` (happens as part of existing transition path) | `i1: RUNNING EVACUATING` <br><br> `i2: CLAIMED ORDINARY` | None
+Missing | Present |`i1: RUNNING SUSPECT` <br><br> `i2: CLAIMED ORDINARY` | `i1` cell calls `EvacuateRunningActualLRP` | BBS removes suspect ActualLRP `i1` and adds evacuating ActualLRP `i1` | `i1: RUNNING EVACUATING` <br><br> `i2: CLAIMED ORDINARY` | None
 Missing | Present |`i1: RUNNING SUSPECT` <br><br> `i2: CLAIMED ORDINARY` | `i2` cell calls `EvacuateClaimedActualLRP` | BBS creates a new actual LRP and reauctions it. | `i1: RUNNING SUSPECT` <br><br> `i2: UNCLAIMED ORDINARY` | None
 Missing | Present |`i1: RUNNING SUSPECT` <br><br> `i2: CLAIMED ORDINARY` | `i1` cell calls `EvacuateCrashedActaulLRP` or `EvacuateStoppedActualLRP` | BBS removes `i1`  | `i1: REMOVED` <br><br> `i2: CLAIMED ORDINARY` | `ActualLRPRemovedEvent({Suspect: i1})`
 Missing | Present |`i1: RUNNING SUSPECT` <br><br> `i2: UNCLAIMED ORDINARY` | `i2` cell calls `ClaimActualLRP` | BBS has nothing to do | `i1: RUNNING SUSPECT` <br><br> `i2: UNCLAIMED ORDINARY` | None
