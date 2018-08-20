@@ -353,7 +353,7 @@ Here are it's responsibilities and the actions it takes:
 5. *Re-emitting start requests:*
 	- The request to start the ActualLRP may have failed. This can be detected if the ActualLRP remains in the `UNCLAIMED` state for longer than some timescale. The BBS acts by resubmitting a start request.
 
-### Harmonizing ActualLRPs based on Cell Precsence: Suspect Cells
+### Harmonizing ActualLRPs based on Cell Presence: Suspect Cells
 
 As mentioned in the previous section, when a Cell fails to register its presence with Locket, BBS marks ActualLRPs assigned to that Cell as `suspect`. Rather than aggressively trying to prune out suspect ActualLRPs and potentially causing loss of routability, the BBS gives the missing Cell some time to recover its presence while working on a contingency plan for a replacement instance. Here is how it works:
 
@@ -361,10 +361,10 @@ As mentioned in the previous section, when a Cell fails to register its presence
 - BBS fetches the list of ActualLRPs on the missing Cell and sets their `presence` to `SUSPECT`.
 - For each suspect ActualLRP from the above, the BBS creates a new `UNCLAIMED` ActualLRP and requests Auction.
 - While the new ActualLRP is auctioned and placed on a healthy Cell:
-	- if the `suspect` Cell reappears and registers its presence with the BBS, the BBS picks up the reappeared Cell int he convergence loop, removes the replacement ActualLRP, and switches `presence` for the suspect ActualLRP from `SUSPECT` back to `ORDINARY`.
+	- if the `suspect` Cell reappears and registers its presence with the BBS, the BBS picks up the reappeared Cell in the convergence loop, removes the replacement ActualLRP, and switches `presence` for the suspect ActualLRP from `SUSPECT` back to `ORDINARY`.
 	- if a new Cell takes on the ActualLRP with the given `process_guid` and `index` and starts it, BBS removes the corresponding `suspect` ActualLRP.
 
-Table below shows how BBS handles transitions between the suspect	 ActualLRP and the replacement ActualLRP and what events are emitted.
+Table below shows how BBS handles transitions between the suspect ActualLRP and the replacement ActualLRP and what events are emitted.
 
 _Notes for the Table_:
 - `i1` and `i2` refer to `instance_guids` of two ActualLRPs with identical `process_guid` and `index` and different `presence` types.
