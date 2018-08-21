@@ -378,20 +378,19 @@ _Notes for the Tables_:
 
 These state transitions are handled during BBS convergence.
 
-`cell-1` State | `cell-2` State | ActualLRPs (before)                          | ActualLRPs (after) + RE Events                                                   | Reason 
--------------- |----------------|----------------------------------------------|----------------------------------------------------------------------------------|--------
-Missing | Present |`i1:` `RUNNING ORDINARY`                                    | `i1: RUNNING SUSPECT` <br> <br> `i2: UNCLAIMED ORDINARY`                         | BBS marks `i1`'s presence as suspect to preserve routability, but auctions a new instance as a potential replacement for `i1`.
-Missing | Present |`i1: RUNNING SUSPECT` <br><br> `i2: CLAIMED ORDINARY`       | `i1: RUNNING SUSPECT` <br><br> `i2: CLAIMED ORDINARY`                            | `i2` has being auctioned and will start running on `cell-2`, so there is nothing for the BBS to do.
-Present | Present |`i1:` `RUNNING SUSPECT` <br><br> `i2: (UN)CLAIMED ORDINARY` | `i1: RUNNING ORDINARY` <br><br> `i2: REMOVED`                                    | `cell-1` came back from being missing, so `i1` is no longer suspect. Because we already have a running instance, we no longer need `i2`.
-N/A     | Present |`i1: RUNNING SUSPECT` <br><br>`i2: RUNNING ORDINARY`        | `i1: REMOVED`, emits `ActualLRPRemovedEvent(i1)` <br><br> `i2: RUNNING ORDINARY` | `i2` is now a running instance that replaces the suspect instance `i1`, which can now be removed.
-Missing | Missing |`i1: RUNNING SUSPECT` <br><br> `i2: CLAIMED ORDINARY`       |  `i1: RUNNING SUSPECT` <br><br> `i2: UNCLAIMED ORDINARY`                         | Because `cell-2` has also gone missing, BBS removes `i2` and auctions another replacement instance.
-
+| ActualLRP State & Presence | Cell presence transition | Resulting ActualLRP State/Presence and Emitted Events | Reason |
+| -------------------------- | --------------------- | ------------------------- | ------ |
+| `i1`: `RUNNING ORDINARY`<br/><br/>`i2`: N/A         | Cell 1 : `Present` => `Missing`<br/><br/>Cell 2: `Present` | `i1`: `RUNNING SUSPECT` <br/><br/> `i2`: `UNCLAIMED ORDINARY`        | When the cell fails to establish presence, the BBS marks all instances on that cell as `SUSPECT` because the cell may or may not be functioning.<br/><br/>Replacement instances are put up for auction so they can be started on other cells. |
+| `i1`: `RUNNING SUSPECT`<br/><br/>`i2`: `UNCLAIMED ORDINARY` or <br/>`CLIAMED ORDINARY`         | Cell 1: `Missing` => `Present`<br/><br/>Cell 2: `Present` | `i1`: `RUNNING ORDINARY` <br/><br/> `i2`: `REMOVED`        | The original cell re-establishes presence before the replace instance has been started, so BBS can remove the replacement instance |
+| `i1`: `RUNNING SUSPECT`<br/><br/>`i2`: `RUNNING ORDINARY` | Cell 1: `Missing`<br/><br/>Cell 2: `Present` | `i1`: `REMOVED`, ActualLRPRemovedEvent(`i1`) <br/><br/> `i2`: `RUNNING ORDINARY`        | Because the replacement instance has been successfully started, the original instance (which is still considered suspect) can be removed in favor of the functioning AcutualLRP instance. |
+| `i1`: `RUNNING SUSPECT`<br/><br/>`i2`: `RUNNING ORDINARY` | Cell 1: `Missing` => `Present`<br/><br/>Cell 2: `Present` | `i1`: `REMOVED` , ActualLRPRemovedEvent(`i1`) <br/><br/> `i2`: `RUNNING ORDINARY`        | As above, the replacement instance takes over because it is successfully running. |
+| `i1`: `RUNNING SUSPECT`<br/><br/>`i2`: `UNCLAIMED ORDINARY` | Cell 1: `Missing` <br/><br/>Cell 2: `Present` => `Missing` | `i1`: `RUNNING SUSPECT` <br/><br/> `i2`: `REMOVED`        | If the cell hosting the replacement ActualLRP also goes missing, BBS will prefer the original `RUNNING SUSPECT` ActualLRP, because there's a chance it's still running (which is better than not running at all). |
 
 #### Harmonizing Event: Auctioneer calls BBS API
 
-Harmonizing Event                |`cell-1` State | `cell-2` State | ActualLRPs (before)                                    | ActualLRPs (after)                                      | Reason             
----------------------------------|-------------- |----------------|--------------------------------------------------------|---------------------------------------------------------|--------
-Auctioneer calls `FailActualLRP` | Missing       | Present`       | i1: RUNNING SUSPECT` <br><br> `i2: UNCLAIMED ORDINARY` | `i1: RUNNING SUSPECT` <br><br> `i2: UNCLAIMED ORDINARY` | BBS has nothing to do
+| ActualLRP State & Presence | Cell presence transition | Harmoizing Event |Resulting ActualLRP State/Presence and Emitted Events | Reason |
+| -------------------------- | --------------------- | ---- | ------------------------- | ------ |
+| `i1` : `RUNNING SUSPECT` <br/><br/> `i2`: `UNCLAIMED ORDINARY` | Cell 1: `Missing` <br/><br/>Cell 2: `Present` | Auctioneer calls `FailActualLRP(i2)` because it cannot place `i2` | `i1` : `RUNNING SUSPECT` <br/><br/> `i2`: `UNCLAIMED ORDINARY` | If the auctioneer fails to place the replacement instance, the BBS prefers to keep the `RUNNING SUSPECT` LRP, until a replacement instance is successfully started somewhere. |
 
 #### Harmonizing Event: Missing Cell running the suspect LRP calls BBS API
 
