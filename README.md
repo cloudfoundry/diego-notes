@@ -364,7 +364,7 @@ As mentioned in the previous section, when a Cell fails to register its presence
 	- if the `suspect` Cell reappears and registers its presence with the BBS, the BBS picks up the reappeared Cell in the convergence loop, removes the replacement ActualLRP, and switches `presence` for the suspect ActualLRP from `SUSPECT` back to `ORDINARY`.
 	- if a new Cell takes on the ActualLRP with the given `process_guid` and `index` and starts it, BBS removes the corresponding `suspect` ActualLRP.
 
-Table below shows how BBS handles transitions between the suspect ActualLRP and the replacement ActualLRP and what events are emitted.
+The tables below shows how BBS handles transitions between the suspect ActualLRP and the replacement ActualLRP and what events are emitted.
 
 _Notes for the Tables_:
 - `i1` and `i2` refer to `instance_guids` of two ActualLRPs with identical `process_guid` and `index` and different `presence` types.
@@ -374,10 +374,10 @@ _Notes for the Tables_:
 - For each instance `i1` and `i2`, both its `State` and `Presence` are listed before and after a BBS harmonizing event.
 - RE Events are Route Emitter Events
 
-### Expected Suspect ActualLRP Workflow
+#### Expected Suspect ActualLRP Workflow
 | ActualLRP State & Presence | Cell presence | Event | Resulting ActualLRP State/Presence and Emitted Events | Reason |
 | -------------------------- | ------------- | ------| ----------------------------------------------------- | ------ |
-| `i1`: `RUNNING ORDINARY`<br/><br/>`i2`: N/A         | Cell 1 : `Present`<br/><br/>Cell 2: `Present` | As part of convergence, Cell 1 changes presence:<br/>`Present` => `Missing` | `i1`: `RUNNING SUSPECT` <br/><br/> `i2`: `UNCLAIMED ORDINARY`        | When the cell fails to establish presence, the BBS marks all instances on that cell as `SUSPECT` because the cell may or may not be functioning.<br/><br/>Replacement instances are put up for auction so they can be started on other cells. |
+| `i1`: `RUNNING ORDINARY`<br/><br/>`i2`: N/A         | Cell 1 : `Present`<br/><br/>Cell 2: `N/A`, since `i2` is not running | As part of convergence, Cell 1 changes presence:<br/>`Present` => `Missing` | `i1`: `RUNNING SUSPECT` <br/><br/> `i2`: `UNCLAIMED ORDINARY`        | When the cell fails to establish presence, the BBS marks all instances on that cell as `SUSPECT` because the cell may or may not be functioning.<br/><br/>Replacement instances are put up for auction so they can be started on other cells. |
 | `i1`: `RUNNING SUSPECT`<br/><br/>`i2`: `UNCLAIMED ORDINARY` | Cell 1 : `Missing`<br/><br/>Cell 2: `Present` | Cell 2 calls `ClaimActualLRP` |`i1`: `RUNNING SUSPECT`<br/><br/> `i2`: `CLAIMED ORDINARY` | As part of the normal auction process, the available Cell 2 claims the replacement ActualLRP so that the `SUSPECT` ActualLRP can eventually be shut down. In the meantime, the `SUSPECT` instance on Cell 1 continues running to maintain routability.  |
 | `i2`: `CLAIMED ORDINARY` | Cell 1 : `Missing`<br/><br/>Cell 2: `Present` | Cell 2 calls `StartActualLRP` |`i1`: `REMOVED`,<br/> ActualLRPRemovedEvent(`i1`) <br/><br/> `i2`: `RUNNING ORDINARY`,<br/> `ActualLRPChangedEvent` (`CLAIMED` => `RUNNING`) | Once Cell 2 starts a replacement ActualLRP, the `SUSPECT` instance can be removed from the missing cell and avoid any routing downtime. |
 
@@ -412,9 +412,9 @@ As such, the first instance `i1` is has state/presence `RUNNING SUSPECT` in each
 | `i2` State & Presence | Harmonizing Event | Resulting ActualLRP State/Presence and Emitted Events | Reason |
 | --------------------- | ----------------- | ----------------------------------------------------- | -------|
 | `i2`: `CLAIMED ORDINARY` | Cell 1 calls `StartActualLRP` |`i1`: `RUNNING SUSPECT` <br><br> `i2`: `CLAIMED ORDINARY` | Even though the cell has made an API call to BBS, if the cell has failed to establish presence via `locket`, it should continue to treat the ActualLRP on Cell 1 as suspect. As such, it should continue allowing the replacement ActualLRP to proceed being placed on a new rep. |
-| `i2`: `RUNNING ORDINARY` | Cell 1 calls `StartActualLRP` |`i1`: `REMOVED`, ActualLRPRemovedEvent(`i1`) <br><br> `i2`: `RUNNING ORDINARY` | BBS returns `Error_ActualLRPCannotBeStarted` because Cell 2 is already running the ActualLRP. |
+| `i2`: `RUNNING ORDINARY` | Cell 1 calls `StartActualLRP` |`i1`: `RUNNING SUSPECT` <br><br> `i2`: `RUNNING ORDINARY` | BBS returns `ErrorActualLRPCannotBeStarted` because Cell 2 is already running the ActualLRP. `i1` remains `RUNNING SUSPECT`, but will be removed later as part of destroying the instance. |
 | `i2`: `CLAIMED ORDINARY` | Cell 1 calls `CrashActualLRP` |`i1`: `REMOVED`, ActualLRPRemovedEvent(`i1`) <br><br> `i2`: `CLAIMED ORDINARY` | When the cell reports the ActualLRP has crashed, there are no longer any running ActualLRPs on either cell. Because Cell 1 is still considered suspect, the BBS decide to move forward with starting the replacement instance on a healthy cell. |
-| `i2`: `CLAIMED ORDINARY` | Cell 1 calls `EvacuateRunningActualLRP` |`i1`: `RUNNING EVACUATING`<br><br> `i2`: `CLAIMED ORDINARY` | When the cell reports that a running ActualLRP needs to evacuate, the BBS needs to do two things. First, it should keep routing traffic to the instance, because the ActualLRP may still be running. Second, the BBS change the ActualLRP presence to `EVACUATING`, so that a replacement instance can be brought up on a different cell (as per the usual evacuation strategy). |
+| `i2`: `CLAIMED ORDINARY` | Cell 1 calls `EvacuateRunningActualLRP` |`i1`: `RUNNING EVACUATING`<br><br> `i2`: `CLAIMED ORDINARY` | When the cell reports that a running ActualLRP needs to evacuate, the BBS needs to do two things. First, it should keep routing traffic to the instance, because the ActualLRP may still be running. Second, the BBS changes the ActualLRP presence to `EVACUATING`, so that a replacement instance can be brought up on a different cell (as per the usual evacuation strategy). |
 | `i2`: `CLAIMED ORDINARY` | Cell 1 calls `EvacuateCrashedActualLRP` or `EvacuateStoppedActualLRP` |`i1`: `REMOVED`, ActualLRPRemovedEvent(`i1`) <br><br> `i2`: `CLAIMED ORDINARY` | When the cell reports that a crashed or stopped ActualLRP needs to evacuate, the BBS learns that the ActualLRP that was previously known to be `RUNNING` is now `STOPPED` or `CRASHED` instead, which means that the instance is not running or routable. Thus, the BBS can simply remove the ActualLRP (rather than try to evacuate it). |
 
 ### Harmonizing ActualLRPs with Container State: Rep
