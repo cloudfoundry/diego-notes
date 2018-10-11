@@ -129,7 +129,8 @@ State | Meaning
 In addition, the ActualLRP includes two pieces of data: `CrashCount` (keeping track of the number of crashes) and `Since` (keeping track of the time when `State` was last updated).
 These are used to implement a backoff policy when restarting crashes.
 
-An evacuating ActualLRP will always be in the `RUNNING` state. So will the suspect ActualLRP.
+An evacuating ActualLRP will always be in the `RUNNING` state.  A SUSPECT
+ActualLRP can only be in either the `RUNNING` or `CLAIMED` state.
 
 ### LRP Lifecycle
 
@@ -605,7 +606,15 @@ In these scenarios, `cell-1` is `Missing` and `cell-2` is `Present`. Thus, `i1`,
       <td>
 	<code>i1</code>: <code>RUNNING SUSPECT</code>
 	<br/><br/>
+  <p>If the instance is restartable</p>
 	<code>i2</code>: <code>CRASHED ORDINARY</code>
+  ActualLRPInstanceCrashedEvent (<code>i2</code>)
+  ActualLRPInstanceRemovedEvent (<code>i2 CLAIMED</code>)
+  ActualLRPInstanceCreatedEvent (<code>i2 UNCLAIMED</code>)
+  <br/><br/>
+  <p>Otherwise, if the instance is not restartable</p>
+	<code>i2</code>: <code>CRASHED ORDINARY</code>
+  ActualLRPInstanceCrashedEvent (<code>i2</code>)
 	ActualLRPInstanceChangedEvent (<code>i2 CLAIMED</code>, <code>i2 CRASHED</code>)
       </td>
       <td>
