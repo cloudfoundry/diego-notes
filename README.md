@@ -1035,6 +1035,27 @@ We support handling two failure modes:
 
   We have seen issues crop up where a Cell may enter a bad state and consistently fail to create containers. These have typically been bugs in Garden. When this occurs existing LRPs on the Cell are likely OK, however new LRPs should not be placed on the Cell. This is a catastrophic failure mode when the Cell is relatively empty - as the auctioneer will consistently place work on the busted Cell.
   To avoid this, the Rep periodically runs a self-test health check that verifies that containers and network bridges can be created. If this self-test health check fails repeatedly, the Rep marks it self as unavailable to perform work and informs the Auctioneer of this when providing its State.
+  
+### ActualLRP Events
+
+- events used to reconstruct state of ActualLRPs
+- e.g. routability of instances
+- BBS emits, etc.
+- ActualLRPs change states (and presences) and events can capture that logic, here is why events get emitted during state change
+
+Before State | After State | Events Emitted | Reason
+---|---|---|---
+UNCLAIMED | UNCLAIMED with an additional placement error | `ActualLRPInstanceChangedEvent` |
+UNCLAIMED | CLAIMED | `ActualLRPChangedEvent` <br/> `ActualLRPInstanceChangedEvent` |
+UNCLAIMED | RUNNING | `ActualLRPChangedEvent` <br/> `ActualLRPInstanceChangedEvent` |
+UNCLAIMED | Any state with an additional crash count | `ActualLRPCrashedEvent` preceding any other relevant events|
+CLAIMED | UNCLAIMED | `ActualLRPChangedEvent` <br/> `ActualLRPInstanceCreatedEvent` <br/> `ActualLRPInstanceRemovedEvent` |
+CLAIMED | RUNNING | `ActualLRPChangedEvent` <br/> `ActualLRPInstanceChangedEvent` |
+CLAIMED | CRASHED | `ActualLRPCrashedEvent` <br/> `ActualLRPChangedEvent` <br/> `ActualLRPInstanceChangedEvent` |
+RUNNING | UNCLAIMED | `ActualLRPChangedEvent` <br/> `ActualLRPInstanceCreatedEvent` <br/> `ActualLRPInstanceRemovedEvent` |
+RUNNING | CLAIMED | `ActualLRPChangedEvent` <br/> `ActualLRPInstanceChangedEvent` |
+RUNNING | CRASHED | `ActualLRPCrashedEvent` <br/> `ActualLRPChangedEvent` <br/> `ActualLRPInstanceChangedEvent` |
+CRASHED | UNCLAIMED | `ActualLRPChangedEvent` <br/> `ActualLRPInstanceCreatedEvent` <br/> `ActualLRPInstanceRemovedEvent` |
 
 ### Pruning Corrupt/Invalid Data
 
