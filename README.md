@@ -253,6 +253,24 @@ Alternatively, the Auctioneer may *find* appropriate Cells but all those Cells m
 Diego continues to attempt to schedule `UNCLAIMED` ActualLRPs.
 Should an operator add spare capacity, Diego will automatically schedule the ActualLRPs.
 
+### ActualLRP Events
+
+The BBS emits events about ActualLRPs that consumers can use to reconstruct the history and state of ActualLRPs in the system. For example, the route emitters on each cell use these events to decide when to register and unregister routes to running ActualLRP instances. The BBS emits these events during convergence and other state or presence change operations. Below is a table outlining the events emitted during common ActualLRP state changes:
+
+| Before State | After State | Events Emitted |
+| ---|---|---|
+| UNCLAIMED | UNCLAIMED with an additional placement error | `ActualLRPInstanceChangedEvent` |
+| UNCLAIMED | CLAIMED | `ActualLRPChangedEvent` <br/> `ActualLRPInstanceChangedEvent` |
+| UNCLAIMED | RUNNING | `ActualLRPChangedEvent` <br/> `ActualLRPInstanceChangedEvent` |
+| CLAIMED | UNCLAIMED | `ActualLRPChangedEvent` <br/> `ActualLRPInstanceCreatedEvent` <br/> `ActualLRPInstanceRemovedEvent` |
+| CLAIMED | RUNNING | `ActualLRPChangedEvent` <br/> `ActualLRPInstanceChangedEvent` |
+| CLAIMED | CRASHED | `ActualLRPCrashedEvent` <br/> `ActualLRPChangedEvent` <br/> `ActualLRPInstanceChangedEvent` |
+| RUNNING | UNCLAIMED | `ActualLRPChangedEvent` <br/> `ActualLRPInstanceCreatedEvent` <br/> `ActualLRPInstanceRemovedEvent` |
+| RUNNING | CLAIMED | `ActualLRPChangedEvent` <br/> `ActualLRPInstanceChangedEvent` |
+| RUNNING | CRASHED | `ActualLRPCrashedEvent` <br/> `ActualLRPChangedEvent` <br/> `ActualLRPInstanceChangedEvent` |
+| CRASHED | UNCLAIMED | `ActualLRPChangedEvent` <br/> `ActualLRPInstanceCreatedEvent` <br/> `ActualLRPInstanceRemovedEvent` |
+| Any state | UNCLAIMED with an incremented crash count | `ActualLRPCrashedEvent` preceding any other relevant events|
+
 ### Crashes
 
 When an ActualLRP instance crashes, Diego is responsible for restarting the instance.
