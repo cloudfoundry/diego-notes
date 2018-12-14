@@ -998,31 +998,41 @@ Assuming a `RUNNING` container on `α`, the α-rep performs these actions, alway
 `β` and `ω` represent other cells in the cluster.
 `ε` indicates that the UNCLAIMED ActualLRP has a placement error set.
 
+Target ActualLRP state/presence | Replacement ActualLRP state/presence | Action | Reason
+---|---|---|---
+Does not exist | Does not exist | Delete container | No corresponding ActualLRP, container can be deleted
+Does not exist | `UNCLAIMED` | Create `EVACUATING` ActualLRP | `EVACUATING` ActualLRP is missing
+
+
+
+<!-- `-` | `-` | Delete container | **Conceivable**: The ActualLRP is now running elsewhere but the /e was somehow lost -->
+<!-- `-` | `UNCLAIMED` | CREATE /e: `RUNNING-α` | **Inconceivable?**: Ensure routing to our running instance  -->
+<!-- `-` | `UNCLAIMED+ε` | CREATE /e: `RUNNING-α` | **Inconceivable?**: No one won the auction, so the evacuating container stays put while the auctioneer has another go. -->
+<!-- `-` | `CLAIMED-α` | CREATE /e: `RUNNING α`, Update /i: `UNCLAIMED` | **Conceivable**: α has a RUNNING container but didn't get to update the BBS to `RUNNING` yet -->
+<!-- `-` | `CLAIMED-ω` | CREATE /e: `RUNNING α` | **Inconceivable?**: Ensure routing to our running instance -->
+<!-- `-` | `RUNNING-α` | CREATE /e: `RUNNING α`, Update /i: `UNCLAIMED` | **Expected**: This is the initial action during evacuation -->
+<!-- `RUNNING-α` | `UNCLAIMED` | Do Nothing | **Expected**: Waiting for other rep to win auction -->
+
 Instance ActualLRP state | Evacuating ActualLRP state | Action | Reason
 ---|---|---|---
-`UNCLAIMED` | - | CREATE /e: `RUNNING-α` | **Inconceivable?**: Ensure routing to our running instance
-`UNCLAIMED+ε` | - | Do Nothing | **Inconceivable?**: No one won the auction, so the evacuating container stays put while the auctioneer has another go.
-`UNCLAIMED` | `RUNNING-α` | Do Nothing | **Expected**: Waiting for other rep to win auction
 `UNCLAIMED+ε` | `RUNNING-α` | Do Nothing | **Conceivable**: No one won the auction, so the evacuating container stays put while the auctioneer has another go.
 `UNCLAIMED` | `RUNNING-β` | Delete container | **Conceivable**: β ran our evacuated instance, then evacuated itself
-`CLAIMED-α` | - | CREATE /e: `RUNNING α`, Update /i: `UNCLAIMED` | **Conceivable**: α has a RUNNING container but didn't get to update the BBS to `RUNNING` yet
 `CLAIMED-α` | `RUNNING-α` | Update /i: `UNCLAIMED` | **Conceivable**: α failed to update the BBS to UNCLAIMED while evacuating
 `CLAIMED-α` | `RUNNING-β` | Update /e: `RUNNING α`, Update /i: `UNCLAIMED` | **Conceivable**: β evacuated the container, α CLAIMED it, ran it and began evacuating but hasn't yet updated the BBS to `RUNNING`
-`CLAIMED-ω` | - | CREATE /e: `RUNNING α` | **Inconceivable?**: Ensure routing to our running instance
 `CLAIMED-ω` | `RUNNING-α` | Do Nothing | **Expected**: Waiting for ω to start running instance
 `CLAIMED-ω` | `RUNNING-β` | Delete container | **Conceivable**: β ran our evacuated instance, then evacuated itself
-`RUNNING-α` | - | CREATE /e: `RUNNING α`, Update /i: `UNCLAIMED` | **Expected**: This is the initial action during evacuation
 `RUNNING-α` | `RUNNING-α` | Update /i: `UNCLAIMED` | **Conceivable**: α failed to update the BBS to UNCLAIMED while evacuating
 `RUNNING-α` | `RUNNING-β` | Update /e: `RUNNING α`, Update /i: `UNCLAIMED` | **Conceivable**: β evacuated the container, α CLAIMED it, ran it, and then began evacuating
 `RUNNING-ω` | - | Delete container | **Conceivable**: The ActualLRP is now running elsewhere but the /e was removed when the instance transitioned to running state
+`RUNNING-ω` and `EVACUATING` | - | Delete container | **Conceivable**: The ActualLRP is now running elsewhere but the /e was removed when the instance transitioned to running state
 `RUNNING-ω` | `RUNNING-α` | Delete /e && Delete container | **Expected**: Cleanup after successful evacuation
 `RUNNING-ω` | `RUNNING-β` | Delete container | **Conceivable**: β evacuated the container, ω CLAIMED it, ran it, and then began evacuating, and then α noticed
 `CRASHED` | - | Delete container | **Conceivable**: The ActualLRP is now running elsewhere but the /e was somehow lost
 `CRASHED` | `RUNNING-α` | Delete /e && Delete container | **Expected**: Cleanup after successful evacuation (but then the new instance crashed)
 `CRASHED` | `RUNNING-β` | Delete container | **Conceivable**: β evacuated the container, some rep CLAIMED it, ran it, `CRASHED` it, and then α noticed
-- | - | Delete container | **Conceivable**: The ActualLRP is now running elsewhere but the /e was somehow lost
-- | `RUNNING-α` | Delete /e && Delete container | **Expected**: Cleanup after scaling down during evacuation
-- | `RUNNING-β` | Delete container | **Conceivable**: β evacuated the container, the ActualLRP was scaled down, and then α noticed
+`-` | `RUNNING-α` | Delete /e && Delete container | **Expected**: Cleanup after scaling down during evacuation
+`-` | `RUNNING-β` | Delete container | **Conceivable**: β evacuated the container, the ActualLRP was scaled down, and then α noticed
+ANY/EVACUATING | - | Delete container | **Conceivable**: There is already a replacement that's evacuating on a different cell
 
 ##### When the container is not Running
 
