@@ -1,4 +1,4 @@
-# LRP states and transitions
+# LRP and Task states and transitions
 
 This describes in detail the Diego state machine for running Tasks and LRPs.
 
