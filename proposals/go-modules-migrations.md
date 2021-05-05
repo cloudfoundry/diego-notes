@@ -112,55 +112,61 @@ Here is an example of such workflow
 - Remove cert from provider
 
 ```
-diff --git a/cmd/bbs/main_suite_test.go b/cmd/bbs/main_suite_test.go
-index e1f83e0..6ef6df6 100644
---- a/cmd/bbs/main_suite_test.go
-+++ b/cmd/bbs/main_suite_test.go
-@@ -19,11 +19,12 @@ import (
- 	bbsconfig "code.cloudfoundry.org/bbs/cmd/bbs/config"
- 	"code.cloudfoundry.org/bbs/encryption"
- 	"code.cloudfoundry.org/bbs/test_helpers"
--	"code.cloudfoundry.org/bbs/test_helpers/sqlrunner"
- 	"code.cloudfoundry.org/consuladapter"
- 	"code.cloudfoundry.org/consuladapter/consulrunner"
--	"code.cloudfoundry.org/diego-logging-client"
-+	diego_logging_client "code.cloudfoundry.org/diego-logging-client"
- 	"code.cloudfoundry.org/diego-logging-client/testhelpers"
-+	sql_test_helpers "code.cloudfoundry.org/diegosqldb/test_helpers"
-+	"code.cloudfoundry.org/diegosqldb/test_helpers/sqlrunner"
+diff --git a/cmd/locket/testrunner/runner.go b/cmd/locket/testrunner/runner.go
+index b211dc9..334483a 100644
+--- a/cmd/locket/testrunner/runner.go
++++ b/cmd/locket/testrunner/runner.go
+@@ -6,7 +6,6 @@ import (
+ 	"io/ioutil"
+ 	"os"
+ 	"os/exec"
+-	"path/filepath"
+ 	"time"
+ 
  	"code.cloudfoundry.org/durationjson"
- 	"code.cloudfoundry.org/go-loggregator/rpc/loggregator_v2"
- 	"code.cloudfoundry.org/inigo/helpers/portauthority"
-@@ -79,7 +80,7 @@ var _ = SynchronizedBeforeSuite(
- 		bbsPath, err := gexec.Build("code.cloudfoundry.org/bbs/cmd/bbs", "-race")
- 		Expect(err).NotTo(HaveOccurred())
+@@ -18,14 +17,6 @@ import (
+ 	"github.com/tedsuo/ifrit/ginkgomon"
+ )
  
--		locketPath, err := gexec.Build("code.cloudfoundry.org/locket/cmd/locket", "-race")
-+		locketPath, err := gexec.Build("code.cloudfoundry.org/locket/cmd/locket", "-race", "-mod=mod")
- 		Expect(err).NotTo(HaveOccurred())
+-var (
+-	fixturesPath = filepath.Join(os.Getenv("GOPATH"), "src/code.cloudfoundry.org/locket/cmd/locket/fixtures")
+-
+-	caCertFile = filepath.Join(fixturesPath, "ca.crt")
+-	certFile   = filepath.Join(fixturesPath, "cert.crt")
+-	keyFile    = filepath.Join(fixturesPath, "cert.key")
+-)
+-
+ func NewLocketRunner(locketBinPath string, fs ...func(cfg *config.LocketConfig)) *ginkgomon.Runner {
+ 	cfg := &config.LocketConfig{
+ 		LagerConfig: lagerflags.LagerConfig{
+@@ -34,9 +25,6 @@ func NewLocketRunner(locketBinPath string, fs ...func(cfg *config.LocketConfig))
+ 		},
+ 		DatabaseDriver: "mysql",
+ 		ReportInterval: durationjson.Duration(1 * time.Minute),
+-		CaFile:         caCertFile,
+-		CertFile:       certFile,
+-		KeyFile:        keyFile,
+ 	}
  
- 		return []byte(strings.Join([]string{bbsPath, locketPath}, ","))
-@@ -99,7 +100,7 @@ var _ = SynchronizedBeforeSuite(
- 		SetDefaultEventuallyTimeout(15 * time.Second)
+ 	for _, f := range fs {
+@@ -64,7 +52,7 @@ func NewLocketRunner(locketBinPath string, fs ...func(cfg *config.LocketConfig))
+ 	})
+ }
  
- 		dbName := fmt.Sprintf("diego_%d", GinkgoParallelNode())
--		sqlRunner = test_helpers.NewSQLRunner(dbName)
-+		sqlRunner = sql_test_helpers.NewSQLRunner(dbName)
- 		sqlProcess = ginkgomon.Invoke(sqlRunner)
+-func LocketClientTLSConfig() *tls.Config {
++func LocketClientTLSConfig(caCertFile, certFile, keyFile string) *tls.Config {
+ 	tlsConfig, err := tlsconfig.Build(
+ 		tlsconfig.WithInternalServiceDefaults(),
+ 		tlsconfig.WithIdentityFromFile(certFile, keyFile),
+@@ -73,7 +61,7 @@ func LocketClientTLSConfig() *tls.Config {
+ 	return tlsConfig
+ }
  
- 		consulStartingPort, err := portAllocator.ClaimPorts(consulrunner.PortOffsetLength)
-@@ -132,7 +133,10 @@ var _ = BeforeEach(func() {
- 	var err error
- 	logger = lagertest.NewTestLogger("test")
- 	ctx = context.Background()
--	fixturesPath := path.Join(os.Getenv("GOPATH"), "src/code.cloudfoundry.org/bbs/cmd/bbs/fixtures")
-+
-+	wd, err := os.Getwd()
-+	Expect(err).To(Succeed())
-+	fixturesPath := path.Join(wd, "fixtures")
- 
- 	consulRunner.Reset()
- 	consulClient = consulRunner.NewClient()
+-func ClientLocketConfig() locket.ClientLocketConfig {
++func ClientLocketConfig(caCertFile, certFile, keyFile string) locket.ClientLocketConfig {
+ 	return locket.ClientLocketConfig{
+ 		LocketCACertFile:     caCertFile,
+ 		LocketClientCertFile: certFile,
 ```
 
 - Caller should provide the certs
