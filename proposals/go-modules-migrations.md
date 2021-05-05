@@ -219,6 +219,12 @@ would be a broken workflow until the main branch is a module.
 - Change `-mod=mod` to `-mod=vendor` after `locket` is fully a standalone module
   and see if go is able to figure out how to import the `main.go` file
 
+
+## Work-In-Progress
+
+- [BBS as a module](https://github.com/cloudfoundry/bbs/tree/with-go-mod)
+- [Locket as a module](https://github.com/cloudfoundry/locket/tree/with-go-mod)
+
 ## End Goal
 
 After migration is completed:
@@ -230,5 +236,4 @@ After migration is completed:
 - `GOPATH` in `.envrc` is removed
 - Release is using Go 1.16+
 - `GO111MODULE` is unset
-- When we `ag GOPATH`, all results should be converted/removed including doc
-  including docs
+- When we `ag GOPATH`, all results should be converted/removed including docs
