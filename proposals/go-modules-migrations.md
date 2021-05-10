@@ -73,6 +73,22 @@ info](https://golang.org/ref/mod#go-mod-file-go) for how to do that.
 
 ## Work-In-Progress
 
+Failing tests for diego
+```
+handlers ./bbs/handlers
+launcher ./buildpackapplifecycle/launcher
+v2 ./cfhttp/v2 # removed submodule
+helpers ./diego-ssh/helpers
+launcher ./dockerapplifecycle/launcher
+containerstore ./executor/depot/containerstore #this was related to versions
+protobuf
+locket ./locket  #this was related to the version of consul. go.mod was getting
+latest, but was able to pin it back to v0.7.0
+handlers ./locket/handlers
+tlsconfig ./tlsconfig # remove submodule
+```
+
+
 ## End Goal
 
 After migration is completed:
