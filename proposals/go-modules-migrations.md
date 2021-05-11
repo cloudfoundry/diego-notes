@@ -75,11 +75,14 @@ info](https://golang.org/ref/mod#go-mod-file-go) for how to do that.
 
 Failing tests for diego
 ```
-handlers ./bbs/handlers
-launcher ./buildpackapplifecycle/launcher
+handlers ./bbs/handlers #added a maxconnection for SQL
+launcher ./buildpackapplifecycle/launcher # not related to go version, fixed the
+test to be more compatible with OS outputs
 v2 ./cfhttp/v2 # removed submodule
-helpers ./diego-ssh/helpers
-launcher ./dockerapplifecycle/launcher
+helpers ./diego-ssh/helpers # go 1.16 has change something about Cert Comparison
+that was breaking this
+launcher ./dockerapplifecycle/launcher #had to do with the way this machine was
+setup. /usr/bin was symlinked to /bin
 containerstore ./executor/depot/containerstore #this was related to versions
 protobuf
 locket ./locket  #this was related to the version of consul. go.mod was getting
