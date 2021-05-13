@@ -25,6 +25,17 @@ go mod vendor -e #ignore errors
 # if tests failed due to mismatch on version, try the submoduled version instead
 ```
 
+### Add Depedabot for independent modules (e.g. code.cloudfoundry.org/localip)
+
+When a new module is created, let's also add dependabot so that the dependencies
+can remain updated.
+[archiver](https://github.com/cloudfoundry/archiver/blob/2762da2677ce6ba931a6e9fff947c7541f470615/.dependabot/config.yml)
+is an example of the dependabot config.
+
+### Add Github action integration for running the test for independent modules
+
+When a new module is created, let's also add github action integration for
+running the tests
 
 ### Module dependency versions
 
@@ -73,23 +84,12 @@ info](https://golang.org/ref/mod#go-mod-file-go) for how to do that.
 
 ## Work-In-Progress
 
-Failing tests for diego
-```
-handlers ./bbs/handlers #added a maxconnection for SQL
-launcher ./buildpackapplifecycle/launcher # not related to go version, fixed the
-test to be more compatible with OS outputs
-v2 ./cfhttp/v2 # removed submodule
-helpers ./diego-ssh/helpers # go 1.16 has change something about Cert Comparison
-that was breaking this
-launcher ./dockerapplifecycle/launcher #had to do with the way this machine was
-setup. /usr/bin was symlinked to /bin
-containerstore ./executor/depot/containerstore #this was related to versions
-protobuf
-locket ./locket  #this was related to the version of consul. go.mod was getting
-latest, but was able to pin it back to v0.7.0
-handlers ./locket/handlers
-tlsconfig ./tlsconfig # remove submodule
-```
+- converted archiver/lager/debugserver/localip/cfhttp/clock to a go module. The
+  submodules are now removed from diego-release and the tests are running under
+  github actions
+- run all unit tests locally
+- Bump golang to 1.16.4
+- deploy
 
 
 ## End Goal
