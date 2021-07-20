@@ -84,24 +84,16 @@ info](https://golang.org/ref/mod#go-mod-file-go) for how to do that.
 
 ## Work-In-Progress
 
-- Get all of the builds green with go 1.15.8 and go.mod changes. (last failure:
-  inigo was failing to build guardian)
-- Bump golang to 1.16.4
-- Let the pipeline run everything with gomodules
-- remove github.com/docker code under src which is probably not used anymore
-  after conversion
-- try to find any regression since we are running a fairly new version of diego.
-  [Here is an example
-  issue](https://github.com/cloudfoundry/dockerapplifecycle/issues/7). If we are
-  incompatible we should either decided to be compatible or that our release
-  notes should reflect the incompatibility.
-
+- [x] diego-release on develop
+- [x] routing-release cloudfoundry/routing-release#211
+- [ ] cf-networking-release
+- [ ] silk-release
+- [ ] nats-release
 
 ## End Goal
 
 After migration is completed:
 
-- A release should have a single submodule
 - `GOPATH` in `.envrc` is removed
 - Release is using Go 1.16+
 - `GO111MODULE` is unset
