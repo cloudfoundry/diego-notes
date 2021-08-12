@@ -87,9 +87,13 @@ info](https://golang.org/ref/mod#go-mod-file-go) for how to do that.
 - [x] diego-release on develop
 - [x] routing-release cloudfoundry/routing-release#211
 - [ ] cf-networking-release
-- [ ] silk-release
+- [ ] silk-release (WIP: https://github.com/cloudfoundry/silk-release/tree/go-mod)
 - [ ] nats-release
 
+- [ ] code.cloudfoundry.org/lager need to be updated in diego-release and
+  silk-release and all of the other consumers since the 2.0.0 tag was added we
+  need to figure out a way to update this dependency
+- [ ] container-networking-cni package needs to be updated on silk-release
 ## End Goal
 
 After migration is completed:
