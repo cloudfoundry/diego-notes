@@ -93,7 +93,41 @@ info](https://golang.org/ref/mod#go-mod-file-go) for how to do that.
 - [ ] code.cloudfoundry.org/lager need to be updated in diego-release and
   silk-release and all of the other consumers since the 2.0.0 tag was added we
   need to figure out a way to update this dependency
-- [ ] container-networking-cni package needs to be updated on silk-release
+
+### List of newly converted modules that have github-actions and dependabot
+- code.cloudfoundry.org/archiver
+- code.cloudfoundry.org/cf-networking-helpers
+- code.cloudfoundry.org/filelock
+- code.cloudfoundry.org/silk
+- code.cloudfoundry.org/diego-logging-client
+- code.cloudfoundry.org/certsplitter
+- code.cloudfoundry.org/bytefmt
+- code.cloudfoundry.org/durationjson
+- code.cloudfoundry.org/consuladapter
+- code.cloudfoundry.org/eventhub
+- code.cloudfoundry.org/debugserver
+- code.cloudfoundry.org/clock
+- code.cloudfoundry.org/localip
+
+## TODO As a different track
+- Add a dependabot configuration for releases so they get the latest version of
+  the dependencies.
+- Go mod fetches `code.cloudfoundry.org/lager` v2.0.0 as the latest version of
+  library, instead of master/main branch with the latest updates. This is leading to
+  a situation where we have to use a [replace
+  directive](https://github.com/cloudfoundry/diego-release/blob/2eb134ea1227064fd4fc15671a34552a20a6e3f3/src/code.cloudfoundry.org/go.mod#L13).
+  This works for now, but it has a side-effect of never getting updated when
+  there is a commit on lager. [The following is a list of
+  repositories](https://pkg.go.dev/code.cloudfoundry.org/lager?tab=importedby) that
+  needs to remove the replace directive when we have a different solution
+- containernetworking/cni package needs to be updated on silk-release
+- Figure out a way to sync github action YAMLs. Currently we have an independent
+  configuration that are mostly the same. If we need to update one, it would be
+  better to be able to have a list of those repositories so that they all get
+  the same version of improvement. This is also true to dependabot.yml.
+- certauthority is now a repository, let's move cert creation functionality out
+  of inigo so that other repositories don't have to import inigo.
+
 ## End Goal
 
 After migration is completed:
