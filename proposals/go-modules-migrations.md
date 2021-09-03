@@ -94,12 +94,14 @@ info](https://golang.org/ref/mod#go-mod-file-go) for how to do that.
 - [ ] code.cloudfoundry.org/lager need to be updated in diego-release and
   silk-release and all of the other consumers since the 2.0.0 tag was added we
   need to figure out a way to update this dependency
+- [ ] Make sure all scripts that bump a submodule also run `go mod tidy & go mod
+  vendor`
 
 ### List of newly converted modules that have github-actions and dependabot
 - code.cloudfoundry.org/archiver
 - code.cloudfoundry.org/cf-networking-helpers
 - code.cloudfoundry.org/filelock
-- code.cloudfoundry.org/silk
+- code.cloudfoundry.org/silk (CI on concourse instead)
 - code.cloudfoundry.org/diego-logging-client
 - code.cloudfoundry.org/certsplitter
 - code.cloudfoundry.org/bytefmt
@@ -127,7 +129,12 @@ info](https://golang.org/ref/mod#go-mod-file-go) for how to do that.
   better to be able to have a list of those repositories so that they all get
   the same version of improvement. This is also true to dependabot.yml.
 - certauthority is now a repository, let's move cert creation functionality out
-  of inigo so that other repositories don't have to import inigo.
+  of inigo so that other repositories don't have to import inigo. Here is the
+  list of repositories that do similar cert generation for tests:
+    - diego-release
+    - silk-release
+    - cf-networking-helpers
+    - cf-networking-release
 
 ## End Goal
 
