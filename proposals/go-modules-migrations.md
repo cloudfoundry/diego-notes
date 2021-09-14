@@ -84,11 +84,13 @@ info](https://golang.org/ref/mod#go-mod-file-go) for how to do that.
 
 ## Work-In-Progress
 
-- [x] diego-release on develop
-- [x] routing-release cloudfoundry/routing-release#211
-- [ ] cf-networking-release
-  (WIP: https://github.com/cloudfoundry/cf-networking-release/tree/go-mod)
-- [x] silk-release cloudfoundry/silk-release#32
+- [x] diego-release v2.51.0
+- [ ] routing-release
+  [WIP cloudfoundry/routing-release#211](https://github.com/cloudfoundry/routing-release/pull/211)
+- [x] cf-networking-release
+  [cloudfoundry/cf-networking-release#90](https://github.com/cloudfoundry/cf-networking-release/pull/90)
+- [x] silk-release
+  [cloudfoundry/silk-release#32](https://github.com/cloudfoundry/silk-release/pull/32)
 - [ ] nats-release
 
 - [ ] code.cloudfoundry.org/lager need to be updated in diego-release and
@@ -96,6 +98,7 @@ info](https://golang.org/ref/mod#go-mod-file-go) for how to do that.
   need to figure out a way to update this dependency
 - [ ] Make sure all scripts that bump a submodule also run `go mod tidy & go mod
   vendor`
+- [ ] Make sure norsk pipelines are all green
 
 ### List of newly converted modules that have github-actions and dependabot
 - code.cloudfoundry.org/archiver
