@@ -84,21 +84,23 @@ info](https://golang.org/ref/mod#go-mod-file-go) for how to do that.
 
 ## Work-In-Progress
 
-- [x] diego-release v2.51.0
-- [ ] routing-release
-  [WIP cloudfoundry/routing-release#211](https://github.com/cloudfoundry/routing-release/pull/211)
+- [x] diego-release v2.51.0. dependabot is not syncing because of [this
+  issue](https://github.com/dependabot/dependabot-core/issues/4249)
+- [x] routing-release
+  [cloudfoundry/routing-release#211](https://github.com/cloudfoundry/routing-release/pull/211)
 - [x] cf-networking-release
   [cloudfoundry/cf-networking-release#90](https://github.com/cloudfoundry/cf-networking-release/pull/90)
 - [x] silk-release
   [cloudfoundry/silk-release#32](https://github.com/cloudfoundry/silk-release/pull/32)
-- [ ] nats-release
+- [x] nats-release
+  [cloudfoundry/nats-release#38](https://github.com/cloudfoundry/nats-release/pull/38)
 
 - [ ] code.cloudfoundry.org/lager need to be updated in diego-release and
   silk-release and all of the other consumers since the 2.0.0 tag was added we
   need to figure out a way to update this dependency
 - [ ] Make sure all scripts that bump a submodule also run `go mod tidy & go mod
   vendor`
-- [ ] Make sure norsk pipelines are all green
+- [x] Make sure norsk pipelines are all green
 
 ### List of newly converted modules that have github-actions and dependabot
 - code.cloudfoundry.org/archiver
