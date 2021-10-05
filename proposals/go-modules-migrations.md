@@ -105,7 +105,6 @@ info](https://golang.org/ref/mod#go-mod-file-go) for how to do that.
 ### List of newly converted modules that have github-actions and dependabot
 - code.cloudfoundry.org/archiver
 - code.cloudfoundry.org/cf-networking-helpers
-- code.cloudfoundry.org/filelock
 - code.cloudfoundry.org/silk (CI on concourse instead)
 - code.cloudfoundry.org/diego-logging-client
 - code.cloudfoundry.org/certsplitter
